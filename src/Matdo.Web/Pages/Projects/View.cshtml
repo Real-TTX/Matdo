@@ -1,0 +1,77 @@
+@page
+@model Matdo.Web.Pages.Projects.ProjectViewModel
+@{
+    ViewData["Title"] = Model.Project.Name;
+    var noColumn = Model.Tasks.Where(t => t.KanbanColumnId == null).ToList();
+}
+<div class="page-head row-between">
+    <div>
+        <h1><span class="dot" style="background:@Model.Project.Color; display:inline-block; margin-right:8px"></span>@Model.Project.Name</h1>
+        <div class="sub">@Model.Tasks.Count offene Aufgaben</div>
+    </div>
+    <a class="btn small" href="/Projects/Edit?id=@Model.Project.Id"><icon name="settings" size="14" /> Einstellungen</a>
+</div>
+
+<div class="tab-bar">
+    <a class="tab @(Model.IsKanban ? "" : "active")" href="/Projects/View?id=@Model.Project.Id&view=list"><icon name="list" size="16" /> Liste</a>
+    <a class="tab @(Model.IsKanban ? "active" : "")" href="/Projects/View?id=@Model.Project.Id&view=kanban"><icon name="kanban" size="16" /> Board</a>
+</div>
+
+@if (!Model.IsKanban)
+{
+    <form method="post" asp-page-handler="QuickAdd" asp-route-id="@Model.Project.Id" class="composer">
+        <input class="title" name="QuickTitle" placeholder="Aufgabenname" autocomplete="off" required />
+        <div class="form-buttons" style="margin-top:6px">
+            <button type="submit" class="btn btn-primary small"><icon name="plus" size="14" /> Aufgabe hinzufügen</button>
+            <a class="btn small" href="/Tasks/Edit?projectId=@Model.Project.Id"><icon name="dots" size="14" /> Mehr Optionen</a>
+        </div>
+    </form>
+
+    @foreach (var t in Model.Tasks)
+    {
+        <partial name="_TaskRow" model="t" />
+    }
+    @if (Model.Tasks.Count == 0)
+    {
+        <div class="empty">Keine offenen Aufgaben in diesem Projekt.</div>
+    }
+}
+else
+{
+    <div class="kanban">
+        @foreach (var col in Model.Columns)
+        {
+            var colTasks = Model.Tasks.Where(t => t.KanbanColumnId == col.Id).OrderBy(t => t.Position).ToList();
+            <div class="kanban-col">
+                <h4>@col.Name <span class="col-count">@colTasks.Count</span></h4>
+                <div class="kanban-cards" data-column-id="@col.Id">
+                    @foreach (var t in colTasks)
+                    {
+                        <partial name="_KanbanCard" model="t" />
+                    }
+                </div>
+            </div>
+        }
+
+        @if (noColumn.Count > 0)
+        {
+            <div class="kanban-col">
+                <h4>Ohne Spalte <span class="col-count">@noColumn.Count</span></h4>
+                <div class="kanban-cards" data-column-id="">
+                    @foreach (var t in noColumn)
+                    {
+                        <partial name="_KanbanCard" model="t" />
+                    }
+                </div>
+            </div>
+        }
+
+        @if (Model.Columns.Count == 0)
+        {
+            <div class="add-col">
+                <div class="empty">Noch keine Spalten. <a href="/Projects/Edit?id=@Model.Project.Id">Spalten definieren</a></div>
+            </div>
+        }
+    </div>
+    <a class="btn small" href="/Tasks/Edit?projectId=@Model.Project.Id"><icon name="plus" size="14" /> Aufgabe hinzufügen</a>
+}

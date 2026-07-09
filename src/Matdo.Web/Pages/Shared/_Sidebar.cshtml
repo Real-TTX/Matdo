@@ -1,0 +1,81 @@
+@inject ICurrentUserAccessor CurrentUser
+@inject ProjectService Projects
+@inject LabelService Labels
+@inject TaskService Tasks
+@{
+    var path = (ViewContext.HttpContext.Request.Path.Value ?? "/").ToLowerInvariant();
+    var query = ViewContext.HttpContext.Request.Query;
+    string Active(string prefix) => path.StartsWith(prefix) ? "active" : "";
+
+    var projects = await Projects.GetAllAsync();
+    var favProjects = projects.Where(p => p.IsFavorite).ToList();
+    var favLabels = await Labels.GetFavoritesAsync();
+    var todayCount = await Tasks.CountTodayAsync();
+    var inboxCount = await Tasks.CountInboxAsync();
+}
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+        <div class="user-chip">
+            <span class="avatar">@(string.IsNullOrEmpty(CurrentUser.DisplayName) ? "?" : CurrentUser.DisplayName![..1].ToUpper())</span>
+            <span class="user-name">@CurrentUser.DisplayName</span>
+        </div>
+        <button class="icon-btn only-mobile" data-close-sidebar aria-label="Schließen"><icon name="x" /></button>
+    </div>
+
+    <nav class="nav-primary">
+        <a class="nav-item add-task" href="/Tasks/Edit"><span class="add-ico"><icon name="plus" size="18" /></span> Aufgabe hinzufügen</a>
+        <a class="nav-item @Active("/search")" href="/Search"><icon name="search" /> Suchen</a>
+        <a class="nav-item @Active("/tasks/inbox")" href="/Tasks/Inbox"><icon name="inbox" /> <span>Eingang</span> @if (inboxCount > 0){<span class="count">@inboxCount</span>}</a>
+        <a class="nav-item @Active("/tasks/today")" href="/Tasks/Today"><span class="today-ico"><icon name="today" /></span> <span>Heute</span> @if (todayCount > 0){<span class="count">@todayCount</span>}</a>
+        <a class="nav-item @Active("/tasks/upcoming")" href="/Tasks/Upcoming"><icon name="upcoming" /> <span>Demnächst</span></a>
+        <a class="nav-item @Active("/labels")" href="/Labels"><icon name="tag" /> Filter und Etiketten</a>
+        <a class="nav-item @Active("/reporting")" href="/Reporting"><icon name="chart" /> Reporting</a>
+    </nav>
+
+    @if (favProjects.Count > 0 || favLabels.Count > 0)
+    {
+        <div class="nav-section">
+            <div class="nav-section-title">Favoriten</div>
+            @foreach (var p in favProjects)
+            {
+                <a class="nav-item" href="/Projects/View?id=@p.Id"><span class="dot" style="background:@p.Color"></span> <span>@p.Name</span></a>
+            }
+            @foreach (var l in favLabels)
+            {
+                <a class="nav-item" href="/Labels/View?id=@l.Id"><icon name="tag" /> <span>@l.Name</span></a>
+            }
+        </div>
+    }
+
+    <div class="nav-section">
+        <div class="nav-section-title">
+            <a href="/Projects">Meine Projekte</a>
+            <a class="mini-add" href="/Projects/Edit" title="Projekt hinzufügen" aria-label="Projekt hinzufügen"><icon name="plus" size="16" /></a>
+        </div>
+        @foreach (var p in projects)
+        {
+            var pid = query["id"].ToString();
+            var isActive = path.StartsWith("/projects/view") && pid == p.Id.ToString();
+            <a class="nav-item @(isActive ? "active" : "")" href="/Projects/View?id=@p.Id">
+                <span class="dot" style="background:@p.Color"></span> <span>@p.Name</span>
+                <span class="view-badge">@(p.ViewType == ProjectViewType.Kanban ? "Board" : "")</span>
+            </a>
+        }
+        @if (projects.Count == 0)
+        {
+            <a class="nav-item muted" href="/Projects/Edit"><icon name="plus" size="16" /> Erstes Projekt anlegen</a>
+        }
+    </div>
+
+    <div class="sidebar-foot">
+        @if (CurrentUser.IsAdmin)
+        {
+            <a class="nav-item @Active("/admin")" href="/Admin"><icon name="settings" /> Administration</a>
+        }
+        <a class="nav-item @Active("/account/settings")" href="/Account/Settings"><icon name="user" /> Einstellungen</a>
+        <form method="post" action="/Account/Logout" class="logout-form">
+            <button type="submit" class="nav-item as-button"><icon name="logout" /> Abmelden</button>
+        </form>
+        <div style="padding:6px 10px; font-size:11px; color:var(--text-faint)">Matdo @Matdo.Web.Services.BuildInfo.Version</div>
+    </div>
+</aside>

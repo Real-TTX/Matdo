@@ -1,0 +1,74 @@
+@page
+@model Matdo.Web.Pages.Account.SettingsModel
+@{
+    ViewData["Title"] = "Einstellungen";
+}
+<div class="page-head"><h1>Einstellungen</h1></div>
+
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="alert success">@Model.Message</div> }
+@if (!string.IsNullOrEmpty(Model.Error)) { <div class="alert error">@Model.Error</div> }
+
+<div data-tabs-scope>
+    <tab-bar>
+        <tab-item target="profile" active="true"><icon name="user" size="16" /> Profil</tab-item>
+        <tab-item target="password"><icon name="settings" size="16" /> Passwort</tab-item>
+        <tab-item target="notify"><icon name="bell" size="16" /> Benachrichtigungen</tab-item>
+    </tab-bar>
+
+    <div class="tab-panel active" data-tab-panel="profile">
+        <form method="post" asp-page-handler="Profile" class="form-card">
+            <form-field label="E-Mail">
+                <input value="@Model.Email" disabled />
+            </form-field>
+            <form-field label="Anzeigename" for="Profile_DisplayName" required="true">
+                <input asp-for="Profile.DisplayName" />
+                <span asp-validation-for="Profile.DisplayName" class="field-error"></span>
+            </form-field>
+            <form-field label="Zeitzone" for="Profile_TimeZone" hint="z.B. Europe/Berlin – für Erinnerungen.">
+                <input asp-for="Profile.TimeZone" placeholder="Europe/Berlin" />
+            </form-field>
+            <form-buttons>
+                <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
+            </form-buttons>
+        </form>
+    </div>
+
+    <div class="tab-panel" data-tab-panel="password">
+        <form method="post" asp-page-handler="Password" class="form-card">
+            <form-field label="Aktuelles Passwort" for="Password_Current">
+                <input asp-for="Password.Current" type="password" autocomplete="current-password" />
+            </form-field>
+            <form-field label="Neues Passwort" for="Password_New">
+                <input asp-for="Password.New" type="password" autocomplete="new-password" />
+                <span asp-validation-for="Password.New" class="field-error"></span>
+            </form-field>
+            <form-field label="Neues Passwort bestätigen" for="Password_Confirm">
+                <input asp-for="Password.Confirm" type="password" autocomplete="new-password" />
+                <span asp-validation-for="Password.Confirm" class="field-error"></span>
+            </form-field>
+            <form-buttons>
+                <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Passwort ändern</button>
+            </form-buttons>
+        </form>
+    </div>
+
+    <div class="tab-panel" data-tab-panel="notify">
+        <p class="muted">Erhalte Erinnerungen als Browser-Benachrichtigung – auch wenn Matdo als App installiert ist.</p>
+        @if (!Model.PushEnabled || string.IsNullOrEmpty(Model.PushPublicKey))
+        {
+            <div class="alert info">Web-Push ist serverseitig noch nicht konfiguriert. Ein Administrator kann VAPID-Schlüssel in der Administration hinterlegen.</div>
+        }
+        else
+        {
+            <div class="form-buttons" style="margin-top:8px">
+                <button type="button" class="btn btn-primary" id="btn-enable-push" data-vapid="@Model.PushPublicKey"><icon name="bell" size="16" /> Benachrichtigungen aktivieren</button>
+                <button type="button" class="btn" id="btn-disable-push">Deaktivieren</button>
+            </div>
+            <div id="push-status" class="muted mt"></div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,17 @@
+# ============================================================
+#  Matdo – Docker Compose Override für Release/Produktion
+#
+#  Verwendung:
+#     docker compose -f docker-compose.yml -f docker-compose.release.yml up -d --build
+# ============================================================
+services:
+  db:
+    # In Produktion sollte das Passwort über die Umgebung/`.env` gesetzt werden.
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD muss gesetzt sein}
+
+  web:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Postgres: "Host=db;Port=5432;Database=matdo;Username=matdo;Password=${POSTGRES_PASSWORD}"
+    restart: always

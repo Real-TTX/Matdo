@@ -1,0 +1,241 @@
+@page
+@model Matdo.Web.Pages.Tasks.TaskEditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Neue Aufgabe" : "Aufgabe bearbeiten";
+    var saved = Request.Query["saved"] == "true";
+    var prios = new[] { (1, "Priorität 1"), (2, "Priorität 2"), (3, "Priorität 3"), (4, "Priorität 4") };
+}
+<div class="page-head">
+    <h1>@ViewData["Title"]</h1>
+</div>
+
+@if (saved) { <div class="alert success">Aufgabe gespeichert.</div> }
+
+<form method="post" class="form-card">
+    <input type="hidden" asp-for="Input.Id" />
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <form-field label="Titel" for="Input_Title" required="true">
+        <input asp-for="Input.Title" placeholder="Was ist zu tun?" autofocus />
+        <span asp-validation-for="Input.Title" class="field-error"></span>
+    </form-field>
+
+    <form-field label="Beschreibung" for="Input_Description">
+        <textarea asp-for="Input.Description" placeholder="Beschreibung / Notizen"></textarea>
+    </form-field>
+
+    <div class="field-row">
+        <form-field label="Projekt" for="Input_ProjectId">
+            <select asp-for="Input.ProjectId" asp-items="Model.ProjectOptions"></select>
+        </form-field>
+        <form-field label="Priorität" for="Input_Priority">
+            <select asp-for="Input.Priority">
+                @foreach (var (val, text) in prios)
+                {
+                    <option value="@val">@text</option>
+                }
+            </select>
+        </form-field>
+    </div>
+
+    <div class="field-row">
+        <form-field label="Fälligkeit" for="Input_DueDate">
+            <input asp-for="Input.DueDate" type="date" />
+        </form-field>
+        <form-field label="Uhrzeit" for="Input_DueTime" hint="optional">
+            <input asp-for="Input.DueTime" type="time" />
+        </form-field>
+    </div>
+
+    <div class="field-row">
+        <form-field label="Deadline" for="Input_DeadlineDate">
+            <input asp-for="Input.DeadlineDate" type="date" />
+        </form-field>
+        <form-field label="Uhrzeit" for="Input_DeadlineTime" hint="optional">
+            <input asp-for="Input.DeadlineTime" type="time" />
+        </form-field>
+    </div>
+
+    <form-field label="Etiketten">
+        @if (Model.AllLabels.Count == 0)
+        {
+            <div class="muted">Noch keine Etiketten. <a href="/Labels/Edit">Etikett anlegen</a></div>
+        }
+        else
+        {
+            <div class="chip-row">
+                @foreach (var l in Model.AllLabels)
+                {
+                    var check = Model.Input.LabelIds.Contains(l.Id);
+                    <label class="chip @(check ? "active" : "")">
+                        <input type="checkbox" name="Input.LabelIds" value="@l.Id" @(check ? "checked" : "") style="display:none" onchange="this.closest('.chip').classList.toggle('active', this.checked)" />
+                        <span class="tag-swatch" style="background:@l.Color"></span> @l.Name
+                    </label>
+                }
+            </div>
+        }
+    </form-field>
+
+    <!-- Buttons in einer Zeile: Speichern, Zurück, <Abstand> Löschen -->
+    <form-buttons>
+        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
+        <a class="btn" href="javascript:history.back()"><icon name="back" size="16" /> Zurück</a>
+        @if (!Model.IsNew)
+        {
+            <button type="submit" class="btn danger" asp-page-handler="Delete" asp-route-id="@Model.Input.Id"
+                    formnovalidate onclick="return confirm('Diese Aufgabe wirklich löschen?')"><icon name="trash" size="16" /> Löschen</button>
+        }
+    </form-buttons>
+</form>
+
+@if (!Model.IsNew)
+{
+    <div class="form-card mt" data-tabs-scope>
+        <tab-bar>
+            <tab-item target="subtasks" active="true"><icon name="list" size="16" /> Unteraufgaben (@Model.SubTasks.Count)</tab-item>
+            <tab-item target="reminders"><icon name="bell" size="16" /> Erinnerungen (@Model.Reminders.Count)</tab-item>
+            @if (Model.CanShare)
+            {
+                <tab-item target="share"><icon name="share" size="16" /> Teilen (@Model.Shares.Count)</tab-item>
+            }
+        </tab-bar>
+
+        <!-- Unteraufgaben -->
+        <div class="tab-panel active" data-tab-panel="subtasks">
+            @foreach (var s in Model.SubTasks)
+            {
+                <partial name="_TaskRow" model="s" />
+            }
+            <form method="post" asp-page-handler="AddSubtask" asp-route-id="@Model.Input.Id" class="composer">
+                <input class="title" name="subtaskTitle" placeholder="Schritt hinzufügen …" autocomplete="off" required />
+                <div class="form-buttons" style="margin-top:6px">
+                    <button type="submit" class="btn btn-primary small"><icon name="plus" size="14" /> Schritt hinzufügen</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Erinnerungen -->
+        <div class="tab-panel" data-tab-panel="reminders">
+            @if (Model.Reminders.Count == 0)
+            {
+                <p class="muted">Noch keine Erinnerungen.</p>
+            }
+            else
+            {
+                <div class="table-wrap mb">
+                    <table class="table">
+                        <thead><tr><th>Zeitpunkt</th><th>Typ</th><th>Kanal</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var r in Model.Reminders)
+                        {
+                            <tr>
+                                <td>@r.RemindAt.ToLocalTime().ToString("g")</td>
+                                <td>@(r.Type == Matdo.Web.Data.Entities.ReminderType.DateTime ? "Datum & Uhrzeit" : $"{r.OffsetMinutes} Min. vorher")</td>
+                                <td>@r.Channel</td>
+                                <td class="actions-cell">
+                                    <form method="post" asp-page-handler="RemoveReminder" asp-route-id="@Model.Input.Id" style="display:inline">
+                                        <input type="hidden" name="reminderId" value="@r.Id" />
+                                        <button type="submit" class="btn small danger"><icon name="trash" size="14" /></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <form method="post" asp-page-handler="AddReminder" asp-route-id="@Model.Input.Id">
+                <div class="field-row">
+                    <form-field label="Art">
+                        <select name="reminderType" id="reminderType" onchange="document.getElementById('rem-abs').style.display=this.value=='0'?'flex':'none';document.getElementById('rem-rel').style.display=this.value=='1'?'block':'none';">
+                            <option value="0">Datum &amp; Uhrzeit</option>
+                            <option value="1">Vor der Fälligkeit</option>
+                        </select>
+                    </form-field>
+                    <form-field label="Kanal">
+                        <select name="channel">
+                            <option value="3">E-Mail &amp; Push</option>
+                            <option value="1">Nur E-Mail</option>
+                            <option value="2">Nur Push</option>
+                        </select>
+                    </form-field>
+                </div>
+                <div class="field-row" id="rem-abs">
+                    <form-field label="Datum"><input type="date" name="remindDate" /></form-field>
+                    <form-field label="Uhrzeit"><input type="time" name="remindTime" /></form-field>
+                </div>
+                <div id="rem-rel" style="display:none">
+                    <form-field label="Minuten vor Fälligkeit" hint="z.B. 60 für eine Stunde vorher">
+                        <input type="number" name="offsetMinutes" value="60" min="0" />
+                    </form-field>
+                </div>
+                <div class="form-buttons" style="margin-top:6px">
+                    <button type="submit" class="btn btn-primary small"><icon name="bell" size="14" /> Erinnerung hinzufügen</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Teilen -->
+        @if (Model.CanShare)
+        {
+            <div class="tab-panel" data-tab-panel="share">
+                @if (Model.Shares.Count > 0)
+                {
+                    <div class="table-wrap mb">
+                        <table class="table">
+                            <thead><tr><th>Benutzer</th><th>Recht</th><th></th></tr></thead>
+                            <tbody>
+                            @foreach (var s in Model.Shares)
+                            {
+                                <tr>
+                                    <td>@s.SharedWithUser?.DisplayName</td>
+                                    <td>@(s.Permission == Matdo.Web.Data.Entities.SharePermission.Edit ? "Bearbeiten" : "Ansehen")</td>
+                                    <td class="actions-cell">
+                                        <form method="post" asp-page-handler="Unshare" asp-route-id="@Model.Input.Id" style="display:inline">
+                                            <input type="hidden" name="targetUserId" value="@s.SharedWithUserId" />
+                                            <button type="submit" class="btn small danger"><icon name="x" size="14" /></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                @if (Model.ShareableUsers.Count == 0)
+                {
+                    <p class="muted">Es gibt keine weiteren Benutzer zum Teilen.</p>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="Share" asp-route-id="@Model.Input.Id">
+                        <div class="field-row">
+                            <form-field label="Benutzer">
+                                <select name="targetUserId">
+                                    @foreach (var u in Model.ShareableUsers)
+                                    {
+                                        <option value="@u.Id">@u.DisplayName (@u.Email)</option>
+                                    }
+                                </select>
+                            </form-field>
+                            <form-field label="Recht">
+                                <select name="permission">
+                                    <option value="1">Bearbeiten</option>
+                                    <option value="0">Ansehen</option>
+                                </select>
+                            </form-field>
+                        </div>
+                        <div class="form-buttons" style="margin-top:6px">
+                            <button type="submit" class="btn btn-primary small"><icon name="share" size="14" /> Teilen</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

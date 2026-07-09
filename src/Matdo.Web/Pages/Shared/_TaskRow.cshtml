@@ -1,0 +1,70 @@
+@model Matdo.Web.Data.Entities.TaskItem
+@{
+    var t = Model;
+    var prioClass = t.Priority switch
+    {
+        TaskPriority.P1 => "p1",
+        TaskPriority.P2 => "p2",
+        TaskPriority.P3 => "p3",
+        _ => ""
+    };
+
+    string? dueLabel = null;
+    var overdue = false;
+    if (t.DueDate.HasValue)
+    {
+        var due = t.DueDate.Value.ToLocalTime();
+        var today = DateTime.Now.Date;
+        overdue = due.Date < today && !t.IsCompleted;
+        if (due.Date == today) dueLabel = "Heute";
+        else if (due.Date == today.AddDays(1)) dueLabel = "Morgen";
+        else if (due.Date == today.AddDays(-1)) dueLabel = "Gestern";
+        else dueLabel = due.ToString("d. MMM");
+        if (t.DueHasTime) dueLabel += " " + due.ToString("HH:mm");
+    }
+    var subCount = t.SubTasks?.Count ?? 0;
+    var doneSub = t.SubTasks?.Count(s => s.IsCompleted) ?? 0;
+}
+<div class="task-row @(t.IsCompleted ? "done" : "")">
+    <div class="task-check @prioClass @(t.IsCompleted ? "checked" : "")"
+         data-complete-task="@t.Id" data-completed="@(t.IsCompleted ? "true" : "false")"
+         role="checkbox" aria-checked="@(t.IsCompleted ? "true" : "false")" title="Erledigt">
+        @(t.IsCompleted ? "✓" : "")
+    </div>
+    <div class="task-body">
+        <div class="task-title"><a href="/Tasks/Edit?id=@t.Id">@t.Title</a></div>
+        @if (!string.IsNullOrWhiteSpace(t.Description))
+        {
+            <div class="task-desc">@t.Description</div>
+        }
+        <div class="task-meta">
+            @if (dueLabel != null)
+            {
+                <span class="due @(overdue ? "overdue" : "")"><icon name="calendar" size="13" /> @dueLabel</span>
+            }
+            @if (t.DeadlineDate.HasValue)
+            {
+                <span class="due"><icon name="flag" size="13" /> @t.DeadlineDate.Value.ToLocalTime().ToString("d. MMM")</span>
+            }
+            @if (subCount > 0)
+            {
+                <span><icon name="list" size="13" /> @doneSub/@subCount</span>
+            }
+            @if (t.Reminders != null && t.Reminders.Any())
+            {
+                <span><icon name="bell" size="13" /></span>
+            }
+            @if (t.Project != null)
+            {
+                <span class="pill-label"><span class="dot" style="background:@t.Project.Color"></span> @t.Project.Name</span>
+            }
+            @if (t.TaskLabels != null)
+            {
+                foreach (var tl in t.TaskLabels.Where(x => x.Label != null))
+                {
+                    <span class="pill-label"><span class="tag-swatch" style="background:@tl.Label!.Color"></span> @tl.Label!.Name</span>
+                }
+            }
+        </div>
+    </div>
+</div>

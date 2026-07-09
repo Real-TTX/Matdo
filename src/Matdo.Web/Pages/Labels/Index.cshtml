@@ -1,0 +1,41 @@
+@page
+@model Matdo.Web.Pages.Labels.LabelsIndexModel
+@{
+    ViewData["Title"] = "Filter und Etiketten";
+}
+<div class="page-head"><h1>Filter und Etiketten</h1></div>
+
+<list-view id="labels">
+    <list-toolbar>
+        <form method="get" class="search">
+            <input type="search" name="q" value="@Model.Search" placeholder="Etiketten durchsuchen …" />
+        </form>
+    </list-toolbar>
+
+    <list-table>
+        <thead>
+            <tr><th>Etikett</th><th>Farbe</th><th>Favorit</th><th></th></tr>
+        </thead>
+        <tbody>
+        @foreach (var l in Model.Items)
+        {
+            <tr>
+                <td><a class="row-link" href="/Labels/View?id=@l.Id"><span class="tag-swatch" style="background:@l.Color; margin-right:6px"></span>@l.Name</a></td>
+                <td><code>@l.Color</code></td>
+                <td>@(l.IsFavorite ? "★" : "")</td>
+                <td class="actions-cell">
+                    <a class="btn small" href="/Labels/Edit?id=@l.Id"><icon name="edit" size="14" /> Bearbeiten</a>
+                </td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="4"><div class="empty">Noch keine Etiketten.</div></td></tr>
+        }
+        </tbody>
+    </list-table>
+
+    <list-actions>
+        <a class="btn btn-primary" href="/Labels/Edit"><icon name="plus" size="16" /> Neues Etikett</a>
+    </list-actions>
+</list-view>

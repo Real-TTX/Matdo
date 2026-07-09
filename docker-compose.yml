@@ -1,0 +1,53 @@
+# ============================================================
+#  Matdo – Docker Compose (Basis / Entwicklung)
+#  Web erreichbar unter http://localhost:6006
+#
+#  Live-Reload/Test: Container neu bauen und Stack neu deployen:
+#     docker compose up -d --build
+# ============================================================
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: matdo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: matdo
+      POSTGRES_USER: matdo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-matdo}
+      TZ: Europe/Berlin
+    volumes:
+      # Persistente Datenbank – bleibt über Container-Neustarts erhalten
+      - matdo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matdo -d matdo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MATDO_VERSION: ${MATDO_VERSION:-local-dev}
+    image: matdo:${MATDO_VERSION:-local-dev}
+    container_name: matdo-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:6006
+      ConnectionStrings__Postgres: "Host=db;Port=5432;Database=matdo;Username=matdo;Password=${POSTGRES_PASSWORD:-matdo}"
+      Matdo__ConfigDir: /data/config
+      TZ: Europe/Berlin
+    ports:
+      - "6006:6006"
+    volumes:
+      # Konfiguration (JSON) im gemounteten Volume
+      - matdo_config:/data
+
+volumes:
+  matdo_pgdata:
+  matdo_config:

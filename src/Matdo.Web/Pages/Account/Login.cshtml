@@ -1,0 +1,36 @@
+@page
+@model Matdo.Web.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Anmelden";
+}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="logo"><icon name="check" size="26" /> Matdo</div>
+        <h1>Willkommen zurück</h1>
+        <p class="sub">Melde dich mit deinem Konto an.</p>
+
+        @if (!string.IsNullOrEmpty(Model.Error))
+        {
+            <div class="alert error">@Model.Error</div>
+        }
+
+        <form method="post">
+            <input type="hidden" asp-for="ReturnUrl" value="@Model.ReturnUrl" />
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+            <form-field label="E-Mail" for="Input_Email" required="true">
+                <input asp-for="Input.Email" type="email" autocomplete="username" placeholder="du@beispiel.de" autofocus />
+                <span asp-validation-for="Input.Email" class="field-error"></span>
+            </form-field>
+
+            <form-field label="Passwort" for="Input_Password" required="true">
+                <input asp-for="Input.Password" type="password" autocomplete="current-password" placeholder="••••••••" />
+                <span asp-validation-for="Input.Password" class="field-error"></span>
+            </form-field>
+
+            <button type="submit" class="btn btn-primary">Anmelden</button>
+        </form>
+
+        <div class="auth-alt">Noch kein Konto? <a href="/Account/Register">Registrieren</a></div>
+    </div>
+</div>

@@ -1,0 +1,26 @@
+@page
+@model Matdo.Web.Pages.Tasks.InboxModel
+@{
+    ViewData["Title"] = "Eingang";
+}
+<div class="page-head">
+    <h1>Eingang</h1>
+    <div class="sub"><icon name="inbox" size="16" /> @Model.Items.Count Aufgaben</div>
+</div>
+
+<form method="post" asp-page-handler="QuickAdd" class="composer">
+    <input class="title" name="QuickTitle" placeholder="Aufgabenname" autocomplete="off" required />
+    <div class="form-buttons" style="margin-top:6px">
+        <button type="submit" class="btn btn-primary small"><icon name="plus" size="14" /> Aufgabe hinzufügen</button>
+        <a class="btn small" href="/Tasks/Edit"><icon name="dots" size="14" /> Mehr Optionen</a>
+    </div>
+</form>
+
+@foreach (var t in Model.Items)
+{
+    <partial name="_TaskRow" model="t" />
+}
+@if (Model.Items.Count == 0)
+{
+    <div class="empty">Dein Eingang ist leer.</div>
+}

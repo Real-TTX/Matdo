@@ -1,0 +1,48 @@
+@page
+@model Matdo.Web.Pages.Labels.LabelEditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Neues Etikett" : "Etikett bearbeiten";
+}
+<div class="page-head"><h1>@ViewData["Title"]</h1></div>
+
+<form method="post" class="form-card">
+    <input type="hidden" asp-for="Input.Id" />
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <form-field label="Name" for="Input_Name" required="true">
+        <input asp-for="Input.Name" placeholder="Etikettname" autofocus />
+        <span asp-validation-for="Input.Name" class="field-error"></span>
+    </form-field>
+
+    <form-field label="Farbe">
+        <div class="chip-row">
+            @foreach (var c in Matdo.Web.Pages.Labels.LabelEditModel.Palette)
+            {
+                var sel = Model.Input.Color == c;
+                <label class="chip @(sel ? "active" : "")" title="@c">
+                    <input type="radio" name="Input.Color" value="@c" @(sel ? "checked" : "") style="display:none"
+                           onchange="document.querySelectorAll('[name=\'Input.Color\']').forEach(r=>r.closest('.chip').classList.toggle('active', r.checked))" />
+                    <span class="tag-swatch" style="background:@c"></span>
+                </label>
+            }
+        </div>
+    </form-field>
+
+    <form-field label="Favorit">
+        <label class="checkbox-row"><input type="checkbox" asp-for="Input.IsFavorite" /> In der Seitenleiste anzeigen</label>
+    </form-field>
+
+    <form-buttons>
+        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
+        <a class="btn" href="/Labels"><icon name="back" size="16" /> Zurück</a>
+        @if (!Model.IsNew)
+        {
+            <button type="submit" class="btn danger" asp-page-handler="Delete" asp-route-id="@Model.Input.Id"
+                    formnovalidate onclick="return confirm('Etikett wirklich löschen?')"><icon name="trash" size="16" /> Löschen</button>
+        }
+    </form-buttons>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

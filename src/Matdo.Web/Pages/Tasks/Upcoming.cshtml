@@ -1,0 +1,28 @@
+@page
+@model Matdo.Web.Pages.Tasks.UpcomingModel
+@{
+    ViewData["Title"] = "Demnächst";
+}
+<div class="page-head">
+    <h1>Demnächst</h1>
+    <div class="sub">Die nächsten Wochen im Überblick</div>
+</div>
+
+@if (Model.Groups.Count == 0)
+{
+    <div class="empty">Keine anstehenden Aufgaben. <a href="/Tasks/Edit">Neue Aufgabe anlegen</a></div>
+}
+else
+{
+    foreach (var g in Model.Groups)
+    {
+        var isTomorrow = g.Key == DateTime.Now.Date.AddDays(1);
+        <div class="task-group">
+            <h3>@g.Key.ToString("d. MMM") · @(isTomorrow ? "Morgen · " : "")@g.Key.ToString("dddd")</h3>
+            @foreach (var t in g)
+            {
+                <partial name="_TaskRow" model="t" />
+            }
+        </div>
+    }
+}

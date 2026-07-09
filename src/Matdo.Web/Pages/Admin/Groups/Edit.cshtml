@@ -1,0 +1,48 @@
+@page
+@model Matdo.Web.Pages.Admin.Groups.GroupEditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Neue Gruppe" : "Gruppe bearbeiten";
+}
+<div class="page-head"><h1>@ViewData["Title"]</h1></div>
+
+<form method="post" class="form-card">
+    <input type="hidden" asp-for="Input.Id" />
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <form-field label="Name" for="Input_Name" required="true">
+        <input asp-for="Input.Name" autofocus />
+        <span asp-validation-for="Input.Name" class="field-error"></span>
+    </form-field>
+
+    <form-field label="Beschreibung" for="Input_Description">
+        <input asp-for="Input.Description" />
+    </form-field>
+
+    <form-field label="Mitglieder">
+        <div class="chip-row">
+            @foreach (var u in Model.AllUsers)
+            {
+                var check = Model.MemberIds.Contains(u.Id);
+                <label class="chip @(check ? "active" : "")">
+                    <input type="checkbox" name="MemberIds" value="@u.Id" @(check ? "checked" : "") style="display:none"
+                           onchange="this.closest('.chip').classList.toggle('active', this.checked)" />
+                    <icon name="user" size="14" /> @u.DisplayName
+                </label>
+            }
+        </div>
+    </form-field>
+
+    <form-buttons>
+        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
+        <a class="btn" href="/Admin/Groups"><icon name="back" size="16" /> Zurück</a>
+        @if (!Model.IsNew)
+        {
+            <button type="submit" class="btn danger" asp-page-handler="Delete" asp-route-id="@Model.Input.Id"
+                    formnovalidate onclick="return confirm('Gruppe wirklich löschen?')"><icon name="trash" size="16" /> Löschen</button>
+        }
+    </form-buttons>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,51 @@
+@inject ICurrentUserAccessor CurrentUser
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>@(ViewData["Title"] != null ? ViewData["Title"] + " · Matdo" : "Matdo")</title>
+
+    <meta name="theme-color" content="#dc4c3e" />
+    <meta name="description" content="Matdo – deine Aufgaben, Projekte und Erinnerungen." />
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <link rel="icon" href="~/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="~/icons/icon.svg" />
+    <link rel="apple-touch-icon" href="~/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Matdo" />
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body>
+@if (CurrentUser.IsAuthenticated)
+{
+    @Html.AntiForgeryToken()
+    <div class="app-shell">
+        <div class="backdrop" data-close-sidebar></div>
+        <partial name="_Sidebar" />
+        <main class="app-main">
+            <header class="topbar">
+                <button class="icon-btn only-mobile" data-toggle-sidebar aria-label="Menü"><icon name="menu" /></button>
+                <a class="brand only-mobile" href="/">Matdo</a>
+                <div class="spacer"></div>
+                <a class="icon-btn" href="/Reporting" title="Reporting" aria-label="Reporting"><icon name="chart" /></a>
+            </header>
+            <div class="app-content">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+}
+else
+{
+    @RenderBody()
+}
+
+<script src="~/js/site.js" asp-append-version="true"></script>
+<script src="~/js/pwa.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

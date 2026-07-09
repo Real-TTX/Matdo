@@ -1,0 +1,161 @@
+@page
+@model Matdo.Web.Pages.Projects.ProjectEditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Neues Projekt" : "Projekt bearbeiten";
+    var saved = Request.Query["saved"] == "true";
+}
+<div class="page-head"><h1>@ViewData["Title"]</h1></div>
+
+@if (saved) { <div class="alert success">Projekt gespeichert.</div> }
+
+<form method="post" class="form-card">
+    <input type="hidden" asp-for="Input.Id" />
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <form-field label="Name" for="Input_Name" required="true">
+        <input asp-for="Input.Name" placeholder="Projektname" autofocus />
+        <span asp-validation-for="Input.Name" class="field-error"></span>
+    </form-field>
+
+    <form-field label="Farbe">
+        <div class="chip-row">
+            @foreach (var c in Matdo.Web.Pages.Projects.ProjectEditModel.Palette)
+            {
+                var sel = Model.Input.Color == c;
+                <label class="chip @(sel ? "active" : "")" title="@c">
+                    <input type="radio" name="Input.Color" value="@c" @(sel ? "checked" : "") style="display:none"
+                           onchange="document.querySelectorAll('[name=\'Input.Color\']').forEach(r=>r.closest('.chip').classList.toggle('active', r.checked))" />
+                    <span class="dot" style="background:@c"></span>
+                </label>
+            }
+        </div>
+    </form-field>
+
+    <div class="field-row">
+        <form-field label="Ansicht" for="Input_ViewType">
+            <select asp-for="Input.ViewType">
+                <option value="0">Liste</option>
+                <option value="1">Kanban (Board)</option>
+            </select>
+        </form-field>
+        <form-field label="Favorit">
+            <label class="checkbox-row"><input type="checkbox" asp-for="Input.IsFavorite" /> Als Favorit anzeigen</label>
+        </form-field>
+    </div>
+
+    <form-buttons>
+        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
+        <a class="btn" href="/Projects"><icon name="back" size="16" /> Zurück</a>
+        @if (!Model.IsNew)
+        {
+            <button type="submit" class="btn danger" asp-page-handler="Delete" asp-route-id="@Model.Input.Id"
+                    formnovalidate onclick="return confirm('Projekt und Zuordnung der Aufgaben wirklich löschen?')"><icon name="trash" size="16" /> Löschen</button>
+        }
+    </form-buttons>
+</form>
+
+@if (!Model.IsNew)
+{
+    <div class="form-card mt" data-tabs-scope>
+        <tab-bar>
+            <tab-item target="columns" active="true"><icon name="kanban" size="16" /> Kanban-Spalten</tab-item>
+            <tab-item target="pshare"><icon name="share" size="16" /> Teilen (@Model.Shares.Count)</tab-item>
+        </tab-bar>
+
+        <div class="tab-panel active" data-tab-panel="columns">
+            <p class="muted">Spalten des Kanban-Boards. Werden in der Board-Ansicht als Spalten angezeigt.</p>
+            <div class="table-wrap mb">
+                <table class="table">
+                    <thead><tr><th>Position</th><th>Name</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach (var col in Model.Columns)
+                    {
+                        <tr>
+                            <td>@(col.Position + 1)</td>
+                            <td>
+                                <form method="post" asp-page-handler="RenameColumn" asp-route-id="@Model.Input.Id" style="display:flex; gap:6px">
+                                    <input type="hidden" name="columnId" value="@col.Id" />
+                                    <input type="text" name="columnName" value="@col.Name" />
+                                    <button type="submit" class="btn small">OK</button>
+                                </form>
+                            </td>
+                            <td class="actions-cell">
+                                <form method="post" asp-page-handler="DeleteColumn" asp-route-id="@Model.Input.Id" style="display:inline" data-confirm="Spalte löschen?">
+                                    <input type="hidden" name="columnId" value="@col.Id" />
+                                    <button type="submit" class="btn small danger"><icon name="trash" size="14" /></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    @if (Model.Columns.Count == 0)
+                    {
+                        <tr><td colspan="3"><div class="empty">Noch keine Spalten.</div></td></tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <form method="post" asp-page-handler="AddColumn" asp-route-id="@Model.Input.Id" style="display:flex; gap:6px; max-width:360px">
+                <input type="text" name="columnName" placeholder="Neue Spalte …" required />
+                <button type="submit" class="btn btn-primary"><icon name="plus" size="16" /> Hinzufügen</button>
+            </form>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="pshare">
+            @if (Model.Shares.Count > 0)
+            {
+                <div class="table-wrap mb">
+                    <table class="table">
+                        <thead><tr><th>Benutzer</th><th>Recht</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var s in Model.Shares)
+                        {
+                            <tr>
+                                <td>@s.SharedWithUser?.DisplayName</td>
+                                <td>@(s.Permission == Matdo.Web.Data.Entities.SharePermission.Edit ? "Bearbeiten" : "Ansehen")</td>
+                                <td class="actions-cell">
+                                    <form method="post" asp-page-handler="Unshare" asp-route-id="@Model.Input.Id" style="display:inline">
+                                        <input type="hidden" name="targetUserId" value="@s.SharedWithUserId" />
+                                        <button type="submit" class="btn small danger"><icon name="x" size="14" /></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            @if (Model.ShareableUsers.Count == 0)
+            {
+                <p class="muted">Es gibt keine weiteren Benutzer zum Teilen.</p>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Share" asp-route-id="@Model.Input.Id">
+                    <div class="field-row">
+                        <form-field label="Benutzer">
+                            <select name="targetUserId">
+                                @foreach (var u in Model.ShareableUsers)
+                                {
+                                    <option value="@u.Id">@u.DisplayName (@u.Email)</option>
+                                }
+                            </select>
+                        </form-field>
+                        <form-field label="Recht">
+                            <select name="permission">
+                                <option value="1">Bearbeiten</option>
+                                <option value="0">Ansehen</option>
+                            </select>
+                        </form-field>
+                    </div>
+                    <div class="form-buttons" style="margin-top:6px">
+                        <button type="submit" class="btn btn-primary small"><icon name="share" size="14" /> Teilen</button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

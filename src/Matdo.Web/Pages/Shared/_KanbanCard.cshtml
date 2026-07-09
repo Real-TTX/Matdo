@@ -1,0 +1,26 @@
+@model Matdo.Web.Data.Entities.TaskItem
+@{
+    var t = Model;
+    var prioClass = t.Priority switch { TaskPriority.P1 => "p1", TaskPriority.P2 => "p2", TaskPriority.P3 => "p3", _ => "" };
+}
+<div class="kanban-card" draggable="true" data-task-id="@t.Id">
+    <div style="display:flex; gap:8px; align-items:flex-start">
+        <div class="task-check @prioClass" data-complete-task="@t.Id" data-completed="false" title="Erledigt"></div>
+        <div style="flex:1; min-width:0">
+            <div class="task-title"><a href="/Tasks/Edit?id=@t.Id">@t.Title</a></div>
+            <div class="task-meta">
+                @if (t.DueDate.HasValue)
+                {
+                    <span class="due"><icon name="calendar" size="13" /> @t.DueDate.Value.ToLocalTime().ToString("d. MMM")</span>
+                }
+                @if (t.TaskLabels != null)
+                {
+                    foreach (var tl in t.TaskLabels.Where(x => x.Label != null))
+                    {
+                        <span class="pill-label"><span class="tag-swatch" style="background:@tl.Label!.Color"></span> @tl.Label!.Name</span>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>

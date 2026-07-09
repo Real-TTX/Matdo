@@ -1,0 +1,61 @@
+@page
+@model Matdo.Web.Pages.Admin.Users.UsersIndexModel
+@{
+    ViewData["Title"] = "Benutzer";
+    var q = Model.Search ?? "";
+    var urlTemplate = $"/Admin/Users?q={Uri.EscapeDataString(q)}&sort={Model.Sort}&p={{page}}";
+}
+<div class="page-head"><h1>Benutzerverwaltung</h1></div>
+
+<list-view id="users">
+    <list-toolbar>
+        <form method="get" class="search">
+            <input type="search" name="q" value="@q" placeholder="Name oder E-Mail …" />
+            <input type="hidden" name="sort" value="@Model.Sort" />
+        </form>
+        <div class="grow"></div>
+        <form method="get" id="uSort">
+            <input type="hidden" name="q" value="@q" />
+            <select name="sort" onchange="document.getElementById('uSort').submit()">
+                <option value="name" selected="@(Model.Sort == "name")">Name (A–Z)</option>
+                <option value="name_desc" selected="@(Model.Sort == "name_desc")">Name (Z–A)</option>
+                <option value="email" selected="@(Model.Sort == "email")">E-Mail</option>
+                <option value="created" selected="@(Model.Sort == "created")">Neueste zuerst</option>
+            </select>
+        </form>
+    </list-toolbar>
+
+    <list-table>
+        <thead>
+            <tr><th>Name</th><th>E-Mail</th><th>Rolle</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+        @foreach (var u in Model.Items)
+        {
+            <tr>
+                <td class="row-link">@u.DisplayName</td>
+                <td>@u.Email</td>
+                <td><span class="badge role">@(u.Role?.Name ?? "-")</span></td>
+                <td>
+                    <span class="status-dot @(u.IsActive ? "on" : "off")"></span>
+                    @(u.IsActive ? "Aktiv" : "Deaktiviert")
+                </td>
+                <td class="actions-cell">
+                    <a class="btn small" href="/Admin/Users/Edit?id=@u.Id"><icon name="edit" size="14" /> Bearbeiten</a>
+                </td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="5"><div class="empty">Keine Benutzer gefunden.</div></td></tr>
+        }
+        </tbody>
+    </list-table>
+
+    <list-actions>
+        <a class="btn btn-primary" href="/Admin/Users/Edit"><icon name="plus" size="16" /> Neuer Benutzer</a>
+    </list-actions>
+
+    <!-- Pagination: einziges Element direkt unter der Tabelle (nach den Aktionen) -->
+    <pagination page="@Model.PageNo" total-pages="@Model.TotalPages" url-template="@urlTemplate"></pagination>
+</list-view>

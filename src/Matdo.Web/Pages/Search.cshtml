@@ -1,0 +1,28 @@
+@page
+@model Matdo.Web.Pages.SearchModel
+@{
+    ViewData["Title"] = "Suchen";
+}
+<div class="page-head"><h1>Suchen</h1></div>
+
+<list-view id="search">
+    <list-toolbar>
+        <form method="get" id="searchForm" class="search" style="max-width:none; flex:1; display:flex; gap:8px">
+            <input type="search" name="q" value="@Model.Query" placeholder="Aufgaben durchsuchen …" autofocus />
+            <button type="submit" class="btn btn-primary"><icon name="search" size="16" /> Suchen</button>
+        </form>
+    </list-toolbar>
+</list-view>
+
+@if (!string.IsNullOrWhiteSpace(Model.Query))
+{
+    <div class="sub muted mb">@Model.Results.Count Treffer für „@Model.Query"</div>
+    @foreach (var t in Model.Results)
+    {
+        <partial name="_TaskRow" model="t" />
+    }
+    @if (Model.Results.Count == 0)
+    {
+        <div class="empty">Keine Treffer.</div>
+    }
+}

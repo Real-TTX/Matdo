@@ -1,0 +1,45 @@
+@page
+@model Matdo.Web.Pages.Tasks.TodayModel
+@{
+    ViewData["Title"] = "Heute";
+    var total = Model.Overdue.Count + Model.DueToday.Count;
+}
+<div class="page-head">
+    <h1>Heute</h1>
+    <div class="sub"><icon name="check" size="16" /> @total Aufgaben</div>
+</div>
+
+@if (Model.Overdue.Count > 0)
+{
+    <div class="task-group">
+        <h3><span class="overdue-head">Überfällig</span></h3>
+        @foreach (var t in Model.Overdue)
+        {
+            <partial name="_TaskRow" model="t" />
+        }
+    </div>
+}
+
+<div class="task-group">
+    <h3>@DateTime.Now.ToString("d. MMM") · Heute · @DateTime.Now.ToString("dddd")</h3>
+
+    <form method="post" asp-page-handler="QuickAdd" class="composer">
+        <input class="title" name="QuickTitle" placeholder="Aufgabenname" autocomplete="off" required />
+        <div class="chip-row">
+            <span class="chip active"><icon name="today" size="14" /> Heute</span>
+            <a class="chip" href="/Tasks/Edit?due=today"><icon name="dots" size="14" /> Mehr Optionen</a>
+        </div>
+        <div class="form-buttons" style="margin-top:6px">
+            <button type="submit" class="btn btn-primary small"><icon name="plus" size="14" /> Aufgabe hinzufügen</button>
+        </div>
+    </form>
+
+    @foreach (var t in Model.DueToday)
+    {
+        <partial name="_TaskRow" model="t" />
+    }
+    @if (total == 0)
+    {
+        <div class="empty">Keine Aufgaben für heute. Genieß deinen Tag! 🎉</div>
+    }
+</div>

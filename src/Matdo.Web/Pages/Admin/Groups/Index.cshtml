@@ -1,0 +1,35 @@
+@page
+@model Matdo.Web.Pages.Admin.Groups.GroupsIndexModel
+@{
+    ViewData["Title"] = "Gruppen";
+}
+<div class="page-head"><h1>Benutzergruppen</h1></div>
+
+<list-view id="groups">
+    <list-table>
+        <thead>
+            <tr><th>Gruppe</th><th>Beschreibung</th><th>Mitglieder</th><th></th></tr>
+        </thead>
+        <tbody>
+        @foreach (var g in Model.Items)
+        {
+            <tr>
+                <td class="row-link">@g.Name</td>
+                <td>@g.Description</td>
+                <td>@g.Members.Count</td>
+                <td class="actions-cell">
+                    <a class="btn small" href="/Admin/Groups/Edit?id=@g.Id"><icon name="edit" size="14" /> Bearbeiten</a>
+                </td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="4"><div class="empty">Noch keine Gruppen.</div></td></tr>
+        }
+        </tbody>
+    </list-table>
+
+    <list-actions>
+        <a class="btn btn-primary" href="/Admin/Groups/Edit"><icon name="plus" size="16" /> Neue Gruppe</a>
+    </list-actions>
+</list-view>

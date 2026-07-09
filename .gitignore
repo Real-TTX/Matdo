@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+out/
+*.user
+*.suo
+.vs/
+[Dd]ebug/
+[Rr]elease/
+publish/
+
+# Rider / VS Code
+.idea/
+.vscode/
+
+# Laufzeit-Daten (Volumes / lokale Configs)
+data/
+*.env
+.env
+
+# Betriebssystem
+Thumbs.db
+.DS_Store

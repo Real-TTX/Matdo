@@ -1,0 +1,64 @@
+@page
+@model Matdo.Web.Pages.Admin.AdminSettingsModel
+@{
+    ViewData["Title"] = "System-Einstellungen";
+}
+<div class="page-head"><h1>System-Einstellungen</h1></div>
+
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="alert success">@Model.Message</div> }
+<p class="muted mb">Diese Werte werden als JSON im gemounteten Daten-Volume gespeichert.</p>
+
+<form method="post" class="form-card" style="max-width:none">
+    <div data-tabs-scope>
+        <tab-bar>
+            <tab-item target="general" active="true"><icon name="settings" size="16" /> Allgemein</tab-item>
+            <tab-item target="smtp"><icon name="bell" size="16" /> E-Mail (SMTP)</tab-item>
+            <tab-item target="push"><icon name="bell" size="16" /> Web-Push</tab-item>
+        </tab-bar>
+
+        <div class="tab-panel active" data-tab-panel="general">
+            <div class="field-row">
+                <form-field label="App-Name"><input asp-for="Config.AppName" /></form-field>
+                <form-field label="Öffentliche Basis-URL" hint="z.B. http://localhost:6006"><input asp-for="Config.PublicBaseUrl" /></form-field>
+            </div>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="smtp">
+            <form-field label="SMTP aktiv">
+                <label class="checkbox-row"><input type="checkbox" asp-for="Config.Smtp.Enabled" /> E-Mail-Versand aktivieren</label>
+            </form-field>
+            <div class="field-row">
+                <form-field label="Host"><input asp-for="Config.Smtp.Host" placeholder="smtp.example.com" /></form-field>
+                <form-field label="Port"><input asp-for="Config.Smtp.Port" type="number" /></form-field>
+            </div>
+            <form-field label="StartTLS">
+                <label class="checkbox-row"><input type="checkbox" asp-for="Config.Smtp.UseStartTls" /> StartTLS verwenden</label>
+            </form-field>
+            <div class="field-row">
+                <form-field label="Benutzer"><input asp-for="Config.Smtp.User" autocomplete="off" /></form-field>
+                <form-field label="Passwort"><input asp-for="Config.Smtp.Password" type="password" autocomplete="new-password" /></form-field>
+            </div>
+            <div class="field-row">
+                <form-field label="Absender-Adresse"><input asp-for="Config.Smtp.FromAddress" /></form-field>
+                <form-field label="Absender-Name"><input asp-for="Config.Smtp.FromName" /></form-field>
+            </div>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="push">
+            <form-field label="Web-Push aktiv">
+                <label class="checkbox-row"><input type="checkbox" asp-for="Config.Push.Enabled" /> Browser-Benachrichtigungen aktivieren</label>
+            </form-field>
+            <form-field label="VAPID Subject" hint="mailto:... oder https://...">
+                <input asp-for="Config.Push.Subject" />
+            </form-field>
+            <form-field label="Public Key"><input asp-for="Config.Push.PublicKey" readonly /></form-field>
+            <form-field label="Private Key"><input asp-for="Config.Push.PrivateKey" type="password" readonly /></form-field>
+            <button type="submit" class="btn small" asp-page-handler="GenerateVapid"><icon name="settings" size="14" /> Neue VAPID-Schlüssel erzeugen</button>
+        </div>
+    </div>
+
+    <form-buttons>
+        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
+        <a class="btn" href="/Admin"><icon name="back" size="16" /> Zurück</a>
+    </form-buttons>
+</form>

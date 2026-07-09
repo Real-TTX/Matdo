@@ -1,0 +1,21 @@
+@page
+@model Matdo.Web.Pages.Labels.LabelViewModel
+@{
+    ViewData["Title"] = Model.Label.Name;
+}
+<div class="page-head row-between">
+    <div>
+        <h1><span class="tag-swatch" style="background:@Model.Label.Color; margin-right:8px"></span>@Model.Label.Name</h1>
+        <div class="sub">@Model.Tasks.Count Aufgaben mit diesem Etikett</div>
+    </div>
+    <a class="btn small" href="/Labels/Edit?id=@Model.Label.Id"><icon name="edit" size="14" /> Bearbeiten</a>
+</div>
+
+@foreach (var t in Model.Tasks)
+{
+    <partial name="_TaskRow" model="t" />
+}
+@if (Model.Tasks.Count == 0)
+{
+    <div class="empty">Keine Aufgaben mit diesem Etikett.</div>
+}

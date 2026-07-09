@@ -1,0 +1,22 @@
+@page
+@model Matdo.Web.Pages.Admin.AdminIndexModel
+@{
+    ViewData["Title"] = "Administration";
+}
+<div class="page-head"><h1>Administration</h1></div>
+
+<div class="cards">
+    <a class="stat-card" href="/Admin/Users"><div class="n">@Model.Users</div><div class="l"><icon name="users" size="14" /> Benutzer</div></a>
+    <a class="stat-card" href="/Admin/Groups"><div class="n">@Model.Groups</div><div class="l"><icon name="group" size="14" /> Gruppen</div></a>
+    <a class="stat-card" href="/Admin/Roles"><div class="n">@Model.Roles</div><div class="l"><icon name="settings" size="14" /> Rollen</div></a>
+    <div class="stat-card"><div class="n">@Model.Projects</div><div class="l">Projekte</div></div>
+    <div class="stat-card"><div class="n">@Model.Tasks</div><div class="l">Aufgaben</div></div>
+    <div class="stat-card"><div class="n">@Model.Sessions</div><div class="l">Aktive Sessions</div></div>
+</div>
+
+<div class="list-actions">
+    <a class="btn" href="/Admin/Users"><icon name="users" size="16" /> Benutzerverwaltung</a>
+    <a class="btn" href="/Admin/Groups"><icon name="group" size="16" /> Gruppen</a>
+    <a class="btn" href="/Admin/Roles"><icon name="settings" size="16" /> Rollen</a>
+    <a class="btn" href="/Admin/Settings"><icon name="bell" size="16" /> System-Einstellungen</a>
+</div>
