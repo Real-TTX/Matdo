@@ -131,4 +131,57 @@
             }
         }
     });
+
+    // ---------- Offline (PWA): Banner, lokale Erfassung, Auto-Sync ----------
+    function offlineAttr(key, fallback) { var b = document.getElementById('offline-bar'); return (b && b.getAttribute('data-' + key)) || fallback; }
+
+    function updateOfflineUI() {
+        var bar = document.getElementById('offline-bar');
+        if (!bar) return;
+        if (navigator.onLine) { bar.hidden = true; return; }
+        bar.hidden = false;
+        if (window.MatdoOffline) window.MatdoOffline.count().then(function (n) {
+            var c = document.getElementById('offline-count');
+            if (c) c.textContent = n > 0 ? '· ' + n : '';
+        });
+    }
+
+    function toast(msg) {
+        var t = document.createElement('div');
+        t.className = 'toast';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        requestAnimationFrame(function () { t.classList.add('show'); });
+        setTimeout(function () { t.classList.remove('show'); setTimeout(function () { t.remove(); }, 300); }, 3200);
+    }
+
+    var flushing = false;
+    function flushOffline() {
+        if (flushing || !window.MatdoOffline || !navigator.onLine) return;
+        flushing = true;
+        window.MatdoOffline.flush(antiForgery())
+            .then(function (n) { flushing = false; if (n > 0) location.reload(); })
+            .catch(function () { flushing = false; });
+    }
+
+    window.addEventListener('online', function () { updateOfflineUI(); flushOffline(); });
+    window.addEventListener('offline', updateOfflineUI);
+    document.addEventListener('DOMContentLoaded', function () { updateOfflineUI(); flushOffline(); });
+
+    // Composer offline: statt fehlschlagendem POST die Aufgabe lokal in die Warteschlange legen.
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form.matches || !form.matches('form[data-composer]')) return;
+        if (navigator.onLine || !window.MatdoOffline) return;
+        var titleEl = form.querySelector('.title, [name="Input.Title"]');
+        var title = titleEl ? titleEl.value.trim() : '';
+        if (!title) return;
+        e.preventDefault();
+        var descEl = form.querySelector('[name="Input.Description"]');
+        window.MatdoOffline.add(title, descEl ? descEl.value.trim() : '').then(function () {
+            try { form.reset(); } catch (x) { }
+            updateOfflineUI();
+            toast(offlineAttr('saved', 'Offline gespeichert – wird bei Verbindung synchronisiert.'));
+        });
+    }, true);
 })();

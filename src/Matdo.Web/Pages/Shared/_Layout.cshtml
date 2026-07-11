@@ -68,6 +68,9 @@
                     <a class="icon-btn" href="/Reporting" title="@T["nav.reporting"]" aria-label="@T["nav.reporting"]"><icon name="chart" /></a>
                 </div>
             </header>
+            <div id="offline-bar" class="offline-bar" hidden data-saved="@T["offline.saved"]">
+                <span class="dot"></span> @T["offline.banner"] <span id="offline-count"></span>
+            </div>
             <div class="app-content">
                 @RenderBody()
             </div>
@@ -79,6 +82,7 @@ else
     @RenderBody()
 }
 
+<script src="~/offline.js" asp-append-version="true"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>
 <script src="~/js/composer.js" asp-append-version="true"></script>
 <script src="~/js/smart.js" asp-append-version="true"></script>

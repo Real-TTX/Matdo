@@ -2,18 +2,82 @@
 <html lang="de">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Offline · Matdo</title>
     <link rel="stylesheet" href="/css/site.css" />
+    <style>
+        .off-wrap { max-width: 460px; margin: 0 auto; padding: 24px 16px 60px; }
+        .off-badge { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--danger); }
+        .off-badge .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); }
+        .off-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-top: 14px; box-shadow: var(--shadow); }
+        .off-row { display: flex; gap: 8px; }
+        .off-row input { flex: 1; }
+        .off-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+        .off-list li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+        .off-list li .tick { color: var(--text-faint); }
+        .off-hint { color: var(--text-muted); font-size: 13px; margin-top: 10px; }
+    </style>
 </head>
 <body>
-    <div class="auth-wrap">
-        <div class="auth-card" style="text-align:center">
-            <div class="logo">Matdo</div>
-            <h1>Du bist offline</h1>
-            <p class="sub">Diese Seite konnte nicht geladen werden. Sobald du wieder online bist, geht es weiter.</p>
-            <a class="btn btn-primary" href="/" onclick="location.reload()">Erneut versuchen</a>
+    <div class="off-wrap">
+        <div class="logo" style="font-weight:800; font-size:20px; color:var(--accent)">Matdo</div>
+        <p class="off-badge"><span class="dot"></span> <span id="state">Offline</span></p>
+        <h1 style="margin:.2rem 0 0">Aufgabe erfassen</h1>
+        <p class="sub" style="color:var(--text-muted)">Du bist offline. Erfasse Aufgaben hier – sie werden automatisch in deinen <b>Eingang</b> synchronisiert, sobald du wieder online bist.</p>
+
+        <div class="off-card">
+            <form id="add-form" class="off-row">
+                <input id="title" type="text" placeholder="Was ist zu tun?" autocomplete="off" autofocus />
+                <button type="submit" class="btn btn-primary">Hinzufügen</button>
+            </form>
+            <ul id="list" class="off-list"></ul>
+            <p class="off-hint" id="hint"></p>
+        </div>
+
+        <div style="margin-top:14px">
+            <a class="btn" href="/" id="retry">Zur App</a>
         </div>
     </div>
+
+    <script src="/offline.js"></script>
+    <script>
+        (function () {
+            var listEl = document.getElementById('list');
+            var hintEl = document.getElementById('hint');
+            var stateEl = document.getElementById('state');
+            var form = document.getElementById('add-form');
+            var titleEl = document.getElementById('title');
+
+            function render() {
+                MatdoOffline.all().then(function (items) {
+                    items.sort(function (a, b) { return b.ts - a.ts; });
+                    listEl.innerHTML = items.map(function (it) {
+                        return '<li><span class="tick">⏳</span> ' + escapeHtml(it.title) + '</li>';
+                    }).join('');
+                    hintEl.textContent = items.length
+                        ? items.length + ' Aufgabe(n) warten auf Synchronisierung.'
+                        : 'Noch nichts erfasst.';
+                });
+            }
+            function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var t = titleEl.value.trim();
+                if (!t) return;
+                MatdoOffline.add(t).then(function () { titleEl.value = ''; titleEl.focus(); render(); });
+            });
+
+            function goOnline() {
+                stateEl.textContent = 'Wieder online – synchronisiere …';
+                // Zur App wechseln; dort wird die Warteschlange mit gültigem Token synchronisiert.
+                setTimeout(function () { location.replace('/'); }, 400);
+            }
+            window.addEventListener('online', goOnline);
+            if (navigator.onLine) goOnline();  // SW hat die Seite evtl. trotz Verbindung geliefert
+
+            render();
+        })();
+    </script>
 </body>
 </html>

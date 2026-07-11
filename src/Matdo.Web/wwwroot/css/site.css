@@ -113,6 +113,14 @@ a.crumb:hover { color: var(--text); }
 .menu-sep { height: 1px; background: var(--border); margin: 6px 4px; }
 .menu-pop form { margin: 0; }
 @media (max-width: 860px) { .crumbs { display: none; } }
+
+/* Offline-Banner + Toast (PWA) */
+.offline-bar { position: sticky; top: 44px; z-index: 15; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--bg)); border-bottom: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border)); }
+.offline-bar[hidden] { display: none; }
+.offline-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+#offline-count { color: var(--text-muted); font-weight: 500; }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(16px); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; box-shadow: var(--shadow); opacity: 0; transition: opacity .25s, transform .25s; z-index: 400; max-width: 90vw; text-align: center; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .topbar .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: var(--accent); font-size: 18px; }
 .brand-mark { color: var(--accent); border-radius: 7px; flex: 0 0 auto; }
 .brand-word { color: var(--text); letter-spacing: -.01em; }
