@@ -1,14 +1,14 @@
 @page
 @model Matdo.Web.Pages.Admin.Roles.RolesIndexModel
 @{
-    ViewData["Title"] = "Rollen";
+    ViewData["Title"] = T["admin.roles.title"];
 }
-<div class="page-head"><h1>Rollenverwaltung</h1></div>
+<div class="page-head"><h1>@T["admin.roles.heading"]</h1></div>
 
 <list-view id="roles">
     <list-table>
         <thead>
-            <tr><th>Rolle</th><th>Beschreibung</th><th>Benutzer</th><th></th></tr>
+            <tr><th>@T["common.role"]</th><th>@T["common.description"]</th><th>@T["admin.roles.usersColumn"]</th><th></th></tr>
         </thead>
         <tbody>
         @foreach (var row in Model.Rows)
@@ -18,7 +18,7 @@
                 <td>@row.Role.Description</td>
                 <td>@row.UserCount</td>
                 <td class="actions-cell">
-                    <a class="btn small" href="/Admin/Roles/Edit?id=@row.Role.Id"><icon name="edit" size="14" /> Bearbeiten</a>
+                    <a class="btn small" href="/Admin/Roles/Edit?id=@row.Role.Id"><icon name="edit" size="14" /> @T["common.edit"]</a>
                 </td>
             </tr>
         }
@@ -26,6 +26,6 @@
     </list-table>
 
     <list-actions>
-        <a class="btn btn-primary" href="/Admin/Roles/Edit"><icon name="plus" size="16" /> Neue Rolle</a>
+        <a class="btn btn-primary" href="/Admin/Roles/Edit"><icon name="plus" size="16" /> @T["admin.roles.newRole"]</a>
     </list-actions>
 </list-view>

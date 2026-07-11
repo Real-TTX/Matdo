@@ -83,7 +83,19 @@ public class UserEditModel : PageModel
 
     public async Task<IActionResult> OnPostDeleteAsync(long id)
     {
-        await _admin.DeleteUserAsync(id);
+        try
+        {
+            await _admin.DeleteUserAsync(id);
+        }
+        catch (InvalidOperationException ex)
+        {
+            await LoadRolesAsync();
+            var u = await _admin.GetUserAsync(id);
+            if (u is not null)
+                Input = new InputModel { Id = u.Id, DisplayName = u.DisplayName, Email = u.Email, RoleId = u.RoleId, IsActive = u.IsActive };
+            Error = ex.Message;
+            return Page();
+        }
         return Redirect("/Admin/Users");
     }
 }

@@ -31,6 +31,11 @@ ENV MATDO_VERSION=$MATDO_VERSION
 ENV ASPNETCORE_URLS=http://+:6006
 ENV Matdo__ConfigDir=/data/config
 ENV Matdo__KeysDir=/data/keys
+
+# Standardwerte für den einfachen (compose-freien) Betrieb – von der Dev-/Release-Compose
+# per environment überschreibbar. So braucht die Public-Compose keine ENV-Konfiguration.
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ConnectionStrings__Postgres="Host=db;Port=5432;Database=matdo;Username=matdo;Password=matdo"
 EXPOSE 6006
 
 # Daten-Verzeichnis (Configs + Schlüssel) wird als Volume gemountet

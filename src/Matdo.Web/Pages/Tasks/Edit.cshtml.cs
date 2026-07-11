@@ -32,6 +32,7 @@ public class TaskEditModel : PageModel
     public List<Reminder> Reminders { get; set; } = new();
     public List<TaskShare> Shares { get; set; } = new();
     public List<User> ShareableUsers { get; set; } = new();
+    public List<User> TeamMembers { get; set; } = new();
     public bool CanShare { get; set; }
 
     public class InputModel
@@ -42,6 +43,7 @@ public class TaskEditModel : PageModel
         public string Title { get; set; } = "";
         public string? Description { get; set; }
         public long? ProjectId { get; set; }
+        public long? AssigneeId { get; set; }
         public int Priority { get; set; } = 4;
 
         public string? DueDate { get; set; }
@@ -58,6 +60,7 @@ public class TaskEditModel : PageModel
         ProjectOptions = new List<SelectListItem> { new("Eingang", "") };
         ProjectOptions.AddRange(projects.Select(p => new SelectListItem(p.Name, p.Id.ToString())));
         AllLabels = await _labels.GetAllAsync();
+        TeamMembers = await _shares.GetCollaboratorsAsync();
     }
 
     private async Task LoadDetailsAsync(long id)
@@ -68,6 +71,11 @@ public class TaskEditModel : PageModel
         Reminders = Existing.Reminders?.OrderBy(r => r.RemindAt).ToList() ?? new();
         Shares = await _shares.GetTaskSharesAsync(id);
         ShareableUsers = await _shares.GetShareableUsersAsync();
+
+        // Aktuellen Zugewiesenen als Option sicherstellen, auch wenn er kein Mitstreiter
+        // des Bearbeiters ist – sonst würde er beim Speichern still entfernt.
+        if (Existing.Assignee is { } asg && TeamMembers.All(u => u.Id != asg.Id))
+            TeamMembers.Insert(0, asg);
         CanShare = Existing.OwnerId == (User.FindFirst(MatdoClaims.UserId) is { } c && long.TryParse(c.Value, out var uid) ? uid : -1);
     }
 
@@ -85,6 +93,7 @@ public class TaskEditModel : PageModel
                 Title = t.Title,
                 Description = t.Description,
                 ProjectId = t.ProjectId,
+                AssigneeId = t.AssigneeId,
                 Priority = (int)t.Priority,
                 DueDate = DateHelper.ToDateInput(t.DueDate),
                 DueTime = DateHelper.ToTimeInput(t.DueDate, t.DueHasTime),
@@ -98,6 +107,10 @@ public class TaskEditModel : PageModel
         {
             if (string.Equals(due, "today", StringComparison.OrdinalIgnoreCase))
                 Input.DueDate = DateTime.Today.ToString("yyyy-MM-dd");
+            else if (!string.IsNullOrWhiteSpace(due) &&
+                     DateTime.TryParseExact(due, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                         System.Globalization.DateTimeStyles.None, out var d))
+                Input.DueDate = d.ToString("yyyy-MM-dd");
             Input.ProjectId = projectId;
         }
         return Page();
@@ -118,6 +131,7 @@ public class TaskEditModel : PageModel
             Title = Input.Title.Trim(),
             Description = string.IsNullOrWhiteSpace(Input.Description) ? null : Input.Description.Trim(),
             ProjectId = Input.ProjectId,
+            AssigneeId = Input.AssigneeId,
             Priority = (TaskPriority)Math.Clamp(Input.Priority, 1, 4),
             DueDate = DateHelper.ToUtc(Input.DueDate, Input.DueTime),
             DueHasTime = !string.IsNullOrWhiteSpace(Input.DueTime),
@@ -144,11 +158,12 @@ public class TaskEditModel : PageModel
 
     public async Task<IActionResult> OnPostAddReminderAsync(long id, int reminderType, string? remindDate, string? remindTime, int offsetMinutes, int channel)
     {
+        var ch = channel is 1 or 2 or 3 ? channel : 3; // gültigen Kanal erzwingen (kein stummes "None")
         var reminder = new Reminder
         {
             Type = (ReminderType)reminderType,
-            Channel = (ReminderChannel)channel,
-            OffsetMinutes = offsetMinutes
+            Channel = (ReminderChannel)ch,
+            OffsetMinutes = Math.Max(0, offsetMinutes)
         };
 
         if (reminder.Type == ReminderType.DateTime)

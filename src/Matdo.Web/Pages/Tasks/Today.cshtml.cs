@@ -1,6 +1,6 @@
 using Matdo.Web.Data.Entities;
 using Matdo.Web.Services;
-using Microsoft.AspNetCore.Mvc;
+using Matdo.Web.Services.Calendar;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Matdo.Web.Pages.Tasks;
@@ -8,12 +8,19 @@ namespace Matdo.Web.Pages.Tasks;
 public class TodayModel : PageModel
 {
     private readonly TaskService _tasks;
-    public TodayModel(TaskService tasks) => _tasks = tasks;
+    private readonly CalendarService _calendar;
+    private readonly ICurrentUserAccessor _me;
+
+    public TodayModel(TaskService tasks, CalendarService calendar, ICurrentUserAccessor me)
+    {
+        _tasks = tasks;
+        _calendar = calendar;
+        _me = me;
+    }
 
     public List<TaskItem> Overdue { get; set; } = new();
     public List<TaskItem> DueToday { get; set; } = new();
-
-    [BindProperty] public string? QuickTitle { get; set; }
+    public List<CalendarEventDto> Events { get; set; } = new();
 
     public async Task OnGetAsync()
     {
@@ -21,19 +28,14 @@ public class TodayModel : PageModel
         var today = DateTime.Now.Date;
         Overdue = all.Where(t => t.DueDate!.Value.ToLocalTime().Date < today).ToList();
         DueToday = all.Where(t => t.DueDate!.Value.ToLocalTime().Date == today).ToList();
-    }
 
-    public async Task<IActionResult> OnPostQuickAddAsync()
-    {
-        if (!string.IsNullOrWhiteSpace(QuickTitle))
+        // Externe Termine des heutigen Tages (lokaler Tag -> UTC-Bereich)
+        if (_me.UserId is long uid)
         {
-            await _tasks.CreateAsync(new TaskItem
-            {
-                Title = QuickTitle.Trim(),
-                DueDate = DateTime.Today.ToUniversalTime(),
-                DueHasTime = false
-            });
+            var fromUtc = today.ToUniversalTime();
+            var toUtc = today.AddDays(1).ToUniversalTime();
+            Events = (await _calendar.GetEventsAsync(uid, fromUtc, toUtc))
+                .OrderBy(e => e.AllDay ? 0 : 1).ThenBy(e => e.StartUtc).ToList();
         }
-        return RedirectToPage();
     }
 }

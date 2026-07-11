@@ -1,0 +1,23 @@
+# Matdo – einfachste Variante für Homelab/Public (zieht fertige Images von GHCR).
+# Start:  docker compose -f docker-compose.public.yml up -d
+# Dann:   http://<host>:6006   (beim ersten Start: Admin anlegen)
+services:
+  db:
+    image: ghcr.io/real-ttx/matdo-db:latest
+    restart: unless-stopped
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  matdo:
+    image: ghcr.io/real-ttx/matdo:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "6006:6006"
+    volumes:
+      - data:/data
+
+volumes:
+  db:
+  data:

@@ -40,6 +40,11 @@ public class AdminService
     public async Task UpdateUserAsync(long id, string displayName, long roleId, bool isActive, string? newPassword)
     {
         var user = await _db.Users.FindAsync(id) ?? throw new InvalidOperationException("Benutzer nicht gefunden.");
+
+        var adminRoleId = (await _db.Roles.FirstAsync(r => r.Name == Role.Admin)).Id;
+        var willRemainActiveAdmin = roleId == adminRoleId && isActive;
+        await GuardLastAdminAsync(id, willRemainActiveAdmin);
+
         user.DisplayName = displayName.Trim();
         user.RoleId = roleId;
         user.IsActive = isActive;
@@ -52,8 +57,24 @@ public class AdminService
     {
         var user = await _db.Users.FindAsync(id);
         if (user is null) return;
+        await GuardLastAdminAsync(id, willRemainActiveAdmin: false);
         _db.Users.Remove(user);
         await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Verhindert, dass der letzte aktive Administrator entfernt, deaktiviert oder
+    /// herabgestuft wird (Schutz gegen Aussperrung der Administration).
+    /// </summary>
+    private async Task GuardLastAdminAsync(long userId, bool willRemainActiveAdmin)
+    {
+        var adminRoleId = (await _db.Roles.FirstAsync(r => r.Name == Role.Admin)).Id;
+        var isCurrentlyActiveAdmin = await _db.Users.AnyAsync(u => u.Id == userId && u.IsActive && u.RoleId == adminRoleId);
+        if (!isCurrentlyActiveAdmin || willRemainActiveAdmin) return;
+
+        var otherActiveAdmins = await _db.Users.CountAsync(u => u.Id != userId && u.IsActive && u.RoleId == adminRoleId);
+        if (otherActiveAdmins == 0)
+            throw new InvalidOperationException("Der letzte aktive Administrator kann nicht entfernt, deaktiviert oder herabgestuft werden.");
     }
 
     // ----- Rollen -----

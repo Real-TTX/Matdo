@@ -49,11 +49,12 @@
                     applicationServerKey: urlBase64ToUint8Array(vapid)
                 });
                 var json = sub.toJSON();
-                await fetch('/api/push/subscribe', {
+                var resp = await fetch('/api/push/subscribe', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token() },
                     body: JSON.stringify({ endpoint: sub.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth })
                 });
+                if (!resp.ok) throw new Error('Server antwortete mit ' + resp.status);
                 status('Benachrichtigungen sind aktiviert. ✓');
             } catch (e) {
                 console.error(e);
@@ -68,12 +69,14 @@
                 var reg = await navigator.serviceWorker.ready;
                 var sub = await reg.pushManager.getSubscription();
                 if (sub) {
+                    var endpoint = sub.endpoint;
+                    // Zuerst lokal abmelden, dann den Server benachrichtigen (Zustände bleiben konsistent).
+                    await sub.unsubscribe();
                     await fetch('/api/push/unsubscribe', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token() },
-                        body: JSON.stringify({ endpoint: sub.endpoint, p256dh: '', auth: '' })
+                        body: JSON.stringify({ endpoint: endpoint, p256dh: '', auth: '' })
                     });
-                    await sub.unsubscribe();
                 }
                 status('Benachrichtigungen wurden deaktiviert.');
             } catch (e) {

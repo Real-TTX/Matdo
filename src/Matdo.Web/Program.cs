@@ -28,15 +28,43 @@ builder.Services.AddDataProtection()
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
 builder.Services.AddSingleton<JsonConfigService>();
+builder.Services.AddSingleton<LocalizationService>();
+builder.Services.AddScoped<UiPreferences>();
+builder.Services.AddScoped<Translator>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<ProjectService>();
 builder.Services.AddScoped<LabelService>();
 builder.Services.AddScoped<ShareService>();
+builder.Services.AddScoped<TeamService>();
+builder.Services.AddScoped<TodoistImportService>();
 builder.Services.AddScoped<AdminService>();
+builder.Services.AddScoped<SmartInputParser>();
 builder.Services.AddScoped<EmailSender>();
 builder.Services.AddScoped<PushSender>();
 builder.Services.AddHostedService<ReminderBackgroundService>();
+
+// ----- Kalender-Anbindung (ICS + Google/Microsoft OAuth) -----
+builder.Services.AddHttpClient("calendar", c =>
+{
+    c.Timeout = TimeSpan.FromSeconds(30);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("Matdo/1.0");
+});
+// Separater Client für ICS-Abos: KEINE automatischen Redirects (SSRF-Schutz, Redirects werden
+// manuell und mit Host-Prüfung verfolgt).
+builder.Services.AddHttpClient("ics", c =>
+{
+    c.Timeout = TimeSpan.FromSeconds(20);
+    c.MaxResponseContentBufferSize = 5 * 1024 * 1024;
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("Matdo/1.0");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddSingleton<Matdo.Web.Services.Calendar.TokenProtector>();
+builder.Services.AddScoped<Matdo.Web.Services.Calendar.IcsCalendarReader>();
+builder.Services.AddScoped<Matdo.Web.Services.Calendar.ICalendarProvider, Matdo.Web.Services.Calendar.GoogleCalendarProvider>();
+builder.Services.AddScoped<Matdo.Web.Services.Calendar.ICalendarProvider, Matdo.Web.Services.Calendar.MicrosoftCalendarProvider>();
+builder.Services.AddScoped<Matdo.Web.Services.Calendar.CalendarService>();
+builder.Services.AddScoped<Matdo.Web.Services.Calendar.IcalExportService>();
+builder.Services.AddHostedService<Matdo.Web.Services.Calendar.CalendarSyncBackgroundService>();
 
 // ----- Authentifizierung / Autorisierung -----
 builder.Services.AddAuthentication(SessionAuthenticationHandler.SchemeName)
@@ -54,6 +82,7 @@ builder.Services.AddRazorPages(options =>
     // ... außer für ausdrücklich öffentliche Seiten.
     options.Conventions.AllowAnonymousToPage("/Account/Login");
     options.Conventions.AllowAnonymousToPage("/Account/Register");
+    options.Conventions.AllowAnonymousToPage("/Account/Setup");
     options.Conventions.AllowAnonymousToPage("/Account/Logout");
     options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
     options.Conventions.AllowAnonymousToPage("/Error");
@@ -62,10 +91,40 @@ builder.Services.AddRazorPages(options =>
 
 builder.Services.AddControllers(); // für API-Endpunkte (Push, AJAX)
 
+// Sprachumschaltung: aktuelle Kultur aus dem Sprach-Cookie ableiten (Datums-/Zahlenformat).
+builder.Services.Configure<Microsoft.AspNetCore.Builder.RequestLocalizationOptions>(o =>
+{
+    var cultures = new[] { new System.Globalization.CultureInfo("de"), new System.Globalization.CultureInfo("en") };
+    o.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("de");
+    o.SupportedCultures = cultures;
+    o.SupportedUICultures = cultures;
+    o.RequestCultureProviders.Insert(0, new Microsoft.AspNetCore.Localization.CustomRequestCultureProvider(ctx =>
+    {
+        var lang = ctx.Request.Cookies[UiPreferences.LangCookie];
+        if (string.IsNullOrWhiteSpace(lang)) lang = "de";
+        return Task.FromResult<Microsoft.AspNetCore.Localization.ProviderCultureResult?>(
+            new Microsoft.AspNetCore.Localization.ProviderCultureResult(lang));
+    }));
+});
+
 // Anti-Forgery-Token auch per Header akzeptieren (für fetch/AJAX).
 builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
 
+// Hinter einem TLS-terminierenden Reverse-Proxy X-Forwarded-Proto/-For auswerten,
+// damit Request.IsHttps korrekt ist und das Session-Cookie das Secure-Flag erhält.
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+                         | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor;
+    // In Container-Setups ist die Proxy-IP nicht vorab bekannt.
+    o.KnownNetworks.Clear();
+    o.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+// Muss früh laufen, damit nachfolgende Middleware das korrekte Schema/IP sieht.
+app.UseForwardedHeaders();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -78,6 +137,7 @@ var contentTypes = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentType
 contentTypes.Mappings[".webmanifest"] = "application/manifest+json";
 app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypes });
 
+app.UseRequestLocalization();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

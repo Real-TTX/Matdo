@@ -1,8 +1,11 @@
 // Matdo Service Worker – App-Shell-Caching + Push-Benachrichtigungen
-const CACHE = 'matdo-v1';
+const CACHE = 'matdo-v16';
 const APP_SHELL = [
+    '/offline.html',
     '/css/site.css',
     '/js/site.js',
+    '/js/composer.js',
+    '/js/datepicker.js',
     '/js/pwa.js',
     '/icons/icon.svg',
     '/icons/icon-192.png',
@@ -28,14 +31,27 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(req.url);
     if (url.origin !== self.location.origin) return;
 
-    // Statische Assets: Cache-first
+    // Statische Assets (css/js/icons): exakt-versioniert cachen.
+    // Da das Layout ?v=HASH anhängt, ist jede neue Version ein NEUER Cache-Key ->
+    // nach einem Deploy wird das Asset frisch geladen (kein „veraltetes JS" mehr).
+    // Reihenfolge: exakter Cache-Treffer -> Netzwerk (und cachen) -> offline: Precache (ignoreSearch).
     if (APP_SHELL.includes(url.pathname) || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/css/') || url.pathname.startsWith('/js/')) {
         event.respondWith(
-            caches.match(req).then((cached) => cached || fetch(req).then((resp) => {
-                const copy = resp.clone();
-                caches.open(CACHE).then((c) => c.put(req, copy));
-                return resp;
-            }))
+            caches.open(CACHE).then((cache) =>
+                cache.match(req).then((hit) => {
+                    if (hit) return hit;
+                    return fetch(req).then((resp) => {
+                        if (resp && resp.ok) {
+                            // Alte Versionen desselben Pfads entfernen (Cache wächst sonst unbegrenzt).
+                            cache.keys().then((keys) => keys.forEach((k) => {
+                                try { var ku = new URL(k.url); if (ku.pathname === url.pathname && k.url !== req.url) cache.delete(k); } catch (e) { }
+                            }));
+                            cache.put(req, resp.clone());
+                        }
+                        return resp;
+                    }).catch(() => cache.match(req, { ignoreSearch: true }));
+                })
+            )
         );
         return;
     }

@@ -1,0 +1,58 @@
+@page
+@model Matdo.Web.Pages.Teams.TeamsIndexModel
+@{
+    ViewData["Title"] = T["teams.title"];
+}
+<div class="page-head"><h1>@T["teams.title"]</h1></div>
+
+<div class="form-card mb">
+    <h3>@T["teams.create"]</h3>
+    <form method="post" asp-page-handler="Create">
+        <form-field label="@T["common.name"]">
+            <input asp-for="NewName" placeholder="@T["teams.namePlaceholder"]" required />
+        </form-field>
+        <form-field label="@T["common.color"]">
+            <div class="chip-row">
+                @foreach (var c in Matdo.Web.Pages.Projects.ProjectEditModel.Palette)
+                {
+                    var sel = Model.NewColor == c;
+                    <label class="chip @(sel ? "active" : "")" title="@c">
+                        <input type="radio" name="NewColor" value="@c" @(sel ? "checked" : "") style="display:none"
+                               onchange="document.querySelectorAll('[name=\'NewColor\']').forEach(r=>r.closest('.chip').classList.toggle('active', r.checked))" />
+                        <span class="dot" style="background:@c"></span>
+                    </label>
+                }
+            </div>
+        </form-field>
+        <div class="form-buttons" style="margin-top:6px">
+            <button type="submit" class="btn btn-primary"><icon name="plus" size="16" /> @T["teams.create"]</button>
+        </div>
+    </form>
+</div>
+
+@if (Model.Teams.Count == 0)
+{
+    <div class="empty">@T["teams.empty"]</div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>@T["common.name"]</th><th>@T["teams.yourRole"]</th><th>@T["teams.members"]</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var row in Model.Teams)
+            {
+                <tr>
+                    <td>
+                        <span class="dot" style="background:@row.Team.Color; display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:middle"></span>
+                        <a href="/Teams/View?id=@row.Team.Id">@row.Team.Name</a>
+                    </td>
+                    <td>@T[$"teams.role.{row.Role}"]</td>
+                    <td>@row.MemberCount</td>
+                    <td class="actions-cell"><a class="btn small" href="/Teams/View?id=@row.Team.Id"><icon name="settings" size="14" /> @T["common.edit"]</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

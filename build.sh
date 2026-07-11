@@ -15,6 +15,8 @@ cd "$(dirname "$0")"
 
 CHANNEL="${1:-local}"
 NO_DEPLOY="${2:-}"
+# Erlaube './build.sh --no-deploy' (Channel bleibt 'local'), analog zu build.ps1 -NoDeploy.
+if [ "$CHANNEL" = "--no-deploy" ]; then CHANNEL="local"; NO_DEPLOY="--no-deploy"; fi
 BUILD_DATE="$(date +%Y%m%d)"
 
 case "$CHANNEL" in

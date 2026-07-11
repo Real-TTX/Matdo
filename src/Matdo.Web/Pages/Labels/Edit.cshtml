@@ -1,7 +1,7 @@
 @page
 @model Matdo.Web.Pages.Labels.LabelEditModel
 @{
-    ViewData["Title"] = Model.IsNew ? "Neues Etikett" : "Etikett bearbeiten";
+    ViewData["Title"] = Model.IsNew ? T["labels.edit.titleNew"] : T["labels.edit.titleEdit"];
 }
 <div class="page-head"><h1>@ViewData["Title"]</h1></div>
 
@@ -9,12 +9,12 @@
     <input type="hidden" asp-for="Input.Id" />
     <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
 
-    <form-field label="Name" for="Input_Name" required="true">
-        <input asp-for="Input.Name" placeholder="Etikettname" autofocus />
+    <form-field label="@T["common.name"]" for="Input_Name" required="true">
+        <input asp-for="Input.Name" placeholder="@T["labels.edit.namePlaceholder"]" autofocus />
         <span asp-validation-for="Input.Name" class="field-error"></span>
     </form-field>
 
-    <form-field label="Farbe">
+    <form-field label="@T["common.color"]">
         <div class="chip-row">
             @foreach (var c in Matdo.Web.Pages.Labels.LabelEditModel.Palette)
             {
@@ -28,17 +28,17 @@
         </div>
     </form-field>
 
-    <form-field label="Favorit">
-        <label class="checkbox-row"><input type="checkbox" asp-for="Input.IsFavorite" /> In der Seitenleiste anzeigen</label>
+    <form-field label="@T["common.favorite"]">
+        <label class="checkbox-row"><input type="checkbox" asp-for="Input.IsFavorite" /> @T["labels.edit.showInSidebar"]</label>
     </form-field>
 
     <form-buttons>
-        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
-        <a class="btn" href="/Labels"><icon name="back" size="16" /> Zurück</a>
+        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> @T["common.save"]</button>
+        <a class="btn" href="/Labels"><icon name="back" size="16" /> @T["common.back"]</a>
         @if (!Model.IsNew)
         {
             <button type="submit" class="btn danger" asp-page-handler="Delete" asp-route-id="@Model.Input.Id"
-                    formnovalidate onclick="return confirm('Etikett wirklich löschen?')"><icon name="trash" size="16" /> Löschen</button>
+                    formnovalidate onclick="return confirm('@T["labels.edit.deleteConfirm"]')"><icon name="trash" size="16" /> @T["common.delete"]</button>
         }
     </form-buttons>
 </form>

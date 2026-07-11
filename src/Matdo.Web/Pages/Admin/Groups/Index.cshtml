@@ -1,14 +1,14 @@
 @page
 @model Matdo.Web.Pages.Admin.Groups.GroupsIndexModel
 @{
-    ViewData["Title"] = "Gruppen";
+    ViewData["Title"] = T["admin.groups.title"];
 }
-<div class="page-head"><h1>Benutzergruppen</h1></div>
+<div class="page-head"><h1>@T["admin.groups.heading"]</h1></div>
 
 <list-view id="groups">
     <list-table>
         <thead>
-            <tr><th>Gruppe</th><th>Beschreibung</th><th>Mitglieder</th><th></th></tr>
+            <tr><th>@T["admin.groups.groupColumn"]</th><th>@T["common.description"]</th><th>@T["admin.groups.membersColumn"]</th><th></th></tr>
         </thead>
         <tbody>
         @foreach (var g in Model.Items)
@@ -18,18 +18,18 @@
                 <td>@g.Description</td>
                 <td>@g.Members.Count</td>
                 <td class="actions-cell">
-                    <a class="btn small" href="/Admin/Groups/Edit?id=@g.Id"><icon name="edit" size="14" /> Bearbeiten</a>
+                    <a class="btn small" href="/Admin/Groups/Edit?id=@g.Id"><icon name="edit" size="14" /> @T["common.edit"]</a>
                 </td>
             </tr>
         }
         @if (Model.Items.Count == 0)
         {
-            <tr><td colspan="4"><div class="empty">Noch keine Gruppen.</div></td></tr>
+            <tr><td colspan="4"><div class="empty">@T["admin.groups.empty"]</div></td></tr>
         }
         </tbody>
     </list-table>
 
     <list-actions>
-        <a class="btn btn-primary" href="/Admin/Groups/Edit"><icon name="plus" size="16" /> Neue Gruppe</a>
+        <a class="btn btn-primary" href="/Admin/Groups/Edit"><icon name="plus" size="16" /> @T["admin.groups.newGroup"]</a>
     </list-actions>
 </list-view>

@@ -1,33 +1,33 @@
 @page
 @model Matdo.Web.Pages.Admin.Users.UsersIndexModel
 @{
-    ViewData["Title"] = "Benutzer";
+    ViewData["Title"] = T["admin.users.title"];
     var q = Model.Search ?? "";
     var urlTemplate = $"/Admin/Users?q={Uri.EscapeDataString(q)}&sort={Model.Sort}&p={{page}}";
 }
-<div class="page-head"><h1>Benutzerverwaltung</h1></div>
+<div class="page-head"><h1>@T["admin.users.heading"]</h1></div>
 
 <list-view id="users">
     <list-toolbar>
         <form method="get" class="search">
-            <input type="search" name="q" value="@q" placeholder="Name oder E-Mail …" />
+            <input type="search" name="q" value="@q" placeholder="@T["admin.users.searchPlaceholder"]" />
             <input type="hidden" name="sort" value="@Model.Sort" />
         </form>
         <div class="grow"></div>
         <form method="get" id="uSort">
             <input type="hidden" name="q" value="@q" />
             <select name="sort" onchange="document.getElementById('uSort').submit()">
-                <option value="name" selected="@(Model.Sort == "name")">Name (A–Z)</option>
-                <option value="name_desc" selected="@(Model.Sort == "name_desc")">Name (Z–A)</option>
-                <option value="email" selected="@(Model.Sort == "email")">E-Mail</option>
-                <option value="created" selected="@(Model.Sort == "created")">Neueste zuerst</option>
+                <option value="name" selected="@(Model.Sort == "name")">@T["admin.users.sort.nameAsc"]</option>
+                <option value="name_desc" selected="@(Model.Sort == "name_desc")">@T["admin.users.sort.nameDesc"]</option>
+                <option value="email" selected="@(Model.Sort == "email")">@T["common.email"]</option>
+                <option value="created" selected="@(Model.Sort == "created")">@T["admin.users.sort.newest"]</option>
             </select>
         </form>
     </list-toolbar>
 
     <list-table>
         <thead>
-            <tr><th>Name</th><th>E-Mail</th><th>Rolle</th><th>Status</th><th></th></tr>
+            <tr><th>@T["common.name"]</th><th>@T["common.email"]</th><th>@T["common.role"]</th><th>@T["common.status"]</th><th></th></tr>
         </thead>
         <tbody>
         @foreach (var u in Model.Items)
@@ -38,22 +38,22 @@
                 <td><span class="badge role">@(u.Role?.Name ?? "-")</span></td>
                 <td>
                     <span class="status-dot @(u.IsActive ? "on" : "off")"></span>
-                    @(u.IsActive ? "Aktiv" : "Deaktiviert")
+                    @(u.IsActive ? T["admin.users.active"] : T["admin.users.disabled"])
                 </td>
                 <td class="actions-cell">
-                    <a class="btn small" href="/Admin/Users/Edit?id=@u.Id"><icon name="edit" size="14" /> Bearbeiten</a>
+                    <a class="btn small" href="/Admin/Users/Edit?id=@u.Id"><icon name="edit" size="14" /> @T["common.edit"]</a>
                 </td>
             </tr>
         }
         @if (Model.Items.Count == 0)
         {
-            <tr><td colspan="5"><div class="empty">Keine Benutzer gefunden.</div></td></tr>
+            <tr><td colspan="5"><div class="empty">@T["admin.users.empty"]</div></td></tr>
         }
         </tbody>
     </list-table>
 
     <list-actions>
-        <a class="btn btn-primary" href="/Admin/Users/Edit"><icon name="plus" size="16" /> Neuer Benutzer</a>
+        <a class="btn btn-primary" href="/Admin/Users/Edit"><icon name="plus" size="16" /> @T["admin.users.newUser"]</a>
     </list-actions>
 
     <!-- Pagination: einziges Element direkt unter der Tabelle (nach den Aktionen) -->

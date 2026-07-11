@@ -32,7 +32,8 @@ public class PaginationTagHelper : TagHelper
         }
 
         var sb = new StringBuilder();
-        string Url(int p) => UrlTemplate.Replace("{page}", p.ToString());
+        // href wird HTML-enkodiert, damit ein manipuliertes UrlTemplate kein Attribut-Ausbruch (XSS) ermöglicht.
+        string Url(int p) => System.Net.WebUtility.HtmlEncode(UrlTemplate.Replace("{page}", p.ToString()));
 
         // Zurück
         sb.Append(Page > 1

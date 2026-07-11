@@ -103,6 +103,25 @@
         });
     });
 
+    // ---------- Dropdown-Menü (Topbar-Aktionen etc.) ----------
+    document.addEventListener('click', function (e) {
+        var toggle = e.target.closest('[data-menu-toggle]');
+        if (toggle) {
+            e.preventDefault();
+            var menu = toggle.closest('[data-menu]');
+            var wasOpen = menu.classList.contains('open');
+            document.querySelectorAll('[data-menu].open').forEach(function (m) { m.classList.remove('open'); });
+            if (!wasOpen) menu.classList.add('open');
+            return;
+        }
+        if (!e.target.closest('[data-menu]')) {
+            document.querySelectorAll('[data-menu].open').forEach(function (m) { m.classList.remove('open'); });
+        }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') document.querySelectorAll('[data-menu].open').forEach(function (m) { m.classList.remove('open'); });
+    });
+
     // ---------- Bestätigung für Löschen ----------
     document.addEventListener('submit', function (e) {
         var form = e.target;

@@ -2,6 +2,7 @@
 @inject ProjectService Projects
 @inject LabelService Labels
 @inject TaskService Tasks
+@inject TeamService Teams
 @{
     var path = (ViewContext.HttpContext.Request.Path.Value ?? "/").ToLowerInvariant();
     var query = ViewContext.HttpContext.Request.Query;
@@ -12,6 +13,32 @@
     var favLabels = await Labels.GetFavoritesAsync();
     var todayCount = await Tasks.CountTodayAsync();
     var inboxCount = await Tasks.CountInboxAsync();
+    var activePid = query["id"].ToString();
+
+    // Teams des Benutzers – Team-Projekte werden je Team gruppiert dargestellt.
+    var myTeams = await Teams.GetMyTeamsAsync();
+    var myTeamIds = myTeams.Select(t => t.Team.Id).ToHashSet();
+
+    // Persönliche/geteilte Projekte (nicht in einem meiner Teams) als Baum ordnen.
+    var personalProjects = projects.Where(p => !(p.TeamId is long tid && myTeamIds.Contains(tid))).ToList();
+    var accessibleIds = personalProjects.Select(p => p.Id).ToHashSet();
+    // 0 = Wurzel (Dictionary erlaubt keinen null-Key)
+    var childrenByParent = personalProjects
+        .GroupBy(p => (p.ParentProjectId.HasValue && accessibleIds.Contains(p.ParentProjectId.Value)) ? p.ParentProjectId.Value : 0L)
+        .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.IsFavorite).ThenBy(x => x.Position).ThenBy(x => x.Name).ToList());
+    var ordered = new List<(Matdo.Web.Data.Entities.Project P, int Depth)>();
+    var visited = new HashSet<long>();
+    void Walk(long parent, int depth)
+    {
+        if (depth > 12 || !childrenByParent.TryGetValue(parent, out var kids)) return;
+        foreach (var k in kids)
+        {
+            if (!visited.Add(k.Id)) continue; // Zyklusschutz
+            ordered.Add((k, depth));
+            Walk(k.Id, depth + 1);
+        }
+    }
+    Walk(0L, 0);
 }
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
@@ -19,62 +46,86 @@
             <span class="avatar">@(string.IsNullOrEmpty(CurrentUser.DisplayName) ? "?" : CurrentUser.DisplayName![..1].ToUpper())</span>
             <span class="user-name">@CurrentUser.DisplayName</span>
         </div>
-        <button class="icon-btn only-mobile" data-close-sidebar aria-label="Schließen"><icon name="x" /></button>
+        <button class="icon-btn only-mobile" data-close-sidebar aria-label="@T["common.cancel"]"><icon name="x" /></button>
     </div>
 
     <nav class="nav-primary">
-        <a class="nav-item add-task" href="/Tasks/Edit"><span class="add-ico"><icon name="plus" size="18" /></span> Aufgabe hinzufügen</a>
-        <a class="nav-item @Active("/search")" href="/Search"><icon name="search" /> Suchen</a>
-        <a class="nav-item @Active("/tasks/inbox")" href="/Tasks/Inbox"><icon name="inbox" /> <span>Eingang</span> @if (inboxCount > 0){<span class="count">@inboxCount</span>}</a>
-        <a class="nav-item @Active("/tasks/today")" href="/Tasks/Today"><span class="today-ico"><icon name="today" /></span> <span>Heute</span> @if (todayCount > 0){<span class="count">@todayCount</span>}</a>
-        <a class="nav-item @Active("/tasks/upcoming")" href="/Tasks/Upcoming"><icon name="upcoming" /> <span>Demnächst</span></a>
-        <a class="nav-item @Active("/labels")" href="/Labels"><icon name="tag" /> Filter und Etiketten</a>
-        <a class="nav-item @Active("/reporting")" href="/Reporting"><icon name="chart" /> Reporting</a>
+        <a class="nav-item add-task" href="/Tasks/Edit"><span class="add-ico"><icon name="plus" size="18" /></span> @T["nav.addTask"]</a>
+        <a class="nav-item @Active("/search")" href="/Search"><icon name="search" /> @T["nav.search"]</a>
+        <a class="nav-item @Active("/tasks/inbox")" href="/Tasks/Inbox"><icon name="inbox" /> <span>@T["nav.inbox"]</span> @if (inboxCount > 0){<span class="count">@inboxCount</span>}</a>
+        <a class="nav-item @Active("/tasks/today")" href="/Tasks/Today"><span class="today-ico"><icon name="today" /></span> <span>@T["nav.today"]</span> @if (todayCount > 0){<span class="count">@todayCount</span>}</a>
+        <a class="nav-item @Active("/tasks/upcoming")" href="/Tasks/Upcoming"><icon name="upcoming" /> <span>@T["nav.upcoming"]</span></a>
+        <a class="nav-item @Active("/labels")" href="/Labels"><icon name="tag" /> @T["nav.filtersLabels"]</a>
+        <a class="nav-item @Active("/teams")" href="/Teams"><icon name="users" /> @T["nav.teams"]</a>
+        <a class="nav-item @Active("/reporting")" href="/Reporting"><icon name="chart" /> @T["nav.reporting"]</a>
     </nav>
 
     @if (favProjects.Count > 0 || favLabels.Count > 0)
     {
         <div class="nav-section">
-            <div class="nav-section-title">Favoriten</div>
+            <div class="nav-section-title">@T["nav.favorites"]</div>
             @foreach (var p in favProjects)
             {
-                <a class="nav-item" href="/Projects/View?id=@p.Id"><span class="dot" style="background:@p.Color"></span> <span>@p.Name</span></a>
+                <a class="nav-item" href="/Projects/View?id=@p.Id"><span class="proj-ico" style="color:@p.Color"><icon name="hash" size="16" /></span> <span>@p.Name</span></a>
             }
             @foreach (var l in favLabels)
             {
-                <a class="nav-item" href="/Labels/View?id=@l.Id"><icon name="tag" /> <span>@l.Name</span></a>
+                <a class="nav-item" href="/Labels/View?id=@l.Id"><span class="proj-ico" style="color:@l.Color"><icon name="tag" size="16" /></span> <span>@l.Name</span></a>
             }
         </div>
     }
 
     <div class="nav-section">
         <div class="nav-section-title">
-            <a href="/Projects">Meine Projekte</a>
-            <a class="mini-add" href="/Projects/Edit" title="Projekt hinzufügen" aria-label="Projekt hinzufügen"><icon name="plus" size="16" /></a>
+            <a href="/Projects">@T["nav.myProjects"]</a>
+            <a class="mini-add" href="/Projects/Edit" title="@T["nav.addTask"]" aria-label="@T["common.add"]"><icon name="plus" size="16" /></a>
         </div>
-        @foreach (var p in projects)
+        @foreach (var (p, depth) in ordered)
         {
-            var pid = query["id"].ToString();
-            var isActive = path.StartsWith("/projects/view") && pid == p.Id.ToString();
-            <a class="nav-item @(isActive ? "active" : "")" href="/Projects/View?id=@p.Id">
-                <span class="dot" style="background:@p.Color"></span> <span>@p.Name</span>
-                <span class="view-badge">@(p.ViewType == ProjectViewType.Kanban ? "Board" : "")</span>
+            var isActive = path.StartsWith("/projects/view") && activePid == p.Id.ToString();
+            <a class="nav-item @(isActive ? "active" : "")" href="/Projects/View?id=@p.Id" style="padding-left:@(10 + depth * 16)px">
+                <span class="proj-ico" style="color:@p.Color"><icon name="hash" size="16" /></span> <span>@p.Name</span>
+                <span class="view-badge">@(p.ViewType == ProjectViewType.Kanban ? T["nav.board"] : "")</span>
             </a>
         }
-        @if (projects.Count == 0)
+        @if (personalProjects.Count == 0 && myTeams.Count == 0)
         {
-            <a class="nav-item muted" href="/Projects/Edit"><icon name="plus" size="16" /> Erstes Projekt anlegen</a>
+            <a class="nav-item muted" href="/Projects/Edit"><icon name="plus" size="16" /> @T["nav.firstProject"]</a>
         }
     </div>
+
+    @foreach (var tm in myTeams)
+    {
+        var teamProjects = projects.Where(p => p.TeamId == tm.Team.Id)
+            .OrderByDescending(p => p.IsFavorite).ThenBy(p => p.Position).ThenBy(p => p.Name).ToList();
+        <div class="nav-section">
+            <div class="nav-section-title">
+                <a href="/Teams/View?id=@tm.Team.Id"><span class="proj-ico" style="color:@tm.Team.Color"><icon name="users" size="15" /></span> @tm.Team.Name</a>
+                <a class="mini-add" href="/Projects/Edit?teamId=@tm.Team.Id" title="@T["projects.index.newProject"]" aria-label="@T["common.add"]"><icon name="plus" size="16" /></a>
+            </div>
+            @foreach (var p in teamProjects)
+            {
+                var isActive = path.StartsWith("/projects/view") && activePid == p.Id.ToString();
+                <a class="nav-item @(isActive ? "active" : "")" href="/Projects/View?id=@p.Id">
+                    <span class="proj-ico" style="color:@p.Color"><icon name="hash" size="16" /></span> <span>@p.Name</span>
+                    <span class="view-badge">@(p.ViewType == ProjectViewType.Kanban ? T["nav.board"] : "")</span>
+                </a>
+            }
+            @if (teamProjects.Count == 0)
+            {
+                <div class="nav-item muted" style="font-size:12px">@T["teams.noProjects"]</div>
+            }
+        </div>
+    }
 
     <div class="sidebar-foot">
         @if (CurrentUser.IsAdmin)
         {
-            <a class="nav-item @Active("/admin")" href="/Admin"><icon name="settings" /> Administration</a>
+            <a class="nav-item @Active("/admin")" href="/Admin"><icon name="settings" /> @T["nav.administration"]</a>
         }
-        <a class="nav-item @Active("/account/settings")" href="/Account/Settings"><icon name="user" /> Einstellungen</a>
+        <a class="nav-item @Active("/account/settings")" href="/Account/Settings"><icon name="user" /> @T["nav.settings"]</a>
         <form method="post" action="/Account/Logout" class="logout-form">
-            <button type="submit" class="nav-item as-button"><icon name="logout" /> Abmelden</button>
+            <button type="submit" class="nav-item as-button"><icon name="logout" /> @T["nav.logout"]</button>
         </form>
         <div style="padding:6px 10px; font-size:11px; color:var(--text-faint)">Matdo @Matdo.Web.Services.BuildInfo.Version</div>
     </div>

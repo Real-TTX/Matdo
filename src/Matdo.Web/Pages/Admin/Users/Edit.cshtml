@@ -1,7 +1,7 @@
 @page
 @model Matdo.Web.Pages.Admin.Users.UserEditModel
 @{
-    ViewData["Title"] = Model.IsNew ? "Neuer Benutzer" : "Benutzer bearbeiten";
+    ViewData["Title"] = Model.IsNew ? T["admin.users.edit.titleNew"] : T["admin.users.edit.titleEdit"];
 }
 <div class="page-head"><h1>@ViewData["Title"]</h1></div>
 
@@ -11,37 +11,37 @@
     <input type="hidden" asp-for="Input.Id" />
     <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
 
-    <form-field label="Anzeigename" for="Input_DisplayName" required="true">
+    <form-field label="@T["admin.users.edit.displayName"]" for="Input_DisplayName" required="true">
         <input asp-for="Input.DisplayName" autofocus />
         <span asp-validation-for="Input.DisplayName" class="field-error"></span>
     </form-field>
 
-    <form-field label="E-Mail" for="Input_Email" required="true">
+    <form-field label="@T["common.email"]" for="Input_Email" required="true">
         <input asp-for="Input.Email" type="email" readonly="@(!Model.IsNew)" />
         <span asp-validation-for="Input.Email" class="field-error"></span>
     </form-field>
 
     <div class="field-row">
-        <form-field label="Rolle" for="Input_RoleId">
+        <form-field label="@T["common.role"]" for="Input_RoleId">
             <select asp-for="Input.RoleId" asp-items="Model.RoleOptions"></select>
         </form-field>
-        <form-field label="Status">
-            <label class="checkbox-row"><input type="checkbox" asp-for="Input.IsActive" /> Konto aktiv</label>
+        <form-field label="@T["common.status"]">
+            <label class="checkbox-row"><input type="checkbox" asp-for="Input.IsActive" /> @T["admin.users.edit.accountActive"]</label>
         </form-field>
     </div>
 
-    <form-field label="@(Model.IsNew ? "Passwort" : "Neues Passwort")" for="Input_Password"
-                hint="@(Model.IsNew ? "" : "Leer lassen, um das Passwort nicht zu ändern.")" required="@Model.IsNew">
+    <form-field label="@(Model.IsNew ? T["admin.users.edit.password"] : T["admin.users.edit.newPassword"])" for="Input_Password"
+                hint="@(Model.IsNew ? "" : T["admin.users.edit.passwordHint"])" required="@Model.IsNew">
         <input asp-for="Input.Password" type="password" autocomplete="new-password" />
     </form-field>
 
     <form-buttons>
-        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
-        <a class="btn" href="/Admin/Users"><icon name="back" size="16" /> Zurück</a>
+        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> @T["common.save"]</button>
+        <a class="btn" href="/Admin/Users"><icon name="back" size="16" /> @T["common.back"]</a>
         @if (!Model.IsNew)
         {
             <button type="submit" class="btn danger" asp-page-handler="Delete" asp-route-id="@Model.Input.Id"
-                    formnovalidate onclick="return confirm('Benutzer wirklich löschen? Dessen Aufgaben und Projekte werden ebenfalls entfernt.')"><icon name="trash" size="16" /> Löschen</button>
+                    formnovalidate onclick="return confirm('@T["admin.users.edit.deleteConfirm"]')"><icon name="trash" size="16" /> @T["common.delete"]</button>
         }
     </form-buttons>
 </form>

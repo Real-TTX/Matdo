@@ -1,12 +1,16 @@
 @inject ICurrentUserAccessor CurrentUser
+@inject Matdo.Web.Services.UiPreferences Ui
+@{
+    var accent = Matdo.Web.Services.ThemeCatalog.Themes.FirstOrDefault(t => t.Key == Ui.Theme)?.Accent ?? "#8300bc";
+}
 <!DOCTYPE html>
-<html lang="de">
+<html lang="@Ui.Language" data-mode="@Ui.Scheme" data-theme="@Ui.Theme">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>@(ViewData["Title"] != null ? ViewData["Title"] + " · Matdo" : "Matdo")</title>
 
-    <meta name="theme-color" content="#dc4c3e" />
+    <meta name="theme-color" content="@accent" />
     <meta name="description" content="Matdo – deine Aufgaben, Projekte und Erinnerungen." />
     <link rel="manifest" href="~/manifest.webmanifest" />
     <link rel="icon" href="~/favicon.ico" sizes="any" />
@@ -28,10 +32,41 @@
         <partial name="_Sidebar" />
         <main class="app-main">
             <header class="topbar">
-                <button class="icon-btn only-mobile" data-toggle-sidebar aria-label="Menü"><icon name="menu" /></button>
-                <a class="brand only-mobile" href="/">Matdo</a>
+                <button class="icon-btn only-mobile" data-toggle-sidebar aria-label="@T["nav.settings"]"><icon name="menu" /></button>
+                <a class="brand only-mobile" href="/" aria-label="Matdo">
+                    <svg class="brand-mark" width="26" height="26" viewBox="0 0 512 512" aria-hidden="true">
+                        <rect width="512" height="512" rx="112" fill="currentColor" />
+                        <circle cx="256" cy="256" r="150" fill="none" stroke="#fff" stroke-width="26" stroke-opacity="0.55" />
+                        <path d="M182 262 l46 46 l104 -118" fill="none" stroke="#fff" stroke-width="40" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <span class="brand-word">Matdo</span>
+                </a>
+                @{
+                    var crumbs = ViewData["Crumbs"] as System.Collections.Generic.List<Matdo.Web.ViewModels.Crumb>;
+                }
+                <nav class="crumbs" aria-label="Pfad">
+                    @if (crumbs is { Count: > 0 })
+                    {
+                        for (var i = 0; i < crumbs.Count; i++)
+                        {
+                            if (i > 0) { <span class="crumb-sep">/</span> }
+                            var c = crumbs[i];
+                            if (!string.IsNullOrEmpty(c.Href))
+                            { <a class="crumb" href="@c.Href">@c.Label</a> }
+                            else
+                            { <span class="crumb cur">@c.Label</span> }
+                        }
+                    }
+                    else if (ViewData["Title"] is string tt && tt.Length > 0)
+                    {
+                        <span class="crumb cur">@tt</span>
+                    }
+                </nav>
                 <div class="spacer"></div>
-                <a class="icon-btn" href="/Reporting" title="Reporting" aria-label="Reporting"><icon name="chart" /></a>
+                <div class="topbar-actions">
+                    @await RenderSectionAsync("TopbarActions", required: false)
+                    <a class="icon-btn" href="/Reporting" title="@T["nav.reporting"]" aria-label="@T["nav.reporting"]"><icon name="chart" /></a>
+                </div>
             </header>
             <div class="app-content">
                 @RenderBody()
@@ -45,6 +80,11 @@ else
 }
 
 <script src="~/js/site.js" asp-append-version="true"></script>
+<script src="~/js/composer.js" asp-append-version="true"></script>
+<script src="~/js/smart.js" asp-append-version="true"></script>
+<script src="~/js/picker.js" asp-append-version="true"></script>
+<script src="~/js/datepicker.js" asp-append-version="true"></script>
+<script src="~/js/modal.js" asp-append-version="true"></script>
 <script src="~/js/pwa.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>

@@ -1,0 +1,69 @@
+@page
+@using Matdo.Web.Data.Entities
+@model Matdo.Web.Pages.Admin.Teams.AdminTeamViewModel
+@{
+    ViewData["Title"] = Model.Team.Name;
+    var members = Model.Team.Members.OrderBy(m => m.Role).ThenBy(m => m.User?.DisplayName).ToList();
+}
+<div class="page-head row-between">
+    <h1>
+        <span class="dot" style="background:@Model.Team.Color; display:inline-block; width:16px; height:16px; border-radius:4px; vertical-align:middle"></span>
+        @Model.Team.Name
+    </h1>
+    <a class="btn" href="/Admin/Teams"><icon name="back" size="16" /> @T["common.back"]</a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="alert info">@Model.Message</div> }
+
+<div class="form-card mb">
+    <h3>@T["teams.membersHeading"] (@members.Count)</h3>
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>@T["common.name"]</th><th>@T["common.email"]</th><th>@T["teams.roleColumn"]</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var m in members)
+            {
+                <tr>
+                    <td>@m.User?.DisplayName</td>
+                    <td class="muted">@m.User?.Email</td>
+                    <td>
+                        @if (m.Role == TeamRole.Owner)
+                        {
+                            <span class="badge role">@T["teams.role.Owner"]</span>
+                        }
+                        else
+                        {
+                            <form method="post" asp-page-handler="Role" asp-route-id="@Model.Team.Id" style="display:flex; gap:6px">
+                                <input type="hidden" name="userId" value="@m.UserId" />
+                                <select name="role" onchange="this.form.submit()">
+                                    <option value="1" selected="@(m.Role == TeamRole.Admin)">@T["teams.role.Admin"]</option>
+                                    <option value="2" selected="@(m.Role == TeamRole.Member)">@T["teams.role.Member"]</option>
+                                    <option value="0">@T["admin.teams.makeOwner"]</option>
+                                </select>
+                            </form>
+                        }
+                    </td>
+                    <td class="actions-cell">
+                        @if (m.Role != TeamRole.Owner)
+                        {
+                            <form method="post" asp-page-handler="Remove" asp-route-id="@Model.Team.Id" style="display:inline" data-confirm="@T["teams.removeConfirm"]">
+                                <input type="hidden" name="userId" value="@m.UserId" />
+                                <button type="submit" class="btn small danger"><icon name="x" size="14" /></button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="form-card">
+    <h3>@T["teams.settings"]</h3>
+    <div class="form-buttons">
+        <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Team.Id" data-confirm="@T["teams.deleteConfirm"]">
+            <button type="submit" class="btn danger"><icon name="trash" size="16" /> @T["teams.delete"]</button>
+        </form>
+    </div>
+</div>

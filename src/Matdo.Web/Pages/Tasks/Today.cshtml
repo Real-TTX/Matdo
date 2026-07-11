@@ -1,18 +1,19 @@
 @page
 @model Matdo.Web.Pages.Tasks.TodayModel
 @{
-    ViewData["Title"] = "Heute";
+    ViewData["Title"] = T["tasks.today.title"];
     var total = Model.Overdue.Count + Model.DueToday.Count;
+    var composer = new ComposerOptions { ReturnUrl = "/Tasks/Today", DefaultDueToday = true };
 }
 <div class="page-head">
-    <h1>Heute</h1>
-    <div class="sub"><icon name="check" size="16" /> @total Aufgaben</div>
+    <h1>@T["tasks.today.title"]</h1>
+    <div class="sub"><icon name="check" size="16" /> @total @T["tasks.common.tasks"]</div>
 </div>
 
 @if (Model.Overdue.Count > 0)
 {
     <div class="task-group">
-        <h3><span class="overdue-head">Überfällig</span></h3>
+        <h3><span class="overdue-head">@T["tasks.today.overdue"]</span></h3>
         @foreach (var t in Model.Overdue)
         {
             <partial name="_TaskRow" model="t" />
@@ -20,19 +21,29 @@
     </div>
 }
 
-<div class="task-group">
-    <h3>@DateTime.Now.ToString("d. MMM") · Heute · @DateTime.Now.ToString("dddd")</h3>
+@if (Model.Events.Count > 0)
+{
+    <div class="task-group">
+        <h3>@T["calendar.events"]</h3>
+        @foreach (var e in Model.Events)
+        {
+            <div class="task-row">
+                <div class="task-body">
+                    <div class="task-title">
+                        <span class="dot" style="background:@e.Color; display:inline-block; margin-right:6px"></span>
+                        @if (!e.AllDay) { <span class="muted">@e.StartUtc.ToLocalTime().ToString("HH:mm")</span> }
+                        @e.Title
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
 
-    <form method="post" asp-page-handler="QuickAdd" class="composer">
-        <input class="title" name="QuickTitle" placeholder="Aufgabenname" autocomplete="off" required />
-        <div class="chip-row">
-            <span class="chip active"><icon name="today" size="14" /> Heute</span>
-            <a class="chip" href="/Tasks/Edit?due=today"><icon name="dots" size="14" /> Mehr Optionen</a>
-        </div>
-        <div class="form-buttons" style="margin-top:6px">
-            <button type="submit" class="btn btn-primary small"><icon name="plus" size="14" /> Aufgabe hinzufügen</button>
-        </div>
-    </form>
+<div class="task-group">
+    <h3>@DateTime.Now.ToString("d. MMM") · @T["tasks.common.today"] · @DateTime.Now.ToString("dddd")</h3>
+
+    <partial name="_Composer" model="composer" />
 
     @foreach (var t in Model.DueToday)
     {
@@ -40,6 +51,6 @@
     }
     @if (total == 0)
     {
-        <div class="empty">Keine Aufgaben für heute. Genieß deinen Tag! 🎉</div>
+        <div class="empty">@T["tasks.today.empty"]</div>
     }
 </div>

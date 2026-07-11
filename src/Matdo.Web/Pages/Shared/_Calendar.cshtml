@@ -1,0 +1,87 @@
+@model Matdo.Web.ViewModels.CalendarMonth
+@using System.Globalization
+@{
+    var culture = CultureInfo.CurrentCulture;
+    var first = Model.FirstOfMonth;
+    var daysInMonth = DateTime.DaysInMonth(Model.Year, Model.Month);
+
+    // Woche beginnt Montag
+    int Offset(DayOfWeek d) => ((int)d + 6) % 7;
+    var lead = Offset(first.DayOfWeek);
+    var totalCells = (int)Math.Ceiling((lead + daysInMonth) / 7.0) * 7;
+
+    var prev = first.AddMonths(-1);
+    var next = first.AddMonths(1);
+    string Nav(DateTime d) => Model.NavUrlTemplate.Replace("{ym}", d.ToString("yyyy-MM"));
+
+    // Aufgaben nach Tag gruppieren (lokale Zeit)
+    var tasksByDay = Model.Tasks
+        .Where(t => t.DueDate.HasValue)
+        .GroupBy(t => t.DueDate!.Value.ToLocalTime().Date)
+        .ToDictionary(g => g.Key, g => g.ToList());
+    var eventsByDay = Model.Events
+        .GroupBy(e => e.Start.ToLocalTime().Date)
+        .ToDictionary(g => g.Key, g => g.ToList());
+
+    var today = DateTime.Now.Date;
+    var weekdayNames = Enumerable.Range(0, 7)
+        .Select(i => culture.DateTimeFormat.AbbreviatedDayNames[((int)DayOfWeek.Monday + i) % 7])
+        .ToArray();
+}
+<div class="cal">
+    <div class="cal-head">
+        <a class="icon-btn" href="@Nav(prev)" aria-label="@T["cal.prevMonth"]"><icon name="chevron-right" /></a>
+        <div class="cal-title">@culture.TextInfo.ToTitleCase(first.ToString("MMMM yyyy", culture))</div>
+        <a class="icon-btn" href="@Nav(next)" aria-label="@T["cal.nextMonth"]"><icon name="chevron-right" /></a>
+        <div class="spacer"></div>
+        <a class="btn small" href="@Nav(today)">@T["cal.today"]</a>
+    </div>
+
+    <div class="cal-grid">
+        @foreach (var w in weekdayNames)
+        {
+            <div class="cal-wd">@w</div>
+        }
+        @for (var i = 0; i < totalCells; i++)
+        {
+            var dayNum = i - lead + 1;
+            if (dayNum < 1 || dayNum > daysInMonth)
+            {
+                <div class="cal-cell out"></div>
+            }
+            else
+            {
+                var date = new DateTime(Model.Year, Model.Month, dayNum);
+                var isToday = date == today;
+                tasksByDay.TryGetValue(date, out var dayTasks);
+                eventsByDay.TryGetValue(date, out var dayEvents);
+                <div class="cal-cell @(isToday ? "today" : "")">
+                    <div class="cal-daynum">
+                        <span>@dayNum</span>
+                        @if (Model.AddUrlTemplate != null)
+                        {
+                            <a class="cal-add" href="@Model.AddUrlTemplate.Replace("{date}", date.ToString("yyyy-MM-dd"))" title="@T["nav.addTask"]"><icon name="plus" size="13" /></a>
+                        }
+                    </div>
+                    <div class="cal-items">
+                        @if (dayEvents != null)
+                        {
+                            foreach (var e in dayEvents.OrderBy(x => x.AllDay ? 0 : 1).ThenBy(x => x.Start))
+                            {
+                                <div class="cal-ev" title="@e.Title"><span class="dot" style="background:@e.Color"></span>@(e.AllDay ? "" : e.Start.ToLocalTime().ToString("HH:mm") + " ")@e.Title</div>
+                            }
+                        }
+                        @if (dayTasks != null)
+                        {
+                            foreach (var t in dayTasks.OrderBy(x => x.Priority))
+                            {
+                                var pc = t.Priority switch { TaskPriority.P1 => "p1", TaskPriority.P2 => "p2", TaskPriority.P3 => "p3", _ => "" };
+                                <a class="cal-task @(t.IsCompleted ? "done" : "")" href="/Tasks/Edit?id=@t.Id" title="@t.Title"><span class="cal-dot @pc"></span>@t.Title</a>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

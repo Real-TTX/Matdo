@@ -1,6 +1,8 @@
 @model Matdo.Web.Data.Entities.TaskItem
+@inject Matdo.Web.Services.ICurrentUserAccessor Me
 @{
     var t = Model;
+    var meId = Me.UserId;
     var prioClass = t.Priority switch
     {
         TaskPriority.P1 => "p1",
@@ -24,11 +26,19 @@
     }
     var subCount = t.SubTasks?.Count ?? 0;
     var doneSub = t.SubTasks?.Count(s => s.IsCompleted) ?? 0;
+
+    string? deadlineLabel = t.DeadlineDate.HasValue
+        ? t.DeadlineDate.Value.ToLocalTime().ToString("d. MMM") + (t.DeadlineHasTime ? " " + t.DeadlineDate.Value.ToLocalTime().ToString("HH:mm") : "")
+        : null;
+
+    var prioNum = t.Priority switch { TaskPriority.P1 => 1, TaskPriority.P2 => 2, TaskPriority.P3 => 3, _ => 4 };
+    string? prioText = prioNum switch { 1 => T["tasks.priority.p1"], 2 => T["tasks.priority.p2"], 3 => T["tasks.priority.p3"], _ => null };
+    var reminderCount = t.Reminders?.Count ?? 0;
 }
 <div class="task-row @(t.IsCompleted ? "done" : "")">
     <div class="task-check @prioClass @(t.IsCompleted ? "checked" : "")"
          data-complete-task="@t.Id" data-completed="@(t.IsCompleted ? "true" : "false")"
-         role="checkbox" aria-checked="@(t.IsCompleted ? "true" : "false")" title="Erledigt">
+         role="checkbox" aria-checked="@(t.IsCompleted ? "true" : "false")" title="@T["tasks.common.completed"]">
         @(t.IsCompleted ? "✓" : "")
     </div>
     <div class="task-body">
@@ -38,29 +48,39 @@
             <div class="task-desc">@t.Description</div>
         }
         <div class="task-meta">
+            @* Alle Eigenschaften einheitlich als Badge (Pill). *@
             @if (dueLabel != null)
             {
-                <span class="due @(overdue ? "overdue" : "")"><icon name="calendar" size="13" /> @dueLabel</span>
+                <span class="pill-label due @(overdue ? "overdue" : "")"><icon name="calendar" size="12" /> @dueLabel</span>
             }
-            @if (t.DeadlineDate.HasValue)
+            @if (prioText != null)
             {
-                <span class="due"><icon name="flag" size="13" /> @t.DeadlineDate.Value.ToLocalTime().ToString("d. MMM")</span>
+                <span class="pill-label prio pri-@prioNum"><icon name="flag" size="12" /> @prioText</span>
+            }
+            @if (deadlineLabel != null)
+            {
+                <span class="pill-label"><icon name="flag" size="12" /> @T["tasks.edit.deadline"]: @deadlineLabel</span>
+            }
+            @if (reminderCount > 0)
+            {
+                <span class="pill-label"><icon name="bell" size="12" />@(reminderCount > 1 ? " " + reminderCount : "")</span>
             }
             @if (subCount > 0)
             {
-                <span><icon name="list" size="13" /> @doneSub/@subCount</span>
-            }
-            @if (t.Reminders != null && t.Reminders.Any())
-            {
-                <span><icon name="bell" size="13" /></span>
+                <span class="pill-label"><icon name="list" size="12" /> @doneSub/@subCount</span>
             }
             @if (t.Project != null)
             {
-                <span class="pill-label"><span class="dot" style="background:@t.Project.Color"></span> @t.Project.Name</span>
+                <span class="pill-label"><span class="phash" style="color:@t.Project.Color">#</span>@t.Project.Name</span>
+            }
+            @if (t.Assignee != null)
+            {
+                <span class="pill-label" title="@T["tasks.row.assignedTo"]"><icon name="user" size="12" /> @t.Assignee.DisplayName</span>
             }
             @if (t.TaskLabels != null)
             {
-                foreach (var tl in t.TaskLabels.Where(x => x.Label != null))
+                @* Persönliche Labels: nur die eigenen Etiketten des Betrachters anzeigen. *@
+                foreach (var tl in t.TaskLabels.Where(x => x.Label != null && x.Label!.OwnerId == meId))
                 {
                     <span class="pill-label"><span class="tag-swatch" style="background:@tl.Label!.Color"></span> @tl.Label!.Name</span>
                 }

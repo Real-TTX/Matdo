@@ -10,8 +10,22 @@ public class AppConfig
 {
     public SmtpConfig Smtp { get; set; } = new();
     public PushConfig Push { get; set; } = new();
+    public OAuthConfig Google { get; set; } = new();
+    public OAuthConfig Microsoft { get; set; } = new();
     public string AppName { get; set; } = "Matdo";
     public string PublicBaseUrl { get; set; } = "http://localhost:6006";
+
+    /// <summary>Offene Selbst-Registrierung. Ist sie aus, verschwindet der „Registrieren"-Button
+    /// und der Endpunkt lehnt neue Registrierungen ab (bestehende Einladungen greifen weiterhin).</summary>
+    public bool AllowRegistration { get; set; } = true;
+
+    /// <summary>OAuth-Client-Zugangsdaten für die Kalender-Anbindung (Google/Microsoft).</summary>
+    public class OAuthConfig
+    {
+        public bool Enabled { get; set; }
+        public string ClientId { get; set; } = "";
+        public string ClientSecret { get; set; } = "";
+    }
 
     public class SmtpConfig
     {

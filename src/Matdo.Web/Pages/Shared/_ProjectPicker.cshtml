@@ -1,0 +1,75 @@
+@model Matdo.Web.ViewModels.ProjectPickerOptions
+@inject ProjectService Projects
+@{
+    var projects = await Projects.GetAllAsync();
+    var shared = await Projects.GetSharedProjectIdsAsync();
+    var selected = Model.SelectedId;
+
+    // Baum-Reihenfolge (Eltern-Kind), 0 = Wurzel
+    var accessibleIds = projects.Select(p => p.Id).ToHashSet();
+    var childrenByParent = projects
+        .GroupBy(p => (p.ParentProjectId.HasValue && accessibleIds.Contains(p.ParentProjectId.Value)) ? p.ParentProjectId.Value : 0L)
+        .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.IsFavorite).ThenBy(x => x.Name).ToList());
+    var ordered = new List<(Matdo.Web.Data.Entities.Project P, int Depth)>();
+    var visited = new HashSet<long>();
+    void Walk(long parent, int depth)
+    {
+        if (depth > 12 || !childrenByParent.TryGetValue(parent, out var kids)) return;
+        foreach (var k in kids) { if (!visited.Add(k.Id)) continue; ordered.Add((k, depth)); Walk(k.Id, depth + 1); }
+    }
+    Walk(0L, 0);
+
+    var selProj = projects.FirstOrDefault(p => p.Id == selected);
+}
+<div class="ppick" data-ppick>
+    <input type="hidden" name="@Model.FieldName" value="@(selected?.ToString())" data-ppick-value />
+    <button type="button" class="ppick-btn" data-ppick-toggle>
+        <span class="ppick-cur">
+            @if (selProj != null)
+            {
+                <span class="proj-ico" style="color:@selProj.Color"><icon name="hash" size="15" /></span>
+                <span class="ppick-label">@selProj.Name</span>
+            }
+            else
+            {
+                <span class="proj-ico"><icon name="inbox" size="15" /></span>
+                <span class="ppick-label">@T["nav.inbox"]</span>
+            }
+        </span>
+        <icon name="chevron-down" size="14" />
+    </button>
+
+    <div class="ppick-pop" data-ppick-pop>
+        <div class="ppick-head only-mobile">
+            <span>@T["tasks.edit.project"]</span>
+            <button type="button" class="icon-btn" data-ppick-close><icon name="x" /></button>
+        </div>
+        <div class="ppick-search">
+            <input type="text" placeholder="@T["projectPicker.search"]" data-ppick-search autocomplete="off" />
+        </div>
+        <div class="ppick-list">
+            <button type="button" class="ppick-item @(selected == null ? "sel" : "")" data-pid="" data-label="@T["nav.inbox"]" data-icon="inbox">
+                <span class="proj-ico"><icon name="inbox" size="15" /></span>
+                <span class="pi-name">@T["nav.inbox"]</span>
+                <span class="pi-check"><icon name="check" size="14" /></span>
+            </button>
+            <div class="ppick-section">@T["nav.myProjects"]</div>
+            @foreach (var (p, depth) in ordered)
+            {
+                <button type="button" class="ppick-item @(selected == p.Id ? "sel" : "")" data-pid="@p.Id" data-label="@p.Name" data-color="@p.Color" style="padding-left:@(10 + depth * 16)px">
+                    <span class="proj-ico" style="color:@p.Color"><icon name="hash" size="15" /></span>
+                    <span class="pi-name">@p.Name</span>
+                    @if (shared.Contains(p.Id))
+                    {
+                        <span class="pi-shared" title="@T["projectPicker.shared"]"><icon name="group" size="14" /></span>
+                    }
+                    <span class="pi-check"><icon name="check" size="14" /></span>
+                </button>
+            }
+            @if (ordered.Count == 0)
+            {
+                <div class="empty" style="padding:12px">@T["projects.index.empty"]</div>
+            }
+        </div>
+    </div>
+</div>

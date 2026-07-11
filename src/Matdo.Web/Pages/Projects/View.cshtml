@@ -1,31 +1,49 @@
 @page
 @model Matdo.Web.Pages.Projects.ProjectViewModel
 @{
-    ViewData["Title"] = Model.Project.Name;
+    ViewData["Title"] = "#" + Model.Project.Name;
+    var pid = Model.Project.Id;
+    ViewData["Crumbs"] = new List<Matdo.Web.ViewModels.Crumb>
+    {
+        new(T["nav.myProjects"], "/Projects"),
+        new("#" + Model.Project.Name)
+    };
     var noColumn = Model.Tasks.Where(t => t.KanbanColumnId == null).ToList();
+    var composer = new ComposerOptions { ReturnUrl = $"/Projects/View?id={Model.Project.Id}", DefaultProjectId = Model.Project.Id };
+    var cal = new Matdo.Web.ViewModels.CalendarMonth
+    {
+        Year = Model.CalYear,
+        Month = Model.CalMonth,
+        Tasks = Model.Tasks,
+        NavUrlTemplate = $"/Projects/View?id={pid}&view=calendar&ym={{ym}}",
+        AddUrlTemplate = $"/Tasks/Edit?projectId={pid}&due={{date}}"
+    };
 }
-<div class="page-head row-between">
-    <div>
-        <h1><span class="dot" style="background:@Model.Project.Color; display:inline-block; margin-right:8px"></span>@Model.Project.Name</h1>
-        <div class="sub">@Model.Tasks.Count offene Aufgaben</div>
-    </div>
-    <a class="btn small" href="/Projects/Edit?id=@Model.Project.Id"><icon name="settings" size="14" /> Einstellungen</a>
-</div>
-
-<div class="tab-bar">
-    <a class="tab @(Model.IsKanban ? "" : "active")" href="/Projects/View?id=@Model.Project.Id&view=list"><icon name="list" size="16" /> Liste</a>
-    <a class="tab @(Model.IsKanban ? "active" : "")" href="/Projects/View?id=@Model.Project.Id&view=kanban"><icon name="kanban" size="16" /> Board</a>
-</div>
-
-@if (!Model.IsKanban)
-{
-    <form method="post" asp-page-handler="QuickAdd" asp-route-id="@Model.Project.Id" class="composer">
-        <input class="title" name="QuickTitle" placeholder="Aufgabenname" autocomplete="off" required />
-        <div class="form-buttons" style="margin-top:6px">
-            <button type="submit" class="btn btn-primary small"><icon name="plus" size="14" /> Aufgabe hinzufügen</button>
-            <a class="btn small" href="/Tasks/Edit?projectId=@Model.Project.Id"><icon name="dots" size="14" /> Mehr Optionen</a>
+@section TopbarActions {
+    <div class="tb-menu" data-menu>
+        <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.view.settings"]"><icon name="dots" /></button>
+        <div class="menu-pop">
+            <a class="menu-item" href="/Projects/Edit?id=@pid"><icon name="settings" size="15" /> @T["projects.view.settings"]</a>
+            <a class="menu-item" href="/projects/@pid/export.csv"><icon name="upload" size="15" /> @T["projects.menu.exportCsv"]</a>
+            <a class="menu-item" href="/Account/Settings?tab=import"><icon name="inbox" size="15" /> @T["projects.menu.importCsv"]</a>
+            <a class="menu-item" href="/Projects/Edit?id=@pid#feed"><icon name="calendar" size="15" /> @T["projects.edit.feedTitle"]</a>
+            <div class="menu-sep"></div>
+            <form method="post" asp-page="/Projects/Edit" asp-page-handler="Delete" asp-route-id="@pid" data-confirm="@T["projects.edit.deleteConfirm"]">
+                <button type="submit" class="menu-item danger"><icon name="trash" size="15" /> @T["common.delete"]</button>
+            </form>
         </div>
-    </form>
+    </div>
+}
+<div class="page-head">
+    <h1><span class="phash" style="color:@Model.Project.Color; margin-right:2px">#</span>@Model.Project.Name</h1>
+    <div class="sub">@Model.Tasks.Count @T["projects.view.openTasks"]</div>
+</div>
+
+@* Der Ansichtstyp (Liste/Kalender/Board) wird ausschließlich in den Projekteinstellungen
+   festgelegt – hier wird das Projekt in seinem konfigurierten Typ dargestellt. *@
+@if (Model.ViewMode == "list")
+{
+    <partial name="_Composer" model="composer" />
 
     @foreach (var t in Model.Tasks)
     {
@@ -33,8 +51,12 @@
     }
     @if (Model.Tasks.Count == 0)
     {
-        <div class="empty">Keine offenen Aufgaben in diesem Projekt.</div>
+        <div class="empty">@T["projects.view.noOpenTasks"]</div>
     }
+}
+else if (Model.ViewMode == "calendar")
+{
+    <partial name="_Calendar" model="cal" />
 }
 else
 {
@@ -56,7 +78,7 @@ else
         @if (noColumn.Count > 0)
         {
             <div class="kanban-col">
-                <h4>Ohne Spalte <span class="col-count">@noColumn.Count</span></h4>
+                <h4>@T["projects.view.noColumn"] <span class="col-count">@noColumn.Count</span></h4>
                 <div class="kanban-cards" data-column-id="">
                     @foreach (var t in noColumn)
                     {
@@ -69,9 +91,9 @@ else
         @if (Model.Columns.Count == 0)
         {
             <div class="add-col">
-                <div class="empty">Noch keine Spalten. <a href="/Projects/Edit?id=@Model.Project.Id">Spalten definieren</a></div>
+                <div class="empty">@T["projects.view.noColumnsYet"] <a href="/Projects/Edit?id=@pid">@T["projects.view.defineColumns"]</a></div>
             </div>
         }
     </div>
-    <a class="btn small" href="/Tasks/Edit?projectId=@Model.Project.Id"><icon name="plus" size="14" /> Aufgabe hinzufügen</a>
+    <a class="btn small" href="/Tasks/Edit?projectId=@pid"><icon name="plus" size="14" /> @T["projects.view.addTask"]</a>
 }

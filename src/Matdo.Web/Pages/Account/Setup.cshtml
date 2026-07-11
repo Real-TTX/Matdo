@@ -1,0 +1,42 @@
+@page
+@model Matdo.Web.Pages.Account.SetupModel
+@{
+    ViewData["Title"] = T["setup.title"];
+}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="logo"><icon name="check" size="26" /> Matdo</div>
+        <h1>@T["setup.heading"]</h1>
+        <p class="sub">@T["setup.subtitle"]</p>
+
+        @if (!string.IsNullOrEmpty(Model.Error))
+        {
+            <div class="alert error">@Model.Error</div>
+        }
+
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+            <form-field label="@T["common.name"]" for="Input_DisplayName" hint="@T["common.optional"]">
+                <input asp-for="Input.DisplayName" placeholder="Admin" autofocus />
+            </form-field>
+
+            <form-field label="@T["common.email"]" for="Input_Email" required="true">
+                <input asp-for="Input.Email" type="email" autocomplete="username" placeholder="admin@beispiel.de" />
+                <span asp-validation-for="Input.Email" class="field-error"></span>
+            </form-field>
+
+            <form-field label="@T["auth.password"]" for="Input_Password" required="true">
+                <input asp-for="Input.Password" type="password" autocomplete="new-password" placeholder="••••••••" />
+                <span asp-validation-for="Input.Password" class="field-error"></span>
+            </form-field>
+
+            <form-field label="@T["auth.passwordConfirm"]" for="Input_PasswordConfirm" required="true">
+                <input asp-for="Input.PasswordConfirm" type="password" autocomplete="new-password" placeholder="••••••••" />
+                <span asp-validation-for="Input.PasswordConfirm" class="field-error"></span>
+            </form-field>
+
+            <button type="submit" class="btn btn-primary">@T["setup.createAdmin"]</button>
+        </form>
+    </div>
+</div>

@@ -1,23 +1,23 @@
 @page
 @model Matdo.Web.Pages.Projects.ProjectsIndexModel
 @{
-    ViewData["Title"] = "Projekte";
+    ViewData["Title"] = T["projects.index.title"];
 }
-<div class="page-head"><h1>Meine Projekte</h1></div>
+<div class="page-head"><h1>@T["projects.index.heading"]</h1></div>
 
 <list-view id="projects">
     <!-- Toolbar: Suche + Sortierung (immer über der Liste) -->
     <list-toolbar>
         <form method="get" class="search">
-            <input type="search" name="q" value="@Model.Search" placeholder="Projekte durchsuchen …" />
+            <input type="search" name="q" value="@Model.Search" placeholder="@T["projects.index.searchPlaceholder"]" />
         </form>
         <div class="grow"></div>
         <form method="get" id="sortForm">
             <input type="hidden" name="q" value="@Model.Search" />
             <select name="sort" onchange="document.getElementById('sortForm').submit()">
-                <option value="name" selected="@(Model.Sort == "name")">Name (A–Z)</option>
-                <option value="name_desc" selected="@(Model.Sort == "name_desc")">Name (Z–A)</option>
-                <option value="view" selected="@(Model.Sort == "view")">Ansicht</option>
+                <option value="name" selected="@(Model.Sort == "name")">@T["projects.index.sortNameAsc"]</option>
+                <option value="name_desc" selected="@(Model.Sort == "name_desc")">@T["projects.index.sortNameDesc"]</option>
+                <option value="view" selected="@(Model.Sort == "view")">@T["projects.index.sortView"]</option>
             </select>
         </form>
     </list-toolbar>
@@ -25,10 +25,10 @@
     <list-table>
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Ansicht</th>
-                <th>Offen</th>
-                <th>Favorit</th>
+                <th>@T["common.name"]</th>
+                <th>@T["projects.index.colView"]</th>
+                <th>@T["projects.index.colOpen"]</th>
+                <th>@T["common.favorite"]</th>
                 <th></th>
             </tr>
         </thead>
@@ -41,23 +41,23 @@
                         <span class="dot" style="background:@row.Project.Color; display:inline-block; margin-right:6px"></span>@row.Project.Name
                     </a>
                 </td>
-                <td>@(row.Project.ViewType == ProjectViewType.Kanban ? "Board" : "Liste")</td>
+                <td>@(row.Project.ViewType == ProjectViewType.Kanban ? T["projects.viewType.board"] : T["projects.viewType.list"])</td>
                 <td>@row.OpenTasks</td>
                 <td>@(row.Project.IsFavorite ? "★" : "")</td>
                 <td class="actions-cell">
-                    <a class="btn small" href="/Projects/Edit?id=@row.Project.Id"><icon name="edit" size="14" /> Bearbeiten</a>
+                    <a class="btn small" href="/Projects/Edit?id=@row.Project.Id"><icon name="edit" size="14" /> @T["common.edit"]</a>
                 </td>
             </tr>
         }
         @if (Model.Rows.Count == 0)
         {
-            <tr><td colspan="5"><div class="empty">Noch keine Projekte.</div></td></tr>
+            <tr><td colspan="5"><div class="empty">@T["projects.index.empty"]</div></td></tr>
         }
         </tbody>
     </list-table>
 
     <!-- Listen-Aktionen: links bündig, unterhalb der Tabelle -->
     <list-actions>
-        <a class="btn btn-primary" href="/Projects/Edit"><icon name="plus" size="16" /> Neues Projekt</a>
+        <a class="btn btn-primary" href="/Projects/Edit"><icon name="plus" size="16" /> @T["projects.index.newProject"]</a>
     </list-actions>
 </list-view>

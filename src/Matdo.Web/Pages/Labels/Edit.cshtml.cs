@@ -15,13 +15,14 @@ public class LabelEditModel : PageModel
     public bool IsNew => Input.Id == 0;
 
     public static readonly string[] Palette =
-        { "#dc4c3e", "#eb8909", "#f9d900", "#af38eb", "#7ecc49", "#158fad", "#4073ff", "#884dff", "#808080" };
+        { "#8300bc", "#884dff", "#af38eb", "#dc4c3e", "#eb8909", "#f9d900", "#7ecc49", "#158fad", "#4073ff", "#808080" };
 
     public class InputModel
     {
         public long Id { get; set; }
         [Required(ErrorMessage = "Bitte einen Namen angeben.")]
         public string Name { get; set; } = "";
+        [RegularExpression("^#[0-9a-fA-F]{6}$", ErrorMessage = "Ungültige Farbe.")]
         public string Color { get; set; } = "#808080";
         public bool IsFavorite { get; set; }
     }

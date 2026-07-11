@@ -8,10 +8,18 @@ namespace Matdo.Web.Pages.Account;
 public class RegisterModel : PageModel
 {
     private readonly AuthService _auth;
-    public RegisterModel(AuthService auth) => _auth = auth;
+    private readonly JsonConfigService _config;
+    public RegisterModel(AuthService auth, JsonConfigService config)
+    {
+        _auth = auth;
+        _config = config;
+    }
 
     [BindProperty] public InputModel Input { get; set; } = new();
     public string? Error { get; set; }
+
+    /// <summary>Offene Registrierung ist aus – Zugang nur über eine Einladung möglich.</summary>
+    public bool InviteOnly => !_config.Current.AllowRegistration;
 
     public class InputModel
     {
@@ -30,10 +38,13 @@ public class RegisterModel : PageModel
         public string PasswordConfirm { get; set; } = string.Empty;
     }
 
-    public IActionResult OnGet()
+    public async Task<IActionResult> OnGetAsync()
     {
         if (User.Identity?.IsAuthenticated == true)
             return Redirect("/");
+        // Vor der Ersteinrichtung zur Setup-Seite (erster Admin) leiten.
+        if (!await _auth.AnyUsersAsync())
+            return Redirect("/Account/Setup");
         return Page();
     }
 

@@ -20,8 +20,13 @@ public class UsersIndexModel : PageModel
     [FromQuery(Name = "sort")] public string Sort { get; set; } = "name";
     [FromQuery(Name = "p")] public int PageNo { get; set; } = 1;
 
+    private static readonly string[] AllowedSorts = { "name", "name_desc", "email", "created" };
+
     public async Task OnGetAsync()
     {
+        // Sort auf bekannte Werte beschränken (verhindert reflektiertes XSS über den Query-Parameter).
+        if (!AllowedSorts.Contains(Sort)) Sort = "name";
+
         var query = _admin.Users();
 
         if (!string.IsNullOrWhiteSpace(Search))

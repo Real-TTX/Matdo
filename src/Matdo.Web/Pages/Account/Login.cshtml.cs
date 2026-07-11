@@ -24,10 +24,13 @@ public class LoginModel : PageModel
         public string Password { get; set; } = string.Empty;
     }
 
-    public IActionResult OnGet()
+    public async Task<IActionResult> OnGetAsync()
     {
         if (User.Identity?.IsAuthenticated == true)
             return Redirect("/");
+        // Vor der Ersteinrichtung (noch kein Benutzer) zur Setup-Seite leiten.
+        if (!await _auth.AnyUsersAsync())
+            return Redirect("/Account/Setup");
         return Page();
     }
 

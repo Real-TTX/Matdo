@@ -1,74 +1,296 @@
 @page
 @model Matdo.Web.Pages.Account.SettingsModel
+@inject Matdo.Web.Services.UiPreferences Ui
+@inject Matdo.Web.Services.LocalizationService Loc
 @{
-    ViewData["Title"] = "Einstellungen";
+    ViewData["Title"] = T["settings.title"];
+    var themes = Matdo.Web.Services.ThemeCatalog.Themes;
+    var standard = themes.Where(t => !t.Special).ToList();
+    var special = themes.Where(t => t.Special).ToList();
+    string ThemeName(Matdo.Web.Services.ThemeOption o) => T.Language == "en" ? o.NameEn : o.NameDe;
+    var at = Model.ActiveTab;
+    string Cls(string t) => at == t ? "active" : "";
+    var calErr = Request.Query["error"].ToString();
+    var calConnected = Request.Query["connected"] == "1";
 }
-<div class="page-head"><h1>Einstellungen</h1></div>
+<div class="page-head"><h1>@T["settings.title"]</h1></div>
 
 @if (!string.IsNullOrEmpty(Model.Message)) { <div class="alert success">@Model.Message</div> }
 @if (!string.IsNullOrEmpty(Model.Error)) { <div class="alert error">@Model.Error</div> }
+@if (calConnected) { <div class="alert success">@T["calendar.connectedOk"]</div> }
+@if (!string.IsNullOrEmpty(calErr)) { <div class="alert error">@T["calendar.error"] (@calErr)</div> }
 
 <div data-tabs-scope>
     <tab-bar>
-        <tab-item target="profile" active="true"><icon name="user" size="16" /> Profil</tab-item>
-        <tab-item target="password"><icon name="settings" size="16" /> Passwort</tab-item>
-        <tab-item target="notify"><icon name="bell" size="16" /> Benachrichtigungen</tab-item>
+        <tab-item target="appearance" active="@(at == "appearance")"><icon name="settings" size="16" /> @T["settings.tab.appearance"]</tab-item>
+        <tab-item target="profile" active="@(at == "profile")"><icon name="user" size="16" /> @T["settings.tab.profile"]</tab-item>
+        <tab-item target="password" active="@(at == "password")"><icon name="settings" size="16" /> @T["settings.tab.password"]</tab-item>
+        <tab-item target="notify" active="@(at == "notify")"><icon name="bell" size="16" /> @T["settings.tab.notify"]</tab-item>
+        <tab-item target="calendar" active="@(at == "calendar")"><icon name="calendar" size="16" /> @T["calendar.title"]</tab-item>
+        <tab-item target="import" active="@(at == "import")"><icon name="upload" size="16" /> @T["settings.tab.import"]</tab-item>
     </tab-bar>
 
-    <div class="tab-panel active" data-tab-panel="profile">
+    <!-- Darstellung -->
+    <div class="tab-panel @Cls("appearance")" data-tab-panel="appearance">
+        <div class="form-card" style="max-width:640px">
+            <p class="muted">@T["appearance.intro"]</p>
+            <div class="form-field">
+                <label>@T["appearance.mode"]</label>
+                <div class="seg" data-pref-group="scheme">
+                    <button type="button" class="seg-btn @(Ui.Scheme == "system" ? "active" : "")" data-pref-scheme="system">@T["appearance.mode.system"]</button>
+                    <button type="button" class="seg-btn @(Ui.Scheme == "light" ? "active" : "")" data-pref-scheme="light">@T["appearance.mode.light"]</button>
+                    <button type="button" class="seg-btn @(Ui.Scheme == "dark" ? "active" : "")" data-pref-scheme="dark">@T["appearance.mode.dark"]</button>
+                </div>
+            </div>
+            <div class="form-field">
+                <label>@T["appearance.theme"] · @T["appearance.theme.standard"]</label>
+                <div class="swatches">
+                    @foreach (var t in standard)
+                    {
+                        <button type="button" class="swatch @(Ui.Theme == t.Key ? "active" : "")" data-pref-theme="@t.Key" title="@ThemeName(t)">
+                            <span class="sw-dot" style="background:@t.Accent"></span><span class="sw-name">@ThemeName(t)</span>
+                        </button>
+                    }
+                </div>
+            </div>
+            <div class="form-field">
+                <label>@T["appearance.theme.special"]</label>
+                <div class="swatches">
+                    @foreach (var t in special)
+                    {
+                        <button type="button" class="swatch @(Ui.Theme == t.Key ? "active" : "")" data-pref-theme="@t.Key" title="@ThemeName(t)">
+                            <span class="sw-dot" style="background:@t.Accent"></span><span class="sw-name">@ThemeName(t)</span>
+                        </button>
+                    }
+                </div>
+            </div>
+            <div class="form-field">
+                <label>@T["appearance.language"]</label>
+                <div class="seg" data-pref-group="lang">
+                    @foreach (var l in Loc.Languages)
+                    {
+                        <button type="button" class="seg-btn @(Ui.Language == l.Code ? "active" : "")" data-pref-lang="@l.Code">@l.Name</button>
+                    }
+                </div>
+            </div>
+            <div id="prefs-status" class="muted"></div>
+        </div>
+    </div>
+
+    <!-- Profil -->
+    <div class="tab-panel @Cls("profile")" data-tab-panel="profile">
         <form method="post" asp-page-handler="Profile" class="form-card">
-            <form-field label="E-Mail">
-                <input value="@Model.Email" disabled />
-            </form-field>
-            <form-field label="Anzeigename" for="Profile_DisplayName" required="true">
+            <form-field label="@T["common.email"]"><input value="@Model.Email" disabled /></form-field>
+            <form-field label="@T["settings.displayName"]" for="Profile_DisplayName" required="true">
                 <input asp-for="Profile.DisplayName" />
                 <span asp-validation-for="Profile.DisplayName" class="field-error"></span>
             </form-field>
-            <form-field label="Zeitzone" for="Profile_TimeZone" hint="z.B. Europe/Berlin – für Erinnerungen.">
+            <form-field label="@T["settings.timezone"]" for="Profile_TimeZone" hint="@T["settings.timezoneHint"]">
                 <input asp-for="Profile.TimeZone" placeholder="Europe/Berlin" />
             </form-field>
-            <form-buttons>
-                <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
-            </form-buttons>
+            <form-buttons><button type="submit" class="btn btn-primary"><icon name="save" size="16" /> @T["common.save"]</button></form-buttons>
         </form>
     </div>
 
-    <div class="tab-panel" data-tab-panel="password">
+    <!-- Passwort -->
+    <div class="tab-panel @Cls("password")" data-tab-panel="password">
         <form method="post" asp-page-handler="Password" class="form-card">
-            <form-field label="Aktuelles Passwort" for="Password_Current">
-                <input asp-for="Password.Current" type="password" autocomplete="current-password" />
-            </form-field>
-            <form-field label="Neues Passwort" for="Password_New">
+            <form-field label="@T["settings.currentPassword"]" for="Password_Current"><input asp-for="Password.Current" type="password" autocomplete="current-password" /></form-field>
+            <form-field label="@T["settings.newPassword"]" for="Password_New">
                 <input asp-for="Password.New" type="password" autocomplete="new-password" />
                 <span asp-validation-for="Password.New" class="field-error"></span>
             </form-field>
-            <form-field label="Neues Passwort bestätigen" for="Password_Confirm">
+            <form-field label="@T["settings.newPasswordConfirm"]" for="Password_Confirm">
                 <input asp-for="Password.Confirm" type="password" autocomplete="new-password" />
                 <span asp-validation-for="Password.Confirm" class="field-error"></span>
             </form-field>
-            <form-buttons>
-                <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Passwort ändern</button>
-            </form-buttons>
+            <form-buttons><button type="submit" class="btn btn-primary"><icon name="save" size="16" /> @T["settings.changePassword"]</button></form-buttons>
         </form>
     </div>
 
-    <div class="tab-panel" data-tab-panel="notify">
-        <p class="muted">Erhalte Erinnerungen als Browser-Benachrichtigung – auch wenn Matdo als App installiert ist.</p>
+    <!-- Benachrichtigungen -->
+    <div class="tab-panel @Cls("notify")" data-tab-panel="notify">
+        <p class="muted">@T["settings.notifyIntro"]</p>
         @if (!Model.PushEnabled || string.IsNullOrEmpty(Model.PushPublicKey))
         {
-            <div class="alert info">Web-Push ist serverseitig noch nicht konfiguriert. Ein Administrator kann VAPID-Schlüssel in der Administration hinterlegen.</div>
+            <div class="alert info">@T["settings.pushNotConfigured"]</div>
         }
         else
         {
             <div class="form-buttons" style="margin-top:8px">
-                <button type="button" class="btn btn-primary" id="btn-enable-push" data-vapid="@Model.PushPublicKey"><icon name="bell" size="16" /> Benachrichtigungen aktivieren</button>
-                <button type="button" class="btn" id="btn-disable-push">Deaktivieren</button>
+                <button type="button" class="btn btn-primary" id="btn-enable-push" data-vapid="@Model.PushPublicKey"><icon name="bell" size="16" /> @T["settings.enableNotifications"]</button>
+                <button type="button" class="btn" id="btn-disable-push">@T["settings.disable"]</button>
             </div>
             <div id="push-status" class="muted mt"></div>
         }
+    </div>
+
+    <!-- Kalender -->
+    <div class="tab-panel @Cls("calendar")" data-tab-panel="calendar">
+        <p class="muted">@T["calendar.intro"]</p>
+
+        <div class="form-card" style="max-width:none">
+            @if (Model.Connections.Count == 0)
+            {
+                <div class="empty">@T["calendar.noConnections"]</div>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th>@T["common.name"]</th><th>@T["calendar.type"]</th><th>@T["calendar.showEvents"]</th><th>@T["calendar.exportTasks"]</th><th>@T["calendar.lastSync"]</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var c in Model.Connections)
+                        {
+                            var typeName = c.Provider switch
+                            {
+                                Matdo.Web.Data.Entities.CalendarProvider.Google => "Google",
+                                Matdo.Web.Data.Entities.CalendarProvider.Microsoft => "Microsoft",
+                                _ => T["calendar.providerIcs"]
+                            };
+                            <tr>
+                                <td><span class="dot" style="background:@c.Color; display:inline-block; margin-right:6px"></span>@c.DisplayName</td>
+                                <td>@typeName</td>
+                                <td>
+                                    <form method="post" asp-page-handler="CalToggle" style="display:inline">
+                                        <input type="hidden" name="id" value="@c.Id" />
+                                        <input type="hidden" name="isEnabled" value="@((!c.IsEnabled).ToString().ToLower())" />
+                                        <input type="hidden" name="exportTasks" value="@c.ExportTasks.ToString().ToLower()" />
+                                        <button type="submit" class="icon-btn" title="@T["calendar.showEvents"]"><icon name="@(c.IsEnabled ? "check" : "x")" size="16" /></button>
+                                    </form>
+                                </td>
+                                <td>
+                                    @if (c.IsOAuth)
+                                    {
+                                        <form method="post" asp-page-handler="CalToggle" style="display:inline">
+                                            <input type="hidden" name="id" value="@c.Id" />
+                                            <input type="hidden" name="isEnabled" value="@c.IsEnabled.ToString().ToLower()" />
+                                            <input type="hidden" name="exportTasks" value="@((!c.ExportTasks).ToString().ToLower())" />
+                                            <button type="submit" class="icon-btn" title="@T["calendar.exportTasks"]"><icon name="@(c.ExportTasks ? "check" : "x")" size="16" /></button>
+                                        </form>
+                                    }
+                                    else { <span class="muted">–</span> }
+                                </td>
+                                <td class="muted">@(c.LastSyncAt.HasValue ? c.LastSyncAt.Value.ToLocalTime().ToString("g") : T["calendar.never"])</td>
+                                <td class="actions-cell">
+                                    <form method="post" asp-page-handler="CalSync" style="display:inline">
+                                        <input type="hidden" name="id" value="@c.Id" />
+                                        <button type="submit" class="btn small">@T["calendar.syncNow"]</button>
+                                    </form>
+                                    <form method="post" asp-page-handler="CalDisconnect" style="display:inline" data-confirm="@T["calendar.disconnectConfirm"]">
+                                        <input type="hidden" name="id" value="@c.Id" />
+                                        <button type="submit" class="btn small danger"><icon name="trash" size="14" /></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="form-card mt" style="max-width:none">
+            <h3>@T["calendar.connectAccount"]</h3>
+            <div class="list-actions">
+                @if (Model.GoogleConfigured)
+                {
+                    <a class="btn" href="/calendar/connect/google"><span class="dot" style="background:#1a73e8"></span> @T["calendar.connectGoogle"]</a>
+                }
+                else { <span class="badge">@T["calendar.connectGoogle"] – @T["calendar.notConfigured"]</span> }
+                @if (Model.MicrosoftConfigured)
+                {
+                    <a class="btn" href="/calendar/connect/microsoft"><span class="dot" style="background:#0078d4"></span> @T["calendar.connectMicrosoft"]</a>
+                }
+                else { <span class="badge">@T["calendar.connectMicrosoft"] – @T["calendar.notConfigured"]</span> }
+            </div>
+            <p class="hint muted">@T["calendar.oauthAdminHint"]</p>
+        </div>
+
+        <div class="form-card mt" style="max-width:none">
+            <h3>@T["calendar.subscribeMatdo"]</h3>
+            <p class="hint muted">@T["calendar.subscribeMatdoHint"]</p>
+            @if (Model.FeedUrl != null)
+            {
+                <form-field><input type="text" value="@Model.FeedUrl" readonly onclick="this.select()" /></form-field>
+            }
+            <div class="form-buttons">
+                <form method="post" asp-page-handler="Feed" style="display:inline">
+                    <button type="submit" class="btn small">@(Model.FeedUrl == null ? T["calendar.generateFeed"] : T["calendar.regenerate"])</button>
+                </form>
+                @if (Model.FeedUrl != null)
+                {
+                    <form method="post" asp-page-handler="FeedDisable" style="display:inline" data-confirm="@T["calendar.feedDisableConfirm"]">
+                        <button type="submit" class="btn small danger"><icon name="x" size="14" /> @T["settings.disable"]</button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="form-card mt">
+            <h3>@T["calendar.addIcs"]</h3>
+            <form method="post" asp-page-handler="AddIcs">
+                <form-field label="@T["calendar.icsUrl"]" hint="@T["calendar.icsHint"]" required="true">
+                    <input type="url" name="icsUrl" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" required />
+                </form-field>
+                <div class="field-row">
+                    <form-field label="@T["common.name"]"><input type="text" name="displayName" placeholder="@T["calendar.title"]" /></form-field>
+                    <form-field label="@T["common.color"]">
+                        <div class="chip-row">
+                            @foreach (var col in Matdo.Web.Pages.Account.SettingsModel.CalPalette)
+                            {
+                                <label class="chip">
+                                    <input type="radio" name="color" value="@col" @(col == "#246fe0" ? "checked" : "") style="display:none"
+                                           onchange="document.querySelectorAll('[name=color]').forEach(r=>r.closest('.chip').classList.toggle('active', r.checked))" />
+                                    <span class="dot" style="background:@col"></span>
+                                </label>
+                            }
+                        </div>
+                    </form-field>
+                </div>
+                <form-buttons><button type="submit" class="btn btn-primary"><icon name="plus" size="16" /> @T["calendar.subscribe"]</button></form-buttons>
+            </form>
+        </div>
+    </div>
+
+    <!-- Import -->
+    <div class="tab-panel @Cls("import")" data-tab-panel="import">
+        <p class="muted">@T["import.intro"]</p>
+
+        @if (Model.ImportResult != null)
+        {
+            <div class="alert success">@Model.ImportResult</div>
+        }
+        @if (Model.ImportWarnings.Count > 0)
+        {
+            <div class="alert info">
+                <strong>@T["import.warnings"]</strong>
+                <ul style="margin:6px 0 0 18px">
+                    @foreach (var w in Model.ImportWarnings)
+                    {
+                        <li>@w</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        <div class="form-card">
+            <h3><icon name="upload" size="16" /> @T["import.todoist.title"]</h3>
+            <p class="hint muted">@T["import.todoist.help"]</p>
+            <form method="post" asp-page-handler="Import" enctype="multipart/form-data">
+                <form-field label="@T["import.file"]" hint="@T["import.fileHint"]" required="true">
+                    <input type="file" name="file" accept=".csv,text/csv" required />
+                </form-field>
+                <form-field label="@T["import.projectName"]" hint="@T["import.projectNameHint"]">
+                    <input type="text" name="projectName" placeholder="@T["import.projectNamePlaceholder"]" />
+                </form-field>
+                <form-buttons><button type="submit" class="btn btn-primary"><icon name="upload" size="16" /> @T["import.run"]</button></form-buttons>
+            </form>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/prefs.js" asp-append-version="true"></script>
 }

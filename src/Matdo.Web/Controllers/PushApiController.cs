@@ -28,8 +28,13 @@ public class PushApiController : ControllerBase
     public async Task<IActionResult> Subscribe([FromBody] SubscribeDto dto)
     {
         var uid = _me.UserId!.Value;
-        var existing = await _db.PushSubscriptions.FirstOrDefaultAsync(s => s.Endpoint == dto.Endpoint);
-        if (existing is null)
+
+        // Fremde Einträge für denselben Browser-Endpoint entfernen (Gerät gehört jetzt diesem Nutzer).
+        var foreign = _db.PushSubscriptions.Where(s => s.Endpoint == dto.Endpoint && s.UserId != uid);
+        _db.PushSubscriptions.RemoveRange(foreign);
+
+        var mine = await _db.PushSubscriptions.FirstOrDefaultAsync(s => s.Endpoint == dto.Endpoint && s.UserId == uid);
+        if (mine is null)
         {
             _db.PushSubscriptions.Add(new PushSubscription
             {
@@ -41,9 +46,8 @@ public class PushApiController : ControllerBase
         }
         else
         {
-            existing.UserId = uid;
-            existing.P256dh = dto.P256dh;
-            existing.Auth = dto.Auth;
+            mine.P256dh = dto.P256dh;
+            mine.Auth = dto.Auth;
         }
         await _db.SaveChangesAsync();
         return Ok(new { ok = true });
@@ -52,7 +56,9 @@ public class PushApiController : ControllerBase
     [HttpPost("unsubscribe")]
     public async Task<IActionResult> Unsubscribe([FromBody] SubscribeDto dto)
     {
-        var subs = await _db.PushSubscriptions.Where(s => s.Endpoint == dto.Endpoint).ToListAsync();
+        var uid = _me.UserId!.Value;
+        // Nur eigene Abos dürfen entfernt werden.
+        var subs = await _db.PushSubscriptions.Where(s => s.Endpoint == dto.Endpoint && s.UserId == uid).ToListAsync();
         _db.PushSubscriptions.RemoveRange(subs);
         await _db.SaveChangesAsync();
         return Ok(new { ok = true });

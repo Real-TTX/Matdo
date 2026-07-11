@@ -1,0 +1,157 @@
+@page
+@using Matdo.Web.Data.Entities
+@model Matdo.Web.Pages.Teams.TeamViewModel
+@{
+    ViewData["Title"] = Model.Team.Name;
+    var members = Model.Team.Members.OrderBy(m => m.Role).ThenBy(m => m.User?.DisplayName).ToList();
+}
+<div class="page-head">
+    <h1>
+        <span class="dot" style="background:@Model.Team.Color; display:inline-block; width:16px; height:16px; border-radius:4px; vertical-align:middle"></span>
+        @Model.Team.Name
+    </h1>
+    <a class="btn" href="/Teams"><icon name="back" size="16" /> @T["common.back"]</a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Message)) { <div class="alert info">@Model.Message</div> }
+
+<div class="form-card mb">
+    <h3>@T["teams.membersHeading"]</h3>
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>@T["common.name"]</th><th>@T["common.email"]</th><th>@T["teams.roleColumn"]</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var m in members)
+            {
+                <tr>
+                    <td>@m.User?.DisplayName @(m.UserId == Model.MeId ? T["teams.you"] : "")</td>
+                    <td class="muted">@m.User?.Email</td>
+                    <td>
+                        @if (Model.IsOwner && m.Role != TeamRole.Owner && m.UserId != Model.MeId)
+                        {
+                            <form method="post" asp-page-handler="ChangeRole" asp-route-id="@Model.Team.Id" style="display:flex; gap:6px">
+                                <input type="hidden" name="userId" value="@m.UserId" />
+                                <select name="role" onchange="this.form.submit()">
+                                    <option value="1" selected="@(m.Role == TeamRole.Admin)">@T["teams.role.Admin"]</option>
+                                    <option value="2" selected="@(m.Role == TeamRole.Member)">@T["teams.role.Member"]</option>
+                                </select>
+                            </form>
+                        }
+                        else
+                        {
+                            @T[$"teams.role.{m.Role}"]
+                        }
+                    </td>
+                    <td class="actions-cell">
+                        @if (Model.IsManager && m.Role != TeamRole.Owner && m.UserId != Model.MeId)
+                        {
+                            <form method="post" asp-page-handler="RemoveMember" asp-route-id="@Model.Team.Id" style="display:inline" data-confirm="@T["teams.removeConfirm"]">
+                                <input type="hidden" name="userId" value="@m.UserId" />
+                                <button type="submit" class="btn small danger"><icon name="x" size="14" /></button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (Model.IsManager)
+{
+    <div class="form-card mb">
+        <h3>@T["teams.inviteHeading"]</h3>
+        <form method="post" asp-page-handler="Invite" asp-route-id="@Model.Team.Id">
+            <div class="field-row">
+                <form-field label="@T["teams.invitePickUser"]">
+                    <select name="userId">
+                        <option value="">@T["teams.inviteByEmailOpt"]</option>
+                        @foreach (var u in Model.Invitable)
+                        {
+                            <option value="@u.Id">@u.DisplayName (@u.Email)</option>
+                        }
+                    </select>
+                </form-field>
+                <form-field label="@T["teams.roleColumn"]">
+                    <select name="role">
+                        <option value="2">@T["teams.role.Member"]</option>
+                        <option value="1">@T["teams.role.Admin"]</option>
+                    </select>
+                </form-field>
+            </div>
+            <form-field label="@T["teams.inviteEmailLabel"]">
+                <input type="email" name="email" placeholder="du@beispiel.de" />
+            </form-field>
+            <div class="form-buttons" style="margin-top:6px">
+                <button type="submit" class="btn btn-primary"><icon name="plus" size="16" /> @T["teams.invite"]</button>
+            </div>
+        </form>
+        <p class="muted" style="margin-top:6px">@T["teams.inviteHint"]</p>
+
+        @if (Model.Pending.Count > 0)
+        {
+            <h4 class="mt">@T["teams.pendingInvites"]</h4>
+            <div class="table-wrap">
+                <table class="table">
+                    <tbody>
+                    @foreach (var inv in Model.Pending)
+                    {
+                        <tr>
+                            <td>@inv.Email <span class="badge">@T[$"teams.role.{inv.TeamRole}"]</span></td>
+                            <td class="actions-cell">
+                                <form method="post" asp-page-handler="CancelInvite" asp-route-id="@Model.Team.Id" style="display:inline">
+                                    <input type="hidden" name="invitationId" value="@inv.Id" />
+                                    <button type="submit" class="btn small danger"><icon name="x" size="14" /></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+<div class="form-card">
+    <h3>@T["teams.settings"]</h3>
+    @if (Model.IsManager)
+    {
+        <form method="post" asp-page-handler="Rename" asp-route-id="@Model.Team.Id" id="team-rename">
+            <form-field label="@T["common.name"]"><input type="text" name="name" value="@Model.Team.Name" required /></form-field>
+            <form-field label="@T["common.color"]">
+                <div class="chip-row">
+                    @foreach (var c in Matdo.Web.Pages.Projects.ProjectEditModel.Palette)
+                    {
+                        var sel = Model.Team.Color == c;
+                        <label class="chip @(sel ? "active" : "")" title="@c">
+                            <input type="radio" name="color" value="@c" @(sel ? "checked" : "") style="display:none"
+                                   onchange="document.querySelectorAll('[name=\'color\']').forEach(r=>r.closest('.chip').classList.toggle('active', r.checked))" />
+                            <span class="dot" style="background:@c"></span>
+                        </label>
+                    }
+                </div>
+            </form-field>
+        </form>
+    }
+    @* Reihenfolge: positiv (Speichern) links, destruktiv (Löschen/Verlassen) rechts. *@
+    <form-buttons>
+        @if (Model.IsManager)
+        {
+            <button type="submit" form="team-rename" class="btn btn-primary"><icon name="save" size="16" /> @T["common.save"]</button>
+        }
+        @if (Model.IsOwner)
+        {
+            <form method="post" asp-page-handler="Delete" asp-route-id="@Model.Team.Id" data-confirm="@T["teams.deleteConfirm"]" class="btn-danger-form">
+                <button type="submit" class="btn danger"><icon name="trash" size="16" /> @T["teams.delete"]</button>
+            </form>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Leave" asp-route-id="@Model.Team.Id" data-confirm="@T["teams.leaveConfirm"]" class="btn-danger-form">
+                <button type="submit" class="btn danger"><icon name="logout" size="16" /> @T["teams.leave"]</button>
+            </form>
+        }
+    </form-buttons>
+</div>

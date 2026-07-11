@@ -1,0 +1,118 @@
+@model Matdo.Web.ViewModels.ComposerOptions
+@inject LabelService LabelSvc
+@inject ProjectService ProjectSvc
+@{
+    var labels = await LabelSvc.GetAllAsync();
+    var today = DateTime.Today.ToString("yyyy-MM-dd");
+    var prios = new[] { (1, T["tasks.priority.p1"]), (2, T["tasks.priority.p2"]), (3, T["tasks.priority.p3"]), (4, T["tasks.priority.p4"]) };
+    var pickerOpts = new Matdo.Web.ViewModels.ProjectPickerOptions { FieldName = "Input.ProjectId", SelectedId = Model.DefaultProjectId };
+}
+<form method="post" asp-page="/Tasks/Create" class="composer" data-composer id="@Model.InstanceId">
+    <input type="hidden" name="Input.ReturnUrl" value="@Model.ReturnUrl" />
+
+    <input class="title" name="Input.Title" placeholder="@T["tasks.composer.namePlaceholder"]" autocomplete="off" data-smart="1" required />
+    <textarea class="desc" name="Input.Description" placeholder="@T["common.description"]" rows="1"></textarea>
+
+    <!-- Gesetzte Eigenschaften als Chips (Klick entfernt die Eigenschaft) -->
+    <div class="composer-chips" data-chips></div>
+
+    <!-- Toolbar: öffnet Popover je Eigenschaft -->
+    <div class="composer-toolbar">
+        <div class="cbtn-wrap">
+            <button type="button" class="cbtn" data-pop="due"><icon name="calendar" size="15" /> @T["tasks.edit.due"]</button>
+            <div class="popover popover-cal" data-pop-panel="due">
+                <input type="date" name="Input.DueDate" data-f="dueDate" data-dp-inline value="@(Model.DefaultDueToday ? today : "")" />
+                <input type="time" name="Input.DueTime" data-f="dueTime" />
+            </div>
+        </div>
+
+        <div class="cbtn-wrap">
+            <button type="button" class="cbtn" data-pop="prio"><icon name="flag" size="15" /> @T["tasks.edit.priority"]</button>
+            <div class="popover" data-pop-panel="prio">
+                <div class="pop-title">@T["tasks.edit.priority"]</div>
+                <div class="chip-row">
+                    @foreach (var (val, text) in prios)
+                    {
+                        <label class="chip @(val == 4 ? "" : "")">
+                            <input type="radio" name="Input.Priority" value="@val" data-f="priority" @(val == 4 ? "checked" : "") style="display:none" />
+                            <span class="pri-@val"><icon name="flag" size="13" /></span> @text
+                        </label>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="cbtn-wrap">
+            <button type="button" class="cbtn" data-pop="reminder"><icon name="bell" size="15" /> @T["tasks.edit.reminders"]</button>
+            <div class="popover" data-pop-panel="reminder">
+                <div class="pop-title">@T["tasks.composer.reminder"]</div>
+                <div class="field-row">
+                    <div class="form-field">
+                        <label>@T["tasks.edit.reminderKind"]</label>
+                        <select name="Input.ReminderType" data-f="reminderType" data-rem-type>
+                            <option value="">@T["tasks.composer.reminderNone"]</option>
+                            <option value="0">@T["tasks.edit.reminderDateTime"]</option>
+                            <option value="1">@T["tasks.edit.reminderBeforeDue"]</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>@T["tasks.edit.reminderChannel"]</label>
+                        <select name="Input.ReminderChannel" data-f="reminderChannel">
+                            <option value="3">@T["tasks.edit.channelEmailPush"]</option>
+                            <option value="1">@T["tasks.edit.channelEmailOnly"]</option>
+                            <option value="2">@T["tasks.edit.channelPushOnly"]</option>
+                        </select>
+                    </div>
+                </div>
+                <div data-rem-abs style="display:none">
+                    <input type="date" name="Input.RemindDate" data-f="remindDate" data-dp-inline />
+                    <input type="time" name="Input.RemindTime" data-f="remindTime" />
+                </div>
+                <div class="form-field" data-rem-rel style="display:none">
+                    <label>@T["tasks.edit.minutesBeforeDue"]</label>
+                    <input type="number" name="Input.ReminderOffsetMinutes" value="60" min="0" data-f="reminderOffset" />
+                </div>
+                <button type="button" class="btn btn-primary small" data-pop-close>@T["tasks.composer.apply"]</button>
+            </div>
+        </div>
+
+        <div class="cbtn-wrap">
+            <button type="button" class="cbtn" data-pop="labels"><icon name="tag" size="15" /> @T["tasks.edit.labels"]</button>
+            <div class="popover" data-pop-panel="labels">
+                <div class="pop-title">@T["tasks.edit.labels"]</div>
+                @if (labels.Count == 0)
+                {
+                    <div class="muted" style="padding:4px 2px">@T["tasks.composer.noLabels"] <a href="/Labels/Edit">@T["tasks.composer.createLabel"]</a></div>
+                }
+                else
+                {
+                    <div class="pop-list">
+                        @foreach (var l in labels)
+                        {
+                            <label class="pop-check">
+                                <input type="checkbox" name="Input.LabelIds" value="@l.Id" data-f="label" data-name="@l.Name" data-color="@l.Color" />
+                                <span class="tag-swatch" style="background:@l.Color"></span> @l.Name
+                            </label>
+                        }
+                    </div>
+                    <button type="button" class="btn btn-primary small" data-pop-close>@T["tasks.composer.apply"]</button>
+                }
+            </div>
+        </div>
+
+        <div class="cbtn-wrap">
+            <button type="button" class="cbtn" data-pop="deadline"><icon name="flag" size="15" /> @T["tasks.edit.deadline"]</button>
+            <div class="popover popover-cal" data-pop-panel="deadline">
+                <input type="date" name="Input.DeadlineDate" data-f="deadlineDate" data-dp-inline />
+                <input type="time" name="Input.DeadlineTime" data-f="deadlineTime" />
+            </div>
+        </div>
+    </div>
+
+    <div class="composer-foot">
+        <partial name="_ProjectPicker" model="pickerOpts" />
+        <div class="spacer"></div>
+        <button type="reset" class="btn small" data-composer-cancel>@T["common.cancel"]</button>
+        <button type="submit" class="btn btn-primary small"><icon name="plus" size="14" /> @T["tasks.composer.addTask"]</button>
+    </div>
+</form>

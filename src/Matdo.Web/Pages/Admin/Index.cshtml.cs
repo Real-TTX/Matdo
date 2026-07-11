@@ -11,6 +11,7 @@ public class AdminIndexModel : PageModel
 
     public int Users { get; set; }
     public int Groups { get; set; }
+    public int Teams { get; set; }
     public int Roles { get; set; }
     public int Projects { get; set; }
     public int Tasks { get; set; }
@@ -20,6 +21,7 @@ public class AdminIndexModel : PageModel
     {
         Users = await _db.Users.CountAsync();
         Groups = await _db.UserGroups.CountAsync();
+        Teams = await _db.Teams.CountAsync();
         Roles = await _db.Roles.CountAsync();
         Projects = await _db.Projects.CountAsync();
         Tasks = await _db.Tasks.CountAsync();

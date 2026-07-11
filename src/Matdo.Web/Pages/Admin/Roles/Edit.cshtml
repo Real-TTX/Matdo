@@ -1,7 +1,7 @@
 @page
 @model Matdo.Web.Pages.Admin.Roles.RoleEditModel
 @{
-    ViewData["Title"] = Model.IsNew ? "Neue Rolle" : "Rolle bearbeiten";
+    ViewData["Title"] = Model.IsNew ? T["admin.roles.edit.titleNew"] : T["admin.roles.edit.titleEdit"];
 }
 <div class="page-head"><h1>@ViewData["Title"]</h1></div>
 
@@ -11,22 +11,22 @@
     <input type="hidden" asp-for="Input.Id" />
     <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
 
-    <form-field label="Name" for="Input_Name" required="true">
+    <form-field label="@T["common.name"]" for="Input_Name" required="true">
         <input asp-for="Input.Name" autofocus />
         <span asp-validation-for="Input.Name" class="field-error"></span>
     </form-field>
 
-    <form-field label="Beschreibung" for="Input_Description">
+    <form-field label="@T["common.description"]" for="Input_Description">
         <input asp-for="Input.Description" />
     </form-field>
 
     <form-buttons>
-        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
-        <a class="btn" href="/Admin/Roles"><icon name="back" size="16" /> Zurück</a>
+        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> @T["common.save"]</button>
+        <a class="btn" href="/Admin/Roles"><icon name="back" size="16" /> @T["common.back"]</a>
         @if (!Model.IsNew && !Model.IsSystemRole)
         {
             <button type="submit" class="btn danger" asp-page-handler="Delete" asp-route-id="@Model.Input.Id"
-                    formnovalidate onclick="return confirm('Rolle wirklich löschen?')"><icon name="trash" size="16" /> Löschen</button>
+                    formnovalidate onclick="return confirm('@T["admin.roles.edit.deleteConfirm"]')"><icon name="trash" size="16" /> @T["common.delete"]</button>
         }
     </form-buttons>
 </form>

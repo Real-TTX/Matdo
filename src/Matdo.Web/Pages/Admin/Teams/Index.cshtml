@@ -1,0 +1,36 @@
+@page
+@model Matdo.Web.Pages.Admin.Teams.AdminTeamsIndexModel
+@{
+    ViewData["Title"] = T["admin.teams.title"];
+}
+<div class="page-head row-between">
+    <h1>@T["admin.teams.title"]</h1>
+    <a class="btn" href="/Admin"><icon name="back" size="16" /> @T["common.back"]</a>
+</div>
+
+@if (Model.Teams.Count == 0)
+{
+    <div class="empty">@T["admin.teams.empty"]</div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table">
+            <thead><tr><th>@T["common.name"]</th><th>@T["teams.owner"]</th><th>@T["teams.members"]</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var r in Model.Teams)
+            {
+                <tr>
+                    <td>
+                        <span class="dot" style="background:@r.Team.Color; display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:middle"></span>
+                        @r.Team.Name
+                    </td>
+                    <td class="muted">@r.Team.Owner?.DisplayName</td>
+                    <td>@r.MemberCount</td>
+                    <td class="actions-cell"><a class="btn small" href="/Admin/Teams/View?id=@r.Team.Id"><icon name="settings" size="14" /> @T["common.edit"]</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

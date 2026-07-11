@@ -1,45 +1,49 @@
 @page
 @model Matdo.Web.Pages.Account.RegisterModel
 @{
-    ViewData["Title"] = "Registrieren";
+    ViewData["Title"] = T["auth.register"];
 }
 <div class="auth-wrap">
     <div class="auth-card">
         <div class="logo"><icon name="check" size="26" /> Matdo</div>
-        <h1>Konto erstellen</h1>
-        <p class="sub">Leg los mit deinen Aufgaben.</p>
+        <h1>@T["auth.createAccount"]</h1>
+        <p class="sub">@T["auth.registerSubtitle"]</p>
 
         @if (!string.IsNullOrEmpty(Model.Error))
         {
             <div class="alert error">@Model.Error</div>
         }
+        @if (Model.InviteOnly)
+        {
+            <div class="alert info">@T["auth.inviteOnly"]</div>
+        }
 
         <form method="post">
             <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
 
-            <form-field label="Name" for="Input_DisplayName" required="true">
+            <form-field label="@T["common.name"]" for="Input_DisplayName" required="true">
                 <input asp-for="Input.DisplayName" placeholder="Max Mustermann" autofocus />
                 <span asp-validation-for="Input.DisplayName" class="field-error"></span>
             </form-field>
 
-            <form-field label="E-Mail" for="Input_Email" required="true">
+            <form-field label="@T["common.email"]" for="Input_Email" required="true">
                 <input asp-for="Input.Email" type="email" autocomplete="username" placeholder="du@beispiel.de" />
                 <span asp-validation-for="Input.Email" class="field-error"></span>
             </form-field>
 
-            <form-field label="Passwort" for="Input_Password" required="true">
-                <input asp-for="Input.Password" type="password" autocomplete="new-password" placeholder="Mindestens 6 Zeichen" />
+            <form-field label="@T["auth.password"]" for="Input_Password" required="true">
+                <input asp-for="Input.Password" type="password" autocomplete="new-password" placeholder="@T["auth.password"]" />
                 <span asp-validation-for="Input.Password" class="field-error"></span>
             </form-field>
 
-            <form-field label="Passwort bestätigen" for="Input_PasswordConfirm" required="true">
+            <form-field label="@T["auth.passwordConfirm"]" for="Input_PasswordConfirm" required="true">
                 <input asp-for="Input.PasswordConfirm" type="password" autocomplete="new-password" placeholder="••••••••" />
                 <span asp-validation-for="Input.PasswordConfirm" class="field-error"></span>
             </form-field>
 
-            <button type="submit" class="btn btn-primary">Konto erstellen</button>
+            <button type="submit" class="btn btn-primary">@T["auth.createAccount"]</button>
         </form>
 
-        <div class="auth-alt">Bereits registriert? <a href="/Account/Login">Anmelden</a></div>
+        <div class="auth-alt">@T["auth.haveAccount"] <a href="/Account/Login">@T["auth.login"]</a></div>
     </div>
 </div>

@@ -1,25 +1,37 @@
 @page
 @model Matdo.Web.Pages.Tasks.UpcomingModel
 @{
-    ViewData["Title"] = "Demnächst";
+    ViewData["Title"] = T["tasks.upcoming.title"];
 }
 <div class="page-head">
-    <h1>Demnächst</h1>
-    <div class="sub">Die nächsten Wochen im Überblick</div>
+    <h1>@T["tasks.upcoming.title"]</h1>
+    <div class="sub">@T["tasks.upcoming.subtitle"]</div>
 </div>
 
-@if (Model.Groups.Count == 0)
+@if (Model.Days.Count == 0)
 {
-    <div class="empty">Keine anstehenden Aufgaben. <a href="/Tasks/Edit">Neue Aufgabe anlegen</a></div>
+    <div class="empty">@T["tasks.upcoming.empty"] <a href="/Tasks/Edit">@T["tasks.upcoming.createNew"]</a></div>
 }
 else
 {
-    foreach (var g in Model.Groups)
+    foreach (var day in Model.Days)
     {
-        var isTomorrow = g.Key == DateTime.Now.Date.AddDays(1);
+        var isTomorrow = day.Date == DateTime.Now.Date.AddDays(1);
         <div class="task-group">
-            <h3>@g.Key.ToString("d. MMM") · @(isTomorrow ? "Morgen · " : "")@g.Key.ToString("dddd")</h3>
-            @foreach (var t in g)
+            <h3>@day.Date.ToString("d. MMM") · @(isTomorrow ? T["tasks.common.tomorrow"] + " · " : "")@day.Date.ToString("dddd")</h3>
+            @foreach (var e in day.Events)
+            {
+                <div class="task-row">
+                    <div class="task-body">
+                        <div class="task-title">
+                            <span class="dot" style="background:@e.Color; display:inline-block; margin-right:6px"></span>
+                            @if (!e.AllDay) { <span class="muted">@e.StartUtc.ToLocalTime().ToString("HH:mm")</span> }
+                            @e.Title
+                        </div>
+                    </div>
+                </div>
+            }
+            @foreach (var t in day.Tasks)
             {
                 <partial name="_TaskRow" model="t" />
             }

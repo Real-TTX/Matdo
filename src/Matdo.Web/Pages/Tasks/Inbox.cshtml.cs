@@ -11,14 +11,6 @@ public class InboxModel : PageModel
     public InboxModel(TaskService tasks) => _tasks = tasks;
 
     public List<TaskItem> Items { get; set; } = new();
-    [BindProperty] public string? QuickTitle { get; set; }
 
     public async Task OnGetAsync() => Items = await _tasks.GetInboxAsync();
-
-    public async Task<IActionResult> OnPostQuickAddAsync()
-    {
-        if (!string.IsNullOrWhiteSpace(QuickTitle))
-            await _tasks.CreateAsync(new TaskItem { Title = QuickTitle.Trim() });
-        return RedirectToPage();
-    }
 }
