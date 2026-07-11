@@ -1,8 +1,23 @@
 @page "/s/{token}"
 @model Matdo.Web.Pages.Public.BoardModel
+@using System.Globalization
+@using Matdo.Web.Data.Entities
 @{
     Layout = null;
     var token = (string)RouteData.Values["token"]!;
+    var color = Model.Project.Color;
+    var noCol = Model.Tasks.Where(t => t.KanbanColumnId == null).ToList();
+
+    string DateVal(DateTime? d) => d?.ToLocalTime().ToString("yyyy-MM-dd") ?? "";
+    string TimeVal(DateTime? d, bool hasTime) => (d.HasValue && hasTime) ? d.Value.ToLocalTime().ToString("HH:mm") : "";
+}
+@functions {
+    static string Fmt(DateTime d, bool hasTime)
+    {
+        var l = d.ToLocalTime();
+        return hasTime ? l.ToString("d. MMM HH:mm") : l.ToString("d. MMM");
+    }
+    static string PrioClass(TaskPriority p) => p switch { TaskPriority.P1 => "p1", TaskPriority.P2 => "p2", TaskPriority.P3 => "p3", _ => "" };
 }
 <!DOCTYPE html>
 <html lang="de" data-mode="system" data-theme="purple">
@@ -12,7 +27,8 @@
     <title>@Model.Project.Name · Matdo</title>
     <link rel="stylesheet" href="/css/site.css" />
     <style>
-        .pub { max-width: 640px; margin: 0 auto; padding: 20px 16px 60px; }
+        .pub { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
+        .pub.wide { max-width: 1200px; }
         .pub-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
         .pub-head h1 { font-size: 22px; margin: 0; }
         .pub-you { font-size: 13px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; }
@@ -20,45 +36,131 @@
         .pub-task { display: flex; align-items: flex-start; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--border); }
         .pub-task:last-child { border-bottom: none; }
         .pub-task .body { flex: 1; min-width: 0; }
-        .pub-chk { width: 20px; height: 20px; margin-top: 2px; cursor: pointer; accent-color: var(--accent); }
+        .pub-task.done .task-title { text-decoration: line-through; color: var(--text-muted); }
+        .pub-chk { width: 20px; height: 20px; margin-top: 2px; cursor: pointer; accent-color: var(--accent); flex: 0 0 auto; }
         .pub-foot { color: var(--text-muted); font-size: 12px; margin-top: 14px; }
+        .pub-sub { margin: 6px 0 0 2px; padding-left: 10px; border-left: 2px solid var(--border); }
+        .pub-sub .sub-item { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 14px; }
+        .pub-sub .sub-item.done span { text-decoration: line-through; color: var(--text-muted); }
+        .sub-chk { width: 16px; height: 16px; accent-color: var(--accent); flex: 0 0 auto; }
+        .sub-add { display: flex; gap: 6px; margin-top: 6px; }
+        .sub-add input[type=text] { flex: 1; }
+        .pub .kanban { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; align-items: flex-start; }
+        .pub .kanban-col { flex: 1 0 260px; max-width: 320px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; }
+        .pub .kanban-col h4 { margin: 0 0 8px; font-size: 14px; display: flex; justify-content: space-between; }
+        .kb-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+        .kb-card .task-title { font-size: 14px; }
+        .kb-top { display: flex; gap: 8px; align-items: flex-start; }
+        .kb-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+        .kb-row select { font-size: 12px; padding: 2px 4px; max-width: 170px; }
+        .grow { flex: 1; min-width: 0; }
+        .cal-add { color: var(--text-muted); }
+        details.more { margin-top: 8px; }
+        details.more summary { cursor: pointer; color: var(--text-muted); font-size: 13px; }
     </style>
 </head>
 <body>
-<div class="pub">
-    @if (Model.AnonName == null)
-    {
-        <div class="pub-head"><h1><span class="phash" style="color:@Model.Project.Color">#</span>@Model.Project.Name</h1></div>
-        <p class="muted">Gib deinen Namen ein, um an diesem Projekt mitzuarbeiten. Er wird für dieses Gerät gemerkt.</p>
-        <form method="post" asp-page-handler="Name" asp-route-token="@token" class="pub-card">
-            <form-field label="Dein Name" required="true">
-                <input type="text" name="name" placeholder="z.B. Max" required autofocus maxlength="60" />
-            </form-field>
-            <button type="submit" class="btn btn-primary">Weiter</button>
-        </form>
-    }
-    else
-    {
-        <div class="pub-head">
-            <h1><span class="phash" style="color:@Model.Project.Color">#</span>@Model.Project.Name</h1>
-            <span class="pub-you">
-                <icon name="user" size="14" /> Anonym: <b>@Model.AnonName</b>
-                <form method="post" asp-page-handler="Forget" asp-route-token="@token" style="display:inline; margin:0">
-                    <button type="submit" class="btn btn-ghost small">ändern</button>
-                </form>
-            </span>
-        </div>
+<div class="pub @(Model.AnonName != null && Model.ViewMode != "list" ? "wide" : "")">
+@if (Model.AnonName == null)
+{
+    <div class="pub-head"><h1><span class="phash" style="color:@color">#</span>@Model.Project.Name</h1></div>
+    <p class="muted">Gib deinen Namen ein, um an diesem Projekt mitzuarbeiten. Er wird für dieses Gerät gemerkt.</p>
+    <form method="post" asp-page-handler="Name" asp-route-token="@token" class="pub-card">
+        <form-field label="Dein Name" required="true">
+            <input type="text" name="name" placeholder="z.B. Max" required autofocus maxlength="60" />
+        </form-field>
+        <button type="submit" class="btn btn-primary">Weiter</button>
+    </form>
+}
+else
+{
+    <div class="pub-head">
+        <h1><span class="phash" style="color:@color">#</span>@Model.Project.Name</h1>
+        <span class="pub-you">
+            <icon name="user" size="14" /> Anonym: <b>@Model.AnonName</b>
+            <form method="post" asp-page-handler="Forget" asp-route-token="@token" style="display:inline; margin:0">
+                <button type="submit" class="btn btn-ghost small">ändern</button>
+            </form>
+        </span>
+    </div>
 
+    @* ---------- Bearbeiten-Formular ---------- *@
+    @if (Model.Editing is { } ed)
+    {
+        <div class="pub-card">
+            <form method="post" asp-page-handler="Edit" asp-route-token="@token">
+                <input type="hidden" name="taskId" value="@ed.Id" />
+                <form-field label="Titel" required="true"><input type="text" name="title" value="@ed.Title" required maxlength="500" /></form-field>
+                <form-field label="Beschreibung"><textarea name="description" rows="3">@ed.Description</textarea></form-field>
+                <div class="field-row">
+                    <form-field label="Fällig"><input name="due" type="date" value="@DateVal(ed.DueDate)" /></form-field>
+                    <form-field label="Uhrzeit"><input name="dueTime" type="time" value="@TimeVal(ed.DueDate, ed.DueHasTime)" /></form-field>
+                    <form-field label="Priorität">
+                        <select name="priority">
+                            <option value="1" selected="@(ed.Priority == TaskPriority.P1)">Priorität 1</option>
+                            <option value="2" selected="@(ed.Priority == TaskPriority.P2)">Priorität 2</option>
+                            <option value="3" selected="@(ed.Priority == TaskPriority.P3)">Priorität 3</option>
+                            <option value="4" selected="@(ed.Priority == TaskPriority.P4)">Priorität 4</option>
+                        </select>
+                    </form-field>
+                </div>
+                <div class="field-row">
+                    <form-field label="Deadline"><input name="deadline" type="date" value="@DateVal(ed.DeadlineDate)" /></form-field>
+                    <form-field label="Uhrzeit"><input name="deadlineTime" type="time" value="@TimeVal(ed.DeadlineDate, ed.DeadlineHasTime)" /></form-field>
+                    @if (Model.ViewMode == "kanban" && ed.ParentTaskId == null)
+                    {
+                        <form-field label="Spalte">
+                            <select name="columnId">
+                                <option value="">Ohne Spalte</option>
+                                @foreach (var c in Model.Columns)
+                                {
+                                    <option value="@c.Id" selected="@(ed.KanbanColumnId == c.Id)">@c.Name</option>
+                                }
+                            </select>
+                        </form-field>
+                    }
+                </div>
+                <div class="form-buttons" style="margin-top:6px">
+                    <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> Speichern</button>
+                    <a class="btn" href="/s/@token">Abbrechen</a>
+                </div>
+            </form>
+        </div>
+    }
+
+    @* ---------- Neue Aufgabe (Liste & Kalender oben; Kanban je Spalte) ---------- *@
+    @if (Model.ViewMode != "kanban")
+    {
         <form method="post" asp-page-handler="Add" asp-route-token="@token" class="pub-card">
             <div class="field-row">
-                <form-field label="Neue Aufgabe"><input type="text" name="title" placeholder="Was ist zu tun?" required maxlength="300" /></form-field>
-                <form-field label="Fällig (optional)"><input name="due" type="date" /></form-field>
+                <form-field label="Neue Aufgabe"><input type="text" name="title" placeholder="Was ist zu tun?" required maxlength="500" /></form-field>
+                <form-field label="Fällig"><input name="due" type="date" value="@Model.DuePrefill" /></form-field>
+                <form-field label="Uhrzeit"><input name="dueTime" type="time" /></form-field>
+                <form-field label="Priorität">
+                    <select name="priority">
+                        <option value="1">Priorität 1</option>
+                        <option value="2">Priorität 2</option>
+                        <option value="3">Priorität 3</option>
+                        <option value="4" selected>Priorität 4</option>
+                    </select>
+                </form-field>
             </div>
+            <details class="more">
+                <summary>Mehr (Deadline)</summary>
+                <div class="field-row" style="margin-top:6px">
+                    <form-field label="Deadline"><input name="deadline" type="date" /></form-field>
+                    <form-field label="Uhrzeit"><input name="deadlineTime" type="time" /></form-field>
+                </div>
+            </details>
             <div class="form-buttons" style="margin-top:6px">
                 <button type="submit" class="btn btn-primary"><icon name="plus" size="16" /> Hinzufügen</button>
             </div>
         </form>
+    }
 
+    @* ========================= LISTE ========================= *@
+    @if (Model.ViewMode == "list")
+    {
         <div class="pub-card">
             @if (Model.Tasks.Count == 0)
             {
@@ -66,47 +168,196 @@
             }
             @foreach (var t in Model.Tasks)
             {
-                @if (Model.Editing?.Id == t.Id)
-                {
-                    <form method="post" asp-page-handler="Edit" asp-route-token="@token" style="padding:8px 2px">
+                var overdue = t.DueDate.HasValue && t.DueDate.Value.ToLocalTime().Date < DateTime.Now.Date;
+                <div class="pub-task @(t.IsCompleted ? "done" : "")">
+                    <form method="post" asp-page-handler="Complete" asp-route-token="@token" style="margin:0">
                         <input type="hidden" name="taskId" value="@t.Id" />
-                        <form-field label="Titel"><input type="text" name="title" value="@t.Title" required maxlength="300" /></form-field>
-                        <form-field label="Beschreibung"><textarea name="description">@t.Description</textarea></form-field>
-                        <form-field label="Fällig"><input name="due" type="date" value="@(t.DueDate?.ToLocalTime().ToString("yyyy-MM-dd"))" /></form-field>
-                        <div class="form-buttons" style="margin-top:6px">
-                            <button type="submit" class="btn btn-primary small"><icon name="save" size="14" /> Speichern</button>
-                            <a class="btn small" href="/s/@token">Abbrechen</a>
-                        </div>
+                        <input type="hidden" name="completed" value="true" />
+                        <input type="checkbox" class="pub-chk" onchange="this.form.submit()" title="Erledigt" />
                     </form>
-                }
-                else
-                {
-                    <div class="pub-task">
-                        <form method="post" asp-page-handler="Complete" asp-route-token="@token" style="margin:0">
-                            <input type="hidden" name="taskId" value="@t.Id" />
-                            <input type="hidden" name="completed" value="true" />
-                            <input type="checkbox" class="pub-chk" onchange="this.form.submit()" title="Erledigt" />
-                        </form>
-                        <div class="body">
-                            <div class="task-title">@t.Title</div>
-                            <div class="task-meta">
-                                @if (t.DueDate.HasValue)
-                                {
-                                    <span class="pill-label due"><icon name="calendar" size="12" /> @t.DueDate.Value.ToLocalTime().ToString("d. MMM")</span>
-                                }
-                                @if (!string.IsNullOrEmpty(t.AnonymousAuthor))
-                                {
-                                    <span class="pill-label"><icon name="user" size="12" /> @t.AnonymousAuthor</span>
-                                }
-                                <a class="pill-label" href="/s/@token?edit=@t.Id"><icon name="edit" size="12" /> Bearbeiten</a>
-                            </div>
+                    <div class="body">
+                        <div class="task-title">@t.Title</div>
+                        @if (!string.IsNullOrWhiteSpace(t.Description))
+                        {
+                            <div class="muted" style="font-size:13px">@t.Description</div>
+                        }
+                        <div class="task-meta">
+                            @if (t.DueDate.HasValue)
+                            {
+                                <span class="pill-label due @(overdue ? "overdue" : "")"><icon name="calendar" size="12" /> @Fmt(t.DueDate.Value, t.DueHasTime)</span>
+                            }
+                            @if (t.Priority != TaskPriority.P4)
+                            {
+                                <span class="pill-label prio pri-@((int)t.Priority)"><icon name="flag" size="12" /> P@((int)t.Priority)</span>
+                            }
+                            @if (t.DeadlineDate.HasValue)
+                            {
+                                <span class="pill-label"><icon name="flag" size="12" /> Deadline: @Fmt(t.DeadlineDate.Value, t.DeadlineHasTime)</span>
+                            }
+                            @if (t.SubTasks.Count > 0)
+                            {
+                                <span class="pill-label"><icon name="list" size="12" /> @t.SubTasks.Count(s => s.IsCompleted)/@t.SubTasks.Count</span>
+                            }
+                            @if (!string.IsNullOrEmpty(t.AnonymousAuthor))
+                            {
+                                <span class="pill-label"><icon name="user" size="12" /> @t.AnonymousAuthor</span>
+                            }
+                            <a class="pill-label" href="/s/@token?edit=@t.Id"><icon name="edit" size="12" /> Bearbeiten</a>
+                        </div>
+                        <div class="pub-sub">
+                            @foreach (var s in t.SubTasks.OrderBy(x => x.Position).ThenBy(x => x.Id))
+                            {
+                                <div class="sub-item @(s.IsCompleted ? "done" : "")">
+                                    <form method="post" asp-page-handler="Complete" asp-route-token="@token" style="margin:0">
+                                        <input type="hidden" name="taskId" value="@s.Id" />
+                                        <input type="hidden" name="completed" value="@((!s.IsCompleted).ToString().ToLower())" />
+                                        <input type="checkbox" class="sub-chk" onchange="this.form.submit()" checked="@s.IsCompleted" title="Erledigt" />
+                                    </form>
+                                    <span>@s.Title</span>
+                                </div>
+                            }
+                            <form method="post" asp-page-handler="Add" asp-route-token="@token" class="sub-add">
+                                <input type="hidden" name="parentTaskId" value="@t.Id" />
+                                <input type="text" name="title" placeholder="Schritt hinzufügen …" maxlength="500" />
+                                <button type="submit" class="btn small"><icon name="plus" size="13" /></button>
+                            </form>
                         </div>
                     </div>
-                }
+                </div>
             }
         </div>
-        <p class="pub-foot">Öffentlich geteiltes Projekt · Änderungen sind für alle mit diesem Link sichtbar.</p>
     }
+    @* ========================= KANBAN ========================= *@
+    else if (Model.ViewMode == "kanban")
+    {
+        var groups = Model.Columns
+            .Select(c => (Id: (long?)c.Id, Name: c.Name, Tasks: Model.Tasks.Where(t => t.KanbanColumnId == c.Id).ToList()))
+            .ToList();
+        groups.Add((null, "Ohne Spalte", noCol));
+        <div class="kanban">
+            @foreach (var g in groups)
+            {
+                <div class="kanban-col">
+                    <h4>@g.Name <span class="col-count">@g.Tasks.Count</span></h4>
+                    @foreach (var t in g.Tasks)
+                    {
+                        var overdue = t.DueDate.HasValue && t.DueDate.Value.ToLocalTime().Date < DateTime.Now.Date;
+                        <div class="kb-card">
+                            <div class="kb-top">
+                                <form method="post" asp-page-handler="Complete" asp-route-token="@token" style="margin:0">
+                                    <input type="hidden" name="taskId" value="@t.Id" />
+                                    <input type="hidden" name="completed" value="true" />
+                                    <input type="checkbox" class="pub-chk" onchange="this.form.submit()" title="Erledigt" />
+                                </form>
+                                <div class="grow">
+                                    <div class="task-title">@t.Title</div>
+                                    <div class="task-meta">
+                                        @if (t.DueDate.HasValue)
+                                        {
+                                            <span class="pill-label due @(overdue ? "overdue" : "")"><icon name="calendar" size="12" /> @Fmt(t.DueDate.Value, t.DueHasTime)</span>
+                                        }
+                                        @if (t.Priority != TaskPriority.P4)
+                                        {
+                                            <span class="pill-label prio pri-@((int)t.Priority)"><icon name="flag" size="12" /> P@((int)t.Priority)</span>
+                                        }
+                                        @if (t.DeadlineDate.HasValue)
+                                        {
+                                            <span class="pill-label"><icon name="flag" size="12" /> Deadline: @Fmt(t.DeadlineDate.Value, t.DeadlineHasTime)</span>
+                                        }
+                                        @if (t.SubTasks.Count > 0)
+                                        {
+                                            <span class="pill-label"><icon name="list" size="12" /> @t.SubTasks.Count(s => s.IsCompleted)/@t.SubTasks.Count</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(t.AnonymousAuthor))
+                                        {
+                                            <span class="pill-label"><icon name="user" size="12" /> @t.AnonymousAuthor</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="kb-row">
+                                <form method="post" asp-page-handler="Move" asp-route-token="@token" style="margin:0" class="grow">
+                                    <input type="hidden" name="taskId" value="@t.Id" />
+                                    <select name="columnId" onchange="this.form.submit()">
+                                        @foreach (var c in Model.Columns)
+                                        {
+                                            <option value="@c.Id" selected="@(t.KanbanColumnId == c.Id)">@c.Name</option>
+                                        }
+                                        <option value="" selected="@(t.KanbanColumnId == null)">Ohne Spalte</option>
+                                    </select>
+                                </form>
+                                <a class="btn small" href="/s/@token?edit=@t.Id"><icon name="edit" size="13" /></a>
+                            </div>
+                        </div>
+                    }
+                    <form method="post" asp-page-handler="Add" asp-route-token="@token" class="sub-add">
+                        <input type="hidden" name="columnId" value="@g.Id" />
+                        <input type="text" name="title" placeholder="Karte hinzufügen …" maxlength="500" />
+                        <button type="submit" class="btn small"><icon name="plus" size="13" /></button>
+                    </form>
+                </div>
+            }
+        </div>
+    }
+    @* ========================= KALENDER ========================= *@
+    else
+    {
+        var first = new DateTime(Model.CalYear, Model.CalMonth, 1);
+        var daysInMonth = DateTime.DaysInMonth(Model.CalYear, Model.CalMonth);
+        var lead = ((int)first.DayOfWeek + 6) % 7;
+        var totalCells = (int)Math.Ceiling((lead + daysInMonth) / 7.0) * 7;
+        var today = DateTime.Now.Date;
+        var culture = CultureInfo.CurrentCulture;
+        var byDay = Model.Tasks.Where(t => t.DueDate.HasValue)
+            .GroupBy(t => t.DueDate!.Value.ToLocalTime().Date).ToDictionary(g => g.Key, g => g.ToList());
+        var wd = Enumerable.Range(0, 7).Select(i => culture.DateTimeFormat.AbbreviatedDayNames[((int)DayOfWeek.Monday + i) % 7]).ToArray();
+        <div class="pub-card cal">
+            <div class="cal-head">
+                <a class="icon-btn" href="/s/@token?ym=@first.AddMonths(-1).ToString("yyyy-MM")" aria-label="Voriger Monat"><icon name="chevron-right" /></a>
+                <div class="cal-title">@culture.TextInfo.ToTitleCase(first.ToString("MMMM yyyy", culture))</div>
+                <a class="icon-btn" href="/s/@token?ym=@first.AddMonths(1).ToString("yyyy-MM")" aria-label="Nächster Monat"><icon name="chevron-right" /></a>
+                <div class="spacer"></div>
+                <a class="btn small" href="/s/@token?ym=@today.ToString("yyyy-MM")">Heute</a>
+            </div>
+            <div class="cal-grid">
+                @foreach (var w in wd)
+                {
+                    <div class="cal-wd">@w</div>
+                }
+                @for (var i = 0; i < totalCells; i++)
+                {
+                    var dayNum = i - lead + 1;
+                    if (dayNum < 1 || dayNum > daysInMonth)
+                    {
+                        <div class="cal-cell out"></div>
+                    }
+                    else
+                    {
+                        var date = new DateTime(Model.CalYear, Model.CalMonth, dayNum);
+                        byDay.TryGetValue(date, out var dayTasks);
+                        <div class="cal-cell @(date == today ? "today" : "")">
+                            <div class="cal-daynum">
+                                <span>@dayNum</span>
+                                <a class="cal-add" href="/s/@token?due=@date.ToString("yyyy-MM-dd")" title="Aufgabe hinzufügen"><icon name="plus" size="13" /></a>
+                            </div>
+                            <div class="cal-items">
+                                @if (dayTasks != null)
+                                {
+                                    foreach (var t in dayTasks.OrderBy(x => x.Priority))
+                                    {
+                                        <a class="cal-task" href="/s/@token?edit=@t.Id" title="@t.Title"><span class="cal-dot @PrioClass(t.Priority)"></span>@t.Title</a>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+    <p class="pub-foot">Öffentlich geteiltes Projekt · Änderungen sind für alle mit diesem Link sichtbar.</p>
+}
 </div>
 <script src="/js/datepicker.js"></script>
 </body>

@@ -18,8 +18,15 @@ public class BoardModel : PageModel
 
     public Project Project { get; set; } = default!;
     public List<TaskItem> Tasks { get; set; } = new();
+    public List<KanbanColumn> Columns { get; set; } = new();
     public string? AnonName { get; set; }
     public TaskItem? Editing { get; set; }
+
+    /// <summary>"list" | "kanban" | "calendar" – aus dem Ansichtstyp des Projekts.</summary>
+    public string ViewMode { get; set; } = "list";
+    public int CalYear { get; set; }
+    public int CalMonth { get; set; }
+    public string? DuePrefill { get; set; }
 
     private async Task<Project?> ResolveAsync(string token)
         => Guid.TryParse(token, out var g) ? await _anon.GetProjectAsync(g) : null;
@@ -44,15 +51,38 @@ public class BoardModel : PageModel
         });
     }
 
-    private static (DateTime? utc, bool hasTime) ParseDue(string? s)
+    /// <summary>Datum (yyyy-MM-dd) + optionale Uhrzeit (HH:mm) aus lokalen Eingaben in UTC.</summary>
+    private static (DateTime? utc, bool hasTime) ParseDateTime(string? date, string? time)
     {
-        if (string.IsNullOrWhiteSpace(s)) return (null, false);
-        if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var d))
-            return (d.ToUniversalTime(), d.TimeOfDay != TimeSpan.Zero);
-        return (null, false);
+        if (string.IsNullOrWhiteSpace(date)) return (null, false);
+        if (!DateTime.TryParse(date, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+            return (null, false);
+        d = d.Date;
+        var hasTime = false;
+        if (!string.IsNullOrWhiteSpace(time) && TimeSpan.TryParse(time, CultureInfo.InvariantCulture, out var ts)
+            && ts >= TimeSpan.Zero && ts < TimeSpan.FromDays(1))
+        {
+            d = d.Add(ts);
+            hasTime = true;
+        }
+        var local = DateTime.SpecifyKind(d, DateTimeKind.Local);
+        return (local.ToUniversalTime(), hasTime);
     }
 
-    public async Task<IActionResult> OnGetAsync(string token, long? edit)
+    private static TaskPriority ParsePriority(string? p) =>
+        int.TryParse(p, out var n) && n is >= 1 and <= 4 ? (TaskPriority)n : TaskPriority.P4;
+
+    private void SetViewMode()
+    {
+        ViewMode = Project.ViewType switch
+        {
+            ProjectViewType.Kanban => "kanban",
+            ProjectViewType.Calendar => "calendar",
+            _ => "list"
+        };
+    }
+
+    public async Task<IActionResult> OnGetAsync(string token, long? edit, string? ym, string? due)
     {
         var p = await ResolveAsync(token);
         if (p is null) return NotFound();
@@ -60,8 +90,20 @@ public class BoardModel : PageModel
         AnonName = Name();
         if (AnonName != null)
         {
+            SetViewMode();
+            Columns = await _anon.GetColumnsAsync(p.Id);
             Tasks = await _anon.GetTasksAsync(p.Id);
             if (edit is long eid) Editing = await _anon.GetTaskAsync(p.Id, eid);
+
+            var now = DateTime.Now;
+            CalYear = now.Year; CalMonth = now.Month;
+            if (!string.IsNullOrWhiteSpace(ym) &&
+                DateTime.TryParseExact(ym + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+            { CalYear = Math.Clamp(d.Year, 1900, 2999); CalMonth = d.Month; }   // AddMonths(±1) darf nicht überlaufen
+
+            if (!string.IsNullOrWhiteSpace(due) &&
+                DateTime.TryParseExact(due, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+                DuePrefill = due;
         }
         return Page();
     }
@@ -79,15 +121,24 @@ public class BoardModel : PageModel
         return Redirect("/s/" + token);
     }
 
-    public async Task<IActionResult> OnPostAddAsync(string token, string? title, string? due)
+    public async Task<IActionResult> OnPostAddAsync(string token, string? title, string? due, string? dueTime,
+        string? deadline, string? deadlineTime, string? priority, long? columnId, long? parentTaskId)
     {
         var p = await ResolveAsync(token);
         var name = Name();
         if (p is null) return NotFound();
         if (name != null && !string.IsNullOrWhiteSpace(title))
         {
-            var (utc, hasTime) = ParseDue(due);
-            await _anon.AddTaskAsync(p, title, utc, hasTime, name);
+            if (parentTaskId is long parent)
+            {
+                await _anon.AddSubTaskAsync(p, parent, title, name);
+            }
+            else
+            {
+                var (dueUtc, dueHasTime) = ParseDateTime(due, dueTime);
+                var (dlUtc, dlHasTime) = ParseDateTime(deadline, deadlineTime);
+                await _anon.AddTaskAsync(p, title, dueUtc, dueHasTime, dlUtc, dlHasTime, ParsePriority(priority), columnId, name);
+            }
         }
         return Redirect("/s/" + token);
     }
@@ -100,15 +151,26 @@ public class BoardModel : PageModel
         return Redirect("/s/" + token);
     }
 
-    public async Task<IActionResult> OnPostEditAsync(string token, long taskId, string? title, string? description, string? due)
+    public async Task<IActionResult> OnPostMoveAsync(string token, long taskId, long? columnId)
+    {
+        var p = await ResolveAsync(token);
+        if (p is null) return NotFound();
+        if (Name() != null) await _anon.MoveTaskAsync(p.Id, taskId, columnId);
+        return Redirect("/s/" + token);
+    }
+
+    public async Task<IActionResult> OnPostEditAsync(string token, long taskId, string? title, string? description,
+        string? due, string? dueTime, string? deadline, string? deadlineTime, string? priority, long? columnId)
     {
         var p = await ResolveAsync(token);
         var name = Name();
         if (p is null) return NotFound();
         if (name != null && !string.IsNullOrWhiteSpace(title))
         {
-            var (utc, hasTime) = ParseDue(due);
-            await _anon.EditTaskAsync(p.Id, taskId, title, description, utc, hasTime, name);
+            var (dueUtc, dueHasTime) = ParseDateTime(due, dueTime);
+            var (dlUtc, dlHasTime) = ParseDateTime(deadline, deadlineTime);
+            await _anon.EditTaskAsync(p.Id, taskId, title, description, dueUtc, dueHasTime, dlUtc, dlHasTime,
+                ParsePriority(priority), columnId, name);
         }
         return Redirect("/s/" + token);
     }
