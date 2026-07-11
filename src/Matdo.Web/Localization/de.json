@@ -45,6 +45,7 @@
   "tasks.row.duplicate": "Duplizieren",
   "tasks.edit.assignee": "Zuweisen an",
   "tasks.edit.assigneeNone": "— niemand —",
+  "tasks.edit.sectionNone": "— kein Abschnitt —",
   "projectPicker.search": "Projektnamen eingeben",
   "projectPicker.shared": "Geteilt",
   "admin.settings.tab.calendar": "Kalender-Sync",

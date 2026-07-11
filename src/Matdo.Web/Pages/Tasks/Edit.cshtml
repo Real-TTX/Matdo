@@ -41,6 +41,23 @@
         </form-field>
     </div>
 
+    @if (Model.SectionOptions.Count > 0)
+    {
+        <form-field label="@T["projects.view.section"]" for="Input_KanbanColumnId">
+            <select asp-for="Input.KanbanColumnId">
+                <option value="">@T["tasks.edit.sectionNone"]</option>
+                @foreach (var s in Model.SectionOptions)
+                {
+                    <option value="@s.Value">@s.Text</option>
+                }
+            </select>
+        </form-field>
+    }
+    else
+    {
+        <input type="hidden" asp-for="Input.KanbanColumnId" />
+    }
+
     @if (Model.TeamMembers.Count > 0)
     {
         <form-field label="@T["tasks.edit.assignee"]" for="Input_AssigneeId">

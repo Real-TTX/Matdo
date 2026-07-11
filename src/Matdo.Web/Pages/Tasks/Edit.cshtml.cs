@@ -27,6 +27,7 @@ public class TaskEditModel : PageModel
     public bool IsNew => Input.Id == 0;
     public TaskItem? Existing { get; set; }
     public List<SelectListItem> ProjectOptions { get; set; } = new();
+    public List<SelectListItem> SectionOptions { get; set; } = new();
     public List<Label> AllLabels { get; set; } = new();
     public List<TaskItem> SubTasks { get; set; } = new();
     public List<Reminder> Reminders { get; set; } = new();
@@ -43,6 +44,7 @@ public class TaskEditModel : PageModel
         public string Title { get; set; } = "";
         public string? Description { get; set; }
         public long? ProjectId { get; set; }
+        public long? KanbanColumnId { get; set; }   // Abschnitt (= Kanban-Spalte)
         public long? AssigneeId { get; set; }
         public int Priority { get; set; } = 4;
 
@@ -61,6 +63,17 @@ public class TaskEditModel : PageModel
         ProjectOptions.AddRange(projects.Select(p => new SelectListItem(p.Name, p.Id.ToString())));
         AllLabels = await _labels.GetAllAsync();
         TeamMembers = await _shares.GetCollaboratorsAsync();
+    }
+
+    /// <summary>Abschnitte (= Kanban-Spalten) des gewählten Projekts für das Dropdown laden.</summary>
+    private async Task LoadSectionsAsync(long? projectId)
+    {
+        SectionOptions = new List<SelectListItem>();
+        if (projectId is long pid)
+        {
+            var cols = await _projects.GetColumnsAsync(pid);
+            SectionOptions = cols.Select(c => new SelectListItem(c.Name, c.Id.ToString())).ToList();
+        }
     }
 
     private async Task LoadDetailsAsync(long id)
@@ -93,6 +106,7 @@ public class TaskEditModel : PageModel
                 Title = t.Title,
                 Description = t.Description,
                 ProjectId = t.ProjectId,
+                KanbanColumnId = t.KanbanColumnId,
                 AssigneeId = t.AssigneeId,
                 Priority = (int)t.Priority,
                 DueDate = DateHelper.ToDateInput(t.DueDate),
@@ -102,6 +116,7 @@ public class TaskEditModel : PageModel
                 LabelIds = t.TaskLabels?.Select(tl => tl.LabelId).ToList() ?? new()
             };
             await LoadDetailsAsync(t.Id);
+            await LoadSectionsAsync(t.ProjectId);
         }
         else
         {
@@ -112,6 +127,7 @@ public class TaskEditModel : PageModel
                          System.Globalization.DateTimeStyles.None, out var d))
                 Input.DueDate = d.ToString("yyyy-MM-dd");
             Input.ProjectId = projectId;
+            await LoadSectionsAsync(projectId);
         }
         return Page();
     }
@@ -122,6 +138,7 @@ public class TaskEditModel : PageModel
         if (!ModelState.IsValid)
         {
             if (Input.Id > 0) await LoadDetailsAsync(Input.Id);
+            await LoadSectionsAsync(Input.ProjectId);
             return Page();
         }
 
@@ -131,6 +148,7 @@ public class TaskEditModel : PageModel
             Title = Input.Title.Trim(),
             Description = string.IsNullOrWhiteSpace(Input.Description) ? null : Input.Description.Trim(),
             ProjectId = Input.ProjectId,
+            KanbanColumnId = Input.KanbanColumnId,
             AssigneeId = Input.AssigneeId,
             Priority = (TaskPriority)Math.Clamp(Input.Priority, 1, 4),
             DueDate = DateHelper.ToUtc(Input.DueDate, Input.DueTime),
