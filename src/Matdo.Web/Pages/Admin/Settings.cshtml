@@ -70,7 +70,8 @@
                 <form-field label="@T["admin.settings.cal.clientId"]"><input asp-for="Config.Google.ClientId" autocomplete="off" /></form-field>
                 <form-field label="@T["admin.settings.cal.clientSecret"]"><input asp-for="Config.Google.ClientSecret" type="password" autocomplete="new-password" /></form-field>
             </div>
-            <div class="hint muted mb">@T["admin.settings.cal.redirectHint"] <code>@baseUrl/calendar/callback/google</code></div>
+            <div class="hint muted">@T["admin.settings.cal.redirectHint"] <code>@baseUrl/calendar/callback/google</code></div>
+            <div class="hint mb"><a href="/Admin/CalendarGuide" target="_blank" rel="noopener">📖 @T["admin.settings.cal.guideLink"]</a></div>
 
             <h3 class="mt">Microsoft</h3>
             <form-field label="@T["admin.settings.cal.enabled"]">

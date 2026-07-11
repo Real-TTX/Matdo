@@ -190,45 +190,10 @@
             }
         </div>
 
-        <div class="form-card mt" style="max-width:none">
-            <h3>@T["calendar.connectAccount"]</h3>
-            <div class="list-actions">
-                @if (Model.GoogleConfigured)
-                {
-                    <a class="btn" href="/calendar/connect/google"><span class="dot" style="background:#1a73e8"></span> @T["calendar.connectGoogle"]</a>
-                }
-                else { <span class="badge">@T["calendar.connectGoogle"] – @T["calendar.notConfigured"]</span> }
-                @if (Model.MicrosoftConfigured)
-                {
-                    <a class="btn" href="/calendar/connect/microsoft"><span class="dot" style="background:#0078d4"></span> @T["calendar.connectMicrosoft"]</a>
-                }
-                else { <span class="badge">@T["calendar.connectMicrosoft"] – @T["calendar.notConfigured"]</span> }
-            </div>
-            <p class="hint muted">@T["calendar.oauthAdminHint"]</p>
-        </div>
-
-        <div class="form-card mt" style="max-width:none">
-            <h3>@T["calendar.subscribeMatdo"]</h3>
-            <p class="hint muted">@T["calendar.subscribeMatdoHint"]</p>
-            @if (Model.FeedUrl != null)
-            {
-                <form-field><input type="text" value="@Model.FeedUrl" readonly onclick="this.select()" /></form-field>
-            }
-            <div class="form-buttons">
-                <form method="post" asp-page-handler="Feed" style="display:inline">
-                    <button type="submit" class="btn small">@(Model.FeedUrl == null ? T["calendar.generateFeed"] : T["calendar.regenerate"])</button>
-                </form>
-                @if (Model.FeedUrl != null)
-                {
-                    <form method="post" asp-page-handler="FeedDisable" style="display:inline" data-confirm="@T["calendar.feedDisableConfirm"]">
-                        <button type="submit" class="btn small danger"><icon name="x" size="14" /> @T["settings.disable"]</button>
-                    </form>
-                }
-            </div>
-        </div>
-
+        @* Empfohlener, einrichtungsfreier Weg: ICS. OAuth (2-Wege) darunter als „Fortgeschritten". *@
         <div class="form-card mt">
-            <h3>@T["calendar.addIcs"]</h3>
+            <h3>@T["calendar.addIcs"] <span class="badge">@T["calendar.easyBadge"]</span></h3>
+            <p class="hint muted">@T["calendar.addIcsSteps"]</p>
             <form method="post" asp-page-handler="AddIcs">
                 <form-field label="@T["calendar.icsUrl"]" hint="@T["calendar.icsHint"]" required="true">
                     <input type="url" name="icsUrl" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" required />
@@ -250,6 +215,44 @@
                 </div>
                 <form-buttons><button type="submit" class="btn btn-primary"><icon name="plus" size="16" /> @T["calendar.subscribe"]</button></form-buttons>
             </form>
+        </div>
+
+        <div class="form-card mt" style="max-width:none">
+            <h3>@T["calendar.subscribeMatdo"] <span class="badge">@T["calendar.easyBadge"]</span></h3>
+            <p class="hint muted">@T["calendar.subscribeMatdoHint"]</p>
+            @if (Model.FeedUrl != null)
+            {
+                <form-field><input type="text" value="@Model.FeedUrl" readonly onclick="this.select()" /></form-field>
+                <p class="hint muted">@T["calendar.subscribeMatdoSteps"]</p>
+            }
+            <div class="form-buttons">
+                <form method="post" asp-page-handler="Feed" style="display:inline">
+                    <button type="submit" class="btn small">@(Model.FeedUrl == null ? T["calendar.generateFeed"] : T["calendar.regenerate"])</button>
+                </form>
+                @if (Model.FeedUrl != null)
+                {
+                    <form method="post" asp-page-handler="FeedDisable" style="display:inline" data-confirm="@T["calendar.feedDisableConfirm"]">
+                        <button type="submit" class="btn small danger"><icon name="x" size="14" /> @T["settings.disable"]</button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="form-card mt" style="max-width:none">
+            <h3>@T["calendar.connectAccount"] <span class="badge">@T["calendar.advancedBadge"]</span></h3>
+            <div class="list-actions">
+                @if (Model.GoogleConfigured)
+                {
+                    <a class="btn" href="/calendar/connect/google"><span class="dot" style="background:#1a73e8"></span> @T["calendar.connectGoogle"]</a>
+                }
+                else { <span class="badge">@T["calendar.connectGoogle"] – @T["calendar.notConfigured"]</span> }
+                @if (Model.MicrosoftConfigured)
+                {
+                    <a class="btn" href="/calendar/connect/microsoft"><span class="dot" style="background:#0078d4"></span> @T["calendar.connectMicrosoft"]</a>
+                }
+                else { <span class="badge">@T["calendar.connectMicrosoft"] – @T["calendar.notConfigured"]</span> }
+            </div>
+            <p class="hint muted">@T["calendar.oauthAdminHint"]</p>
         </div>
     </div>
 

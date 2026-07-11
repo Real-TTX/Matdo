@@ -1,0 +1,85 @@
+@page
+@inject Matdo.Web.Services.JsonConfigService Config
+@{
+    ViewData["Title"] = "Google-Kalender einrichten";
+    var en = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
+    var baseUrl = (Config.Current.PublicBaseUrl ?? "https://DEINE-DOMAIN").TrimEnd('/');
+    var redirect = baseUrl + "/calendar/callback/google";
+}
+
+<div class="page-head"><h1><icon name="calendar" size="20" /> @(en ? "Connect Google Calendar (OAuth)" : "Google-Kalender per OAuth verbinden")</h1></div>
+
+<div class="form-card" style="max-width:760px">
+    @if (en)
+    {
+        <p class="muted">This sets up the <strong>one-time app registration</strong> so every user can then connect with a single click. Free, and a <strong>private Google account is enough</strong> — no credit card, no company, no Workspace.</p>
+        <p class="hint muted">Only need <strong>read-only</strong> sync? You can skip all of this and use the ICS options in <em>Settings → Calendar</em> instead.</p>
+
+        <h3>1 · Create a project</h3>
+        <p>Open <a href="https://console.cloud.google.com" target="_blank" rel="noopener">console.cloud.google.com</a>, sign in, and create a new project (e.g. <code>Matdo</code>).</p>
+
+        <h3>2 · Enable the Calendar API</h3>
+        <p>Menu → <em>APIs &amp; Services → Library</em> → search <strong>Google Calendar API</strong> → <strong>Enable</strong>.</p>
+
+        <h3>3 · OAuth consent screen</h3>
+        <p>Menu → <em>APIs &amp; Services → OAuth consent screen</em> → user type <strong>External</strong>. Fill in app name + your e-mail, add the scope <code>.../auth/calendar.events</code>.</p>
+        <p class="hint muted"><strong>Important:</strong> in <em>Testing</em> mode refresh tokens expire after 7 days and only listed test users work. Click <strong>Publish app</strong> (→ Production) so it lasts — it stays free; users just click through a one-time “unverified app” warning.</p>
+
+        <h3>4 · Create the OAuth client ID</h3>
+        <p>Menu → <em>Credentials → Create credentials → OAuth client ID</em> → type <strong>Web application</strong>. Under <strong>Authorized redirect URIs</strong> add exactly:</p>
+        <form-field><input type="text" value="@redirect" readonly onclick="this.select()" /></form-field>
+        <p class="hint muted">Must match exactly — <code>https</code>, correct domain, no trailing slash. Then copy the <strong>Client ID</strong> and <strong>Client secret</strong>.</p>
+
+        <h3>5 · Enter in Matdo (admin, once)</h3>
+        <p><em>Admin → Settings → Calendar → Google</em>: tick <strong>Enable</strong>, paste Client ID + secret, <strong>Save</strong>.</p>
+
+        <h3>6 · Each user connects</h3>
+        <p><em>Settings → Calendar → “Connect with Google”</em> → sign in → done (2-way sync).</p>
+
+        <h3>Troubleshooting</h3>
+        <ul>
+            <li><code>redirect_uri_mismatch</code> → the URI above doesn’t match exactly (https / domain / no trailing slash).</li>
+            <li>“Access blocked” → add your account as a <strong>test user</strong>, or publish to Production.</li>
+            <li>Drops after ~7 days → still in <em>Testing</em> mode; <strong>publish to Production</strong>.</li>
+            <li>“App isn’t verified” → normal for self-hosted → <em>Advanced → Continue</em>.</li>
+        </ul>
+    }
+    else
+    {
+        <p class="muted">Hier wird die <strong>einmalige App-Registrierung</strong> eingerichtet – danach verbindet sich jeder Nutzer per Klick. Kostenlos, und ein <strong>privates Google-Konto genügt</strong> – keine Kreditkarte, keine Firma, kein Workspace.</p>
+        <p class="hint muted">Reicht dir <strong>nur lesender</strong> Sync? Dann kannst du das alles überspringen und stattdessen die ICS-Optionen unter <em>Einstellungen → Kalender</em> nutzen.</p>
+
+        <h3>1 · Projekt anlegen</h3>
+        <p>Öffne <a href="https://console.cloud.google.com" target="_blank" rel="noopener">console.cloud.google.com</a>, melde dich an und lege ein neues Projekt an (z. B. <code>Matdo</code>). „Google Cloud" ist nur Googles Verwaltungsoberfläche – hier kostet nichts.</p>
+
+        <h3>2 · Google Calendar API aktivieren</h3>
+        <p>Menü → <em>APIs &amp; Dienste → Bibliothek</em> → <strong>Google Calendar API</strong> suchen → <strong>Aktivieren</strong>.</p>
+
+        <h3>3 · OAuth-Zustimmungsbildschirm</h3>
+        <p>Menü → <em>APIs &amp; Dienste → OAuth-Zustimmungsbildschirm</em> → Nutzertyp <strong>Extern</strong>. App-Name + deine E-Mail ausfüllen, Scope <code>.../auth/calendar.events</code> hinzufügen.</p>
+        <p class="hint muted"><strong>Wichtig:</strong> Im <em>Test</em>-Modus läuft der Refresh-Token nach 7 Tagen ab und nur eingetragene Testnutzer funktionieren. Mit <strong>„App veröffentlichen"</strong> (→ Produktion) läuft es dauerhaft – bleibt kostenlos; Nutzer bestätigen einmalig eine „nicht überprüft"-Warnseite.</p>
+
+        <h3>4 · OAuth-Client-ID erstellen</h3>
+        <p>Menü → <em>Anmeldedaten → Anmeldedaten erstellen → OAuth-Client-ID</em> → Typ <strong>Webanwendung</strong>. Unter <strong>Autorisierte Weiterleitungs-URIs</strong> exakt eintragen:</p>
+        <form-field><input type="text" value="@redirect" readonly onclick="this.select()" /></form-field>
+        <p class="hint muted">Muss exakt passen – <code>https</code>, richtige Domain, kein Schrägstrich am Ende. Danach <strong>Client-ID</strong> und <strong>Client-Secret</strong> kopieren.</p>
+
+        <h3>5 · In Matdo eintragen (Admin, einmalig)</h3>
+        <p><em>Admin → Einstellungen → Kalender → Google</em>: <strong>Aktivieren</strong> ankreuzen, Client-ID + Secret einfügen, <strong>Speichern</strong>.</p>
+
+        <h3>6 · Jeder Nutzer verbindet sich</h3>
+        <p><em>Einstellungen → Kalender → „Mit Google verbinden"</em> → anmelden → fertig (2-Wege-Sync).</p>
+
+        <h3>Fehlerbehebung</h3>
+        <ul>
+            <li><code>redirect_uri_mismatch</code> → die obige URI stimmt nicht exakt (https / Domain / kein End-Slash).</li>
+            <li>„Zugriff blockiert" → Konto als <strong>Testnutzer</strong> eintragen oder auf Produktion veröffentlichen.</li>
+            <li>Bricht nach ~7 Tagen ab → noch im <em>Test</em>-Modus; <strong>auf Produktion veröffentlichen</strong>.</li>
+            <li>„App nicht überprüft" → bei self-hosted normal → <em>Erweitert → Fortfahren</em>.</li>
+        </ul>
+    }
+
+    <form-buttons>
+        <a class="btn" href="/Admin/Settings?tab=cal"><icon name="back" size="16" /> @(en ? "Back to settings" : "Zurück zu den Einstellungen")</a>
+    </form-buttons>
+</div>
