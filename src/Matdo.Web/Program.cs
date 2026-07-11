@@ -1,7 +1,9 @@
+using System.Threading.RateLimiting;
 using Matdo.Web.Data;
 using Matdo.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +40,7 @@ builder.Services.AddScoped<LabelService>();
 builder.Services.AddScoped<ShareService>();
 builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<TodoistImportService>();
+builder.Services.AddScoped<AnonymousShareService>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<SmartInputParser>();
 builder.Services.AddScoped<EmailSender>();
@@ -83,6 +86,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToPage("/Account/Login");
     options.Conventions.AllowAnonymousToPage("/Account/Register");
     options.Conventions.AllowAnonymousToPage("/Account/Setup");
+    options.Conventions.AllowAnonymousToPage("/Public/Board");
     options.Conventions.AllowAnonymousToPage("/Account/Logout");
     options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
     options.Conventions.AllowAnonymousToPage("/Error");
@@ -109,6 +113,22 @@ builder.Services.Configure<Microsoft.AspNetCore.Builder.RequestLocalizationOptio
 
 // Anti-Forgery-Token auch per Header akzeptieren (für fetch/AJAX).
 builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
+
+// Rate-Limit für den öffentlichen anonymen Freigabe-Link (/s/{token}), partitioniert nach
+// Client-IP. Bremst Massen-POSTs (Task-Flut) durch Link-Inhaber, ohne echte Nutzer zu behindern.
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.AddPolicy("anon-board", ctx =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
 
 // Hinter einem TLS-terminierenden Reverse-Proxy X-Forwarded-Proto/-For auswerten,
 // damit Request.IsHttps korrekt ist und das Session-Cookie das Secure-Flag erhält.
@@ -139,6 +159,7 @@ app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypes })
 
 app.UseRequestLocalization();
 app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

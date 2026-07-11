@@ -77,6 +77,10 @@
             {
                 <span class="pill-label" title="@T["tasks.row.assignedTo"]"><icon name="user" size="12" /> @t.Assignee.DisplayName</span>
             }
+            @if (!string.IsNullOrEmpty(t.AnonymousAuthor))
+            {
+                <span class="pill-label" title="@T["projects.edit.anonTitle"]"><icon name="user" size="12" /> @T["tasks.row.anon"]: @t.AnonymousAuthor</span>
+            }
             @if (t.TaskLabels != null)
             {
                 @* Persönliche Labels: nur die eigenen Etiketten des Betrachters anzeigen. *@

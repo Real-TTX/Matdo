@@ -245,6 +245,26 @@
             }
         </div>
     </div>
+
+    <div class="form-card mt">
+        <h3><icon name="share" size="16" /> @T["projects.edit.anonTitle"]</h3>
+        <p class="hint muted">@T["projects.edit.anonHint"]</p>
+        @if (Model.AnonUrl != null)
+        {
+            <form-field><input type="text" value="@Model.AnonUrl" readonly onclick="this.select()" /></form-field>
+        }
+        <div class="form-buttons">
+            <form method="post" asp-page-handler="Anon" asp-route-id="@Model.Input.Id" style="display:inline">
+                <button type="submit" class="btn small"><icon name="share" size="14" /> @(Model.AnonUrl == null ? T["projects.edit.anonGenerate"] : T["projects.edit.feedRegenerate"])</button>
+            </form>
+            @if (Model.AnonUrl != null)
+            {
+                <form method="post" asp-page-handler="AnonDisable" asp-route-id="@Model.Input.Id" style="display:inline" data-confirm="@T["projects.edit.anonDisableConfirm"]">
+                    <button type="submit" class="btn small danger"><icon name="x" size="14" /> @T["settings.disable"]</button>
+                </form>
+            }
+        </div>
+    </div>
 }
 
 @section Scripts {

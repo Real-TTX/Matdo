@@ -156,6 +156,25 @@ public class ProjectService
         await _db.SaveChangesAsync();
     }
 
+    /// <summary>Erzeugt/erneuert den anonymen Freigabe-Token (Eigentümer oder Team-Owner/Admin).</summary>
+    public async Task<Guid?> SetAnonymousTokenAsync(long id)
+    {
+        var p = await ManageableProjects().FirstOrDefaultAsync(x => x.Id == id);
+        if (p is null) return null;
+        p.AnonymousToken = Guid.NewGuid();
+        await _db.SaveChangesAsync();
+        return p.AnonymousToken;
+    }
+
+    /// <summary>Deaktiviert die anonyme Freigabe (der bestehende Link wird ungültig).</summary>
+    public async Task ClearAnonymousTokenAsync(long id)
+    {
+        var p = await ManageableProjects().FirstOrDefaultAsync(x => x.Id == id);
+        if (p is null || p.AnonymousToken is null) return;
+        p.AnonymousToken = null;
+        await _db.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(long id)
     {
         var uid = Uid;

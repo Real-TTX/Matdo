@@ -22,9 +22,12 @@ public class ProjectEditModel : PageModel
     }
 
     public string? IcalFeedUrl { get; set; }
+    public string? AnonUrl { get; set; }
 
     private string BuildFeedUrl(Guid token) =>
         _config.Current.PublicBaseUrl.TrimEnd('/') + "/feed/project/" + token.ToString("N") + ".ics";
+    private string BuildAnonUrl(Guid token) =>
+        _config.Current.PublicBaseUrl.TrimEnd('/') + "/s/" + token.ToString("N");
 
     [BindProperty] public InputModel Input { get; set; } = new();
     public bool IsNew => Input.Id == 0;
@@ -80,6 +83,7 @@ public class ProjectEditModel : PageModel
             if (p is null) return NotFound();
             Input = new InputModel { Id = p.Id, Name = p.Name, Color = p.Color, ViewType = (int)p.ViewType, IsFavorite = p.IsFavorite, ParentProjectId = p.ParentProjectId, TeamId = p.TeamId };
             if (p.IcalToken is Guid tok) IcalFeedUrl = BuildFeedUrl(tok);
+            if (p.AnonymousToken is Guid atok) AnonUrl = BuildAnonUrl(atok);
             await LoadAsync(p.Id);
         }
         else
@@ -185,6 +189,18 @@ public class ProjectEditModel : PageModel
     public async Task<IActionResult> OnPostFeedDisableAsync(long id)
     {
         await _projects.ClearIcalTokenAsync(id);
+        return RedirectToPage(new { id, saved = false });
+    }
+
+    public async Task<IActionResult> OnPostAnonAsync(long id)
+    {
+        await _projects.SetAnonymousTokenAsync(id);
+        return RedirectToPage(new { id, saved = false });
+    }
+
+    public async Task<IActionResult> OnPostAnonDisableAsync(long id)
+    {
+        await _projects.ClearAnonymousTokenAsync(id);
         return RedirectToPage(new { id, saved = false });
     }
 

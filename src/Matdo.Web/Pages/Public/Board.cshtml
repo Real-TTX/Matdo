@@ -1,0 +1,113 @@
+@page "/s/{token}"
+@model Matdo.Web.Pages.Public.BoardModel
+@{
+    Layout = null;
+    var token = (string)RouteData.Values["token"]!;
+}
+<!DOCTYPE html>
+<html lang="de" data-mode="system" data-theme="purple">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>@Model.Project.Name · Matdo</title>
+    <link rel="stylesheet" href="/css/site.css" />
+    <style>
+        .pub { max-width: 640px; margin: 0 auto; padding: 20px 16px 60px; }
+        .pub-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+        .pub-head h1 { font-size: 22px; margin: 0; }
+        .pub-you { font-size: 13px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 6px; }
+        .pub-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-top: 14px; }
+        .pub-task { display: flex; align-items: flex-start; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--border); }
+        .pub-task:last-child { border-bottom: none; }
+        .pub-task .body { flex: 1; min-width: 0; }
+        .pub-chk { width: 20px; height: 20px; margin-top: 2px; cursor: pointer; accent-color: var(--accent); }
+        .pub-foot { color: var(--text-muted); font-size: 12px; margin-top: 14px; }
+    </style>
+</head>
+<body>
+<div class="pub">
+    @if (Model.AnonName == null)
+    {
+        <div class="pub-head"><h1><span class="phash" style="color:@Model.Project.Color">#</span>@Model.Project.Name</h1></div>
+        <p class="muted">Gib deinen Namen ein, um an diesem Projekt mitzuarbeiten. Er wird für dieses Gerät gemerkt.</p>
+        <form method="post" asp-page-handler="Name" asp-route-token="@token" class="pub-card">
+            <form-field label="Dein Name" required="true">
+                <input type="text" name="name" placeholder="z.B. Max" required autofocus maxlength="60" />
+            </form-field>
+            <button type="submit" class="btn btn-primary">Weiter</button>
+        </form>
+    }
+    else
+    {
+        <div class="pub-head">
+            <h1><span class="phash" style="color:@Model.Project.Color">#</span>@Model.Project.Name</h1>
+            <span class="pub-you">
+                <icon name="user" size="14" /> Anonym: <b>@Model.AnonName</b>
+                <form method="post" asp-page-handler="Forget" asp-route-token="@token" style="display:inline; margin:0">
+                    <button type="submit" class="btn btn-ghost small">ändern</button>
+                </form>
+            </span>
+        </div>
+
+        <form method="post" asp-page-handler="Add" asp-route-token="@token" class="pub-card">
+            <div class="field-row">
+                <form-field label="Neue Aufgabe"><input type="text" name="title" placeholder="Was ist zu tun?" required maxlength="300" /></form-field>
+                <form-field label="Fällig (optional)"><input name="due" type="date" /></form-field>
+            </div>
+            <div class="form-buttons" style="margin-top:6px">
+                <button type="submit" class="btn btn-primary"><icon name="plus" size="16" /> Hinzufügen</button>
+            </div>
+        </form>
+
+        <div class="pub-card">
+            @if (Model.Tasks.Count == 0)
+            {
+                <div class="empty">Noch keine offenen Aufgaben.</div>
+            }
+            @foreach (var t in Model.Tasks)
+            {
+                @if (Model.Editing?.Id == t.Id)
+                {
+                    <form method="post" asp-page-handler="Edit" asp-route-token="@token" style="padding:8px 2px">
+                        <input type="hidden" name="taskId" value="@t.Id" />
+                        <form-field label="Titel"><input type="text" name="title" value="@t.Title" required maxlength="300" /></form-field>
+                        <form-field label="Beschreibung"><textarea name="description">@t.Description</textarea></form-field>
+                        <form-field label="Fällig"><input name="due" type="date" value="@(t.DueDate?.ToLocalTime().ToString("yyyy-MM-dd"))" /></form-field>
+                        <div class="form-buttons" style="margin-top:6px">
+                            <button type="submit" class="btn btn-primary small"><icon name="save" size="14" /> Speichern</button>
+                            <a class="btn small" href="/s/@token">Abbrechen</a>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <div class="pub-task">
+                        <form method="post" asp-page-handler="Complete" asp-route-token="@token" style="margin:0">
+                            <input type="hidden" name="taskId" value="@t.Id" />
+                            <input type="hidden" name="completed" value="true" />
+                            <input type="checkbox" class="pub-chk" onchange="this.form.submit()" title="Erledigt" />
+                        </form>
+                        <div class="body">
+                            <div class="task-title">@t.Title</div>
+                            <div class="task-meta">
+                                @if (t.DueDate.HasValue)
+                                {
+                                    <span class="pill-label due"><icon name="calendar" size="12" /> @t.DueDate.Value.ToLocalTime().ToString("d. MMM")</span>
+                                }
+                                @if (!string.IsNullOrEmpty(t.AnonymousAuthor))
+                                {
+                                    <span class="pill-label"><icon name="user" size="12" /> @t.AnonymousAuthor</span>
+                                }
+                                <a class="pill-label" href="/s/@token?edit=@t.Id"><icon name="edit" size="12" /> Bearbeiten</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <p class="pub-foot">Öffentlich geteiltes Projekt · Änderungen sind für alle mit diesem Link sichtbar.</p>
+    }
+</div>
+<script src="/js/datepicker.js"></script>
+</body>
+</html>
