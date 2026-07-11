@@ -293,7 +293,12 @@ textarea { resize: vertical; min-height: 60px; }
 .kanban-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; cursor: grab; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
 .kanban-card.dragging { opacity: .5; }
 .kanban-cards.drop-hover { outline: 2px dashed var(--accent); outline-offset: 2px; border-radius: 8px; }
-.add-col { flex: 0 0 240px; }
+.kanban-col-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.kanban-col-head h4 { flex: 1; margin: 0; }
+.kb-add { margin-top: 8px; }
+.kb-add input[type=text] { flex: 1; min-width: 0; }
+.add-col { flex: 0 0 240px; display: flex; gap: 6px; align-items: center; background: none; border: 1px dashed var(--border-strong); border-radius: var(--radius); padding: 10px; height: fit-content; }
+.add-col input[type=text] { flex: 1; min-width: 0; }
 
 /* ---------- Kalender-Ansicht ---------- */
 .cal { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }

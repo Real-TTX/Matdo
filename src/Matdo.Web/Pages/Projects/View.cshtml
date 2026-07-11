@@ -126,35 +126,63 @@ else
         {
             var colTasks = Model.Tasks.Where(t => t.KanbanColumnId == col.Id).OrderBy(t => t.Position).ToList();
             <div class="kanban-col">
-                <h4>@col.Name <span class="col-count">@colTasks.Count</span></h4>
+                <div class="kanban-col-head">
+                    <h4>@col.Name <span class="col-count">@colTasks.Count</span></h4>
+                    <div class="tb-menu" data-menu>
+                        <button type="button" class="icon-btn sm" data-menu-toggle aria-label="@T["common.edit"]"><icon name="dots" size="16" /></button>
+                        <div class="menu-pop">
+                            <form method="post" asp-page-handler="RenameSection" asp-route-id="@pid" class="menu-inline">
+                                <input type="hidden" name="columnId" value="@col.Id" />
+                                <input type="text" name="sectionName" value="@col.Name" aria-label="@T["common.name"]" />
+                                <button type="submit" class="btn small btn-primary"><icon name="save" size="14" /></button>
+                            </form>
+                            <div class="menu-sep"></div>
+                            <form method="post" asp-page-handler="DeleteSection" asp-route-id="@pid" data-confirm="@T["projects.edit.deleteColumnConfirm"]">
+                                <input type="hidden" name="columnId" value="@col.Id" />
+                                <button type="submit" class="menu-item danger"><icon name="trash" size="15" /> @T["common.delete"]</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
                 <div class="kanban-cards" data-column-id="@col.Id">
                     @foreach (var t in colTasks)
                     {
                         <partial name="_KanbanCard" model="t" />
                     }
                 </div>
+                <form method="post" asp-page="/Tasks/Create" class="sec-add kb-add">
+                    <input type="hidden" name="Input.ProjectId" value="@pid" />
+                    <input type="hidden" name="Input.KanbanColumnId" value="@col.Id" />
+                    <input type="hidden" name="Input.ReturnUrl" value="/Projects/View?id=@pid&view=kanban" />
+                    <input type="text" name="Input.Title" placeholder="@T["projects.view.addTask"]" />
+                    <button type="submit" class="btn small"><icon name="plus" size="14" /></button>
+                </form>
             </div>
         }
 
         @if (noColumn.Count > 0)
         {
             <div class="kanban-col">
-                <h4>@T["projects.view.noColumn"] <span class="col-count">@noColumn.Count</span></h4>
+                <div class="kanban-col-head"><h4>@T["projects.view.noColumn"] <span class="col-count">@noColumn.Count</span></h4></div>
                 <div class="kanban-cards" data-column-id="">
                     @foreach (var t in noColumn)
                     {
                         <partial name="_KanbanCard" model="t" />
                     }
                 </div>
+                <form method="post" asp-page="/Tasks/Create" class="sec-add kb-add">
+                    <input type="hidden" name="Input.ProjectId" value="@pid" />
+                    <input type="hidden" name="Input.ReturnUrl" value="/Projects/View?id=@pid&view=kanban" />
+                    <input type="text" name="Input.Title" placeholder="@T["projects.view.addTask"]" />
+                    <button type="submit" class="btn small"><icon name="plus" size="14" /></button>
+                </form>
             </div>
         }
 
-        @if (Model.Columns.Count == 0)
-        {
-            <div class="add-col">
-                <div class="empty">@T["projects.view.noColumnsYet"] <a href="/Projects/Edit?id=@pid">@T["projects.view.defineColumns"]</a></div>
-            </div>
-        }
+        @* Neue Spalte / Abschnitt hinzufügen – wie in der Listenansicht. *@
+        <form method="post" asp-page-handler="AddSection" asp-route-id="@pid" class="add-col">
+            <input type="text" name="sectionName" placeholder="@T["projects.view.addSection"]" />
+            <button type="submit" class="btn small"><icon name="plus" size="14" /> @T["projects.view.addSection"]</button>
+        </form>
     </div>
-    <a class="btn small" href="/Tasks/Edit?projectId=@pid"><icon name="plus" size="14" /> @T["projects.view.addTask"]</a>
 }
