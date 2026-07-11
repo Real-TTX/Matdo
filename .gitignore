@@ -13,8 +13,14 @@ publish/
 .idea/
 .vscode/
 
-# Laufzeit-Daten (Volumes / lokale Configs)
-data/
+# Laufzeit-Daten (Volumes / lokale Configs).
+# ACHTUNG: NICHT den Quell-Ordner src/Matdo.Web/Data/ ignorieren! Unter Windows/macOS
+# (case-insensitiv) würde ein blankes „data/" auch „Data/" treffen und die komplette
+# Datenschicht aus Git ausschließen. Daher nur die zur Laufzeit erzeugten Unterordner
+# (Data-Protection-Schlüssel & lokale Config) gezielt ignorieren.
+/data/
+**/data/keys/
+**/data/config/
 *.env
 .env
 
