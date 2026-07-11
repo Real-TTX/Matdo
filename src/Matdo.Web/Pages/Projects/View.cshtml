@@ -26,7 +26,6 @@
             <a class="menu-item" href="/Projects/Edit?id=@pid"><icon name="settings" size="15" /> @T["projects.view.settings"]</a>
             <a class="menu-item" href="/projects/@pid/export.csv"><icon name="upload" size="15" /> @T["projects.menu.exportCsv"]</a>
             <a class="menu-item" href="/Account/Settings?tab=import"><icon name="inbox" size="15" /> @T["projects.menu.importCsv"]</a>
-            <a class="menu-item" href="/Projects/Edit?id=@pid#feed"><icon name="calendar" size="15" /> @T["projects.edit.feedTitle"]</a>
             <div class="menu-sep"></div>
             <form method="post" asp-page="/Projects/Edit" asp-page-handler="Delete" asp-route-id="@pid" data-confirm="@T["projects.edit.deleteConfirm"]">
                 <button type="submit" class="menu-item danger"><icon name="trash" size="15" /> @T["common.delete"]</button>
