@@ -242,6 +242,46 @@ public class TaskService
         await _db.SaveChangesAsync();
     }
 
+    /// <summary>Dupliziert eine Aufgabe (Kernfelder + eigene Etiketten + Unteraufgaben) als neue eigene Aufgabe.</summary>
+    public async Task<long?> DuplicateAsync(long id)
+    {
+        var src = await EditableTasks()
+            .Include(t => t.TaskLabels)
+            .Include(t => t.SubTasks)
+            .FirstOrDefaultAsync(t => t.Id == id);
+        if (src is null) return null;
+
+        var labelIds = src.TaskLabels.Select(l => l.LabelId).ToList();
+        var copy = await CreateAsync(new TaskItem
+        {
+            Title = src.Title,
+            Description = src.Description,
+            ProjectId = src.ProjectId,
+            KanbanColumnId = src.KanbanColumnId,
+            DueDate = src.DueDate,
+            DueHasTime = src.DueHasTime,
+            DeadlineDate = src.DeadlineDate,
+            DeadlineHasTime = src.DeadlineHasTime,
+            Priority = src.Priority,
+            AssigneeId = src.AssigneeId
+        }, labelIds);
+
+        foreach (var s in src.SubTasks.OrderBy(x => x.Position).ThenBy(x => x.Id))
+        {
+            await CreateAsync(new TaskItem
+            {
+                Title = s.Title,
+                Description = s.Description,
+                ProjectId = copy.ProjectId,
+                ParentTaskId = copy.Id,
+                Priority = s.Priority,
+                DueDate = s.DueDate,
+                DueHasTime = s.DueHasTime
+            });
+        }
+        return copy.Id;
+    }
+
     public async Task MoveToColumnAsync(long taskId, long? columnId, int position)
     {
         var task = await EditableTasks().FirstOrDefaultAsync(t => t.Id == taskId);

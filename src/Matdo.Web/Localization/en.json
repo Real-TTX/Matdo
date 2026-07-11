@@ -42,6 +42,7 @@
   "projects.edit.parentNone": "— none —",
   "tasks.row.assignedTo": "Assigned",
   "tasks.row.anon": "Anonymous",
+  "tasks.row.duplicate": "Duplicate",
   "tasks.edit.assignee": "Assign to",
   "tasks.edit.assigneeNone": "— nobody —",
   "projectPicker.search": "Enter project name",

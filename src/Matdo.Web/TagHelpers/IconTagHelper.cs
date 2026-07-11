@@ -49,6 +49,7 @@ public class IconTagHelper : TagHelper
         ["chevron-down"] = "<path d='m6 9 6 6 6-6'/>",
         ["chevron-right"] = "<path d='m9 18 6-6-6-6'/>",
         ["dots"] = "<circle cx='12' cy='12' r='1'/><circle cx='19' cy='12' r='1'/><circle cx='5' cy='12' r='1'/>",
+        ["copy"] = "<rect width='14' height='14' x='8' y='8' rx='2' ry='2'/><path d='M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2'/>",
     };
 
     public override void Process(TagHelperContext context, TagHelperOutput output)

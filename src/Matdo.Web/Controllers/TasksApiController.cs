@@ -56,4 +56,18 @@ public class TasksApiController : ControllerBase
         await _tasks.MoveToColumnAsync(id, dto.ColumnId, dto.Position);
         return Ok(new { ok = true });
     }
+
+    [HttpPost("{id:long}/duplicate")]
+    public async Task<IActionResult> Duplicate(long id)
+    {
+        var newId = await _tasks.DuplicateAsync(id);
+        return newId is null ? NotFound() : Ok(new { id = newId });
+    }
+
+    [HttpPost("{id:long}/delete")]
+    public async Task<IActionResult> Delete(long id)
+    {
+        await _tasks.DeleteAsync(id);
+        return Ok(new { ok = true });
+    }
 }

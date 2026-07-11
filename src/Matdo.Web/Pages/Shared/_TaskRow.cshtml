@@ -91,4 +91,16 @@
             }
         </div>
     </div>
+    <div class="task-actions">
+        <a class="icon-btn sm" href="/Tasks/Edit?id=@t.Id" title="@T["common.edit"]" aria-label="@T["common.edit"]"><icon name="edit" size="15" /></a>
+        <div class="tb-menu" data-menu>
+            <button type="button" class="icon-btn sm" data-menu-toggle aria-label="@T["common.edit"]"><icon name="dots" size="16" /></button>
+            <div class="menu-pop">
+                <a class="menu-item" href="/Tasks/Edit?id=@t.Id"><icon name="edit" size="15" /> @T["common.edit"]</a>
+                <button type="button" class="menu-item" data-task-duplicate="@t.Id"><icon name="copy" size="15" /> @T["tasks.row.duplicate"]</button>
+                <div class="menu-sep"></div>
+                <button type="button" class="menu-item danger" data-task-delete="@t.Id" data-confirm="@T["tasks.edit.deleteConfirm"]"><icon name="trash" size="15" /> @T["common.delete"]</button>
+            </div>
+        </div>
+    </div>
 </div>

@@ -122,6 +122,31 @@
         if (e.key === 'Escape') document.querySelectorAll('[data-menu].open').forEach(function (m) { m.classList.remove('open'); });
     });
 
+    // ---------- Aufgaben-Schnellaktionen (Duplizieren / Löschen) ----------
+    document.addEventListener('click', function (e) {
+        var del = e.target.closest('[data-task-delete]');
+        if (del) {
+            e.preventDefault();
+            if (!window.confirm(del.getAttribute('data-confirm') || 'Wirklich löschen?')) return;
+            fetch('/api/tasks/' + del.getAttribute('data-task-delete') + '/delete',
+                { method: 'POST', headers: { 'RequestVerificationToken': antiForgery() } })
+                .then(function (r) {
+                    if (!r.ok) return;
+                    var row = del.closest('.task-row');
+                    if (row) row.remove(); else location.reload();
+                });
+            return;
+        }
+        var dup = e.target.closest('[data-task-duplicate]');
+        if (dup) {
+            e.preventDefault();
+            fetch('/api/tasks/' + dup.getAttribute('data-task-duplicate') + '/duplicate',
+                { method: 'POST', headers: { 'RequestVerificationToken': antiForgery() } })
+                .then(function (r) { if (r.ok) location.reload(); });
+            return;
+        }
+    });
+
     // ---------- Bestätigung für Löschen ----------
     document.addEventListener('submit', function (e) {
         var form = e.target;

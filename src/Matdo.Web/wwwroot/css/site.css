@@ -267,6 +267,11 @@ textarea { resize: vertical; min-height: 60px; }
 .task-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 3px; font-size: 12px; color: var(--text-muted); align-items: center; }
 .task-meta .due.overdue { color: var(--danger); }
 .task-meta .due { display: inline-flex; align-items: center; gap: 3px; }
+/* Hover-Aktionen rechts an jeder Aufgabe (Todoist-artig) */
+.icon-btn.sm { width: 28px; height: 28px; }
+.task-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex: 0 0 auto; opacity: 0; transition: opacity .1s; }
+.task-row:hover .task-actions, .task-actions:focus-within, .task-actions:has(.tb-menu.open) { opacity: 1; }
+@media (hover: none) { .task-actions { opacity: 1; } }
 .overdue-head { color: var(--danger); font-weight: 700; }
 
 /* ---------- Kanban ---------- */
