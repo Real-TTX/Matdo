@@ -1,82 +1,97 @@
 @page
 @inject Matdo.Web.Services.JsonConfigService Config
 @{
-    ViewData["Title"] = "Google-Kalender einrichten";
+    ViewData["Title"] = "Kalender per OAuth einrichten";
     var en = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";
     var baseUrl = (Config.Current.PublicBaseUrl ?? "https://DEINE-DOMAIN").TrimEnd('/');
-    var redirect = baseUrl + "/calendar/callback/google";
+    var redirectG = baseUrl + "/calendar/callback/google";
+    var redirectM = baseUrl + "/calendar/callback/microsoft";
 }
 
-<div class="page-head"><h1><icon name="calendar" size="20" /> @(en ? "Connect Google Calendar (OAuth)" : "Google-Kalender per OAuth verbinden")</h1></div>
+<div class="page-head"><h1><icon name="calendar" size="20" /> @(en ? "Connect a calendar via OAuth" : "Kalender per OAuth verbinden")</h1></div>
 
 <div class="form-card" style="max-width:760px">
     @if (en)
     {
-        <p class="muted">This sets up the <strong>one-time app registration</strong> so every user can then connect with a single click. Free, and a <strong>private Google account is enough</strong> — no credit card, no company, no Workspace.</p>
+        <p class="muted">This sets up the <strong>one-time app registration</strong> so every user can then connect with a single click. Free, and a <strong>private account is enough</strong> — no credit card, no company.</p>
         <p class="hint muted">Only need <strong>read-only</strong> sync? You can skip all of this and use the ICS options in <em>Settings → Calendar</em> instead.</p>
+        <p><strong>Jump to:</strong> <a href="#google">Google</a> · <a href="#microsoft">Microsoft</a></p>
 
+        <h2 id="google">Google</h2>
         <h3>1 · Create a project</h3>
         <p>Open <a href="https://console.cloud.google.com" target="_blank" rel="noopener">console.cloud.google.com</a>, sign in, and create a new project (e.g. <code>Matdo</code>).</p>
-
         <h3>2 · Enable the Calendar API</h3>
         <p>Menu → <em>APIs &amp; Services → Library</em> → search <strong>Google Calendar API</strong> → <strong>Enable</strong>.</p>
-
         <h3>3 · OAuth consent screen</h3>
         <p>Menu → <em>APIs &amp; Services → OAuth consent screen</em> → user type <strong>External</strong>. Fill in app name + your e-mail, add the scope <code>.../auth/calendar.events</code>.</p>
-        <p class="hint muted"><strong>Important:</strong> in <em>Testing</em> mode refresh tokens expire after 7 days and only listed test users work. Click <strong>Publish app</strong> (→ Production) so it lasts — it stays free; users just click through a one-time “unverified app” warning.</p>
-
+        <p class="hint muted"><strong>Important:</strong> in <em>Testing</em> mode refresh tokens expire after 7 days and only listed test users work. Click <strong>Publish app</strong> (→ Production) so it lasts — stays free; users just click through a one-time “unverified app” warning.</p>
         <h3>4 · Create the OAuth client ID</h3>
         <p>Menu → <em>Credentials → Create credentials → OAuth client ID</em> → type <strong>Web application</strong>. Under <strong>Authorized redirect URIs</strong> add exactly:</p>
-        <form-field><input type="text" value="@redirect" readonly onclick="this.select()" /></form-field>
+        <form-field><input type="text" value="@redirectG" readonly onclick="this.select()" /></form-field>
         <p class="hint muted">Must match exactly — <code>https</code>, correct domain, no trailing slash. Then copy the <strong>Client ID</strong> and <strong>Client secret</strong>.</p>
-
         <h3>5 · Enter in Matdo (admin, once)</h3>
         <p><em>Admin → Settings → Calendar → Google</em>: tick <strong>Enable</strong>, paste Client ID + secret, <strong>Save</strong>.</p>
-
         <h3>6 · Each user connects</h3>
         <p><em>Settings → Calendar → “Connect with Google”</em> → sign in → done (2-way sync).</p>
+        <p class="hint muted"><strong>Troubleshooting:</strong> <code>redirect_uri_mismatch</code> → URI not exact · “Access blocked” → add your account as a <strong>test user</strong> or publish to Production · drops after ~7 days → still in <em>Testing</em>, publish to Production · “App isn’t verified” → <em>Advanced → Continue</em>.</p>
 
-        <h3>Troubleshooting</h3>
-        <ul>
-            <li><code>redirect_uri_mismatch</code> → the URI above doesn’t match exactly (https / domain / no trailing slash).</li>
-            <li>“Access blocked” → add your account as a <strong>test user</strong>, or publish to Production.</li>
-            <li>Drops after ~7 days → still in <em>Testing</em> mode; <strong>publish to Production</strong>.</li>
-            <li>“App isn’t verified” → normal for self-hosted → <em>Advanced → Continue</em>.</li>
-        </ul>
+        <h2 id="microsoft" class="mt">Microsoft</h2>
+        <h3>1 · Open the portal</h3>
+        <p>Open <a href="https://entra.microsoft.com" target="_blank" rel="noopener">entra.microsoft.com</a> (or portal.azure.com) and sign in with your <strong>private Microsoft account</strong>. Free.</p>
+        <h3>2 · Register an app</h3>
+        <p><em>Microsoft Entra ID → App registrations → New registration</em>. Name it <code>Matdo</code>.</p>
+        <p class="hint muted"><strong>Crucial for private accounts:</strong> under <em>Supported account types</em> choose <strong>“Accounts in any organizational directory and personal Microsoft accounts”</strong> — Matdo uses the <code>common</code> endpoint, so personal outlook.com/hotmail accounts only work with this option.</p>
+        <h3>3 · Redirect URI</h3>
+        <p>Add a platform <strong>Web</strong> with the redirect URI (exactly):</p>
+        <form-field><input type="text" value="@redirectM" readonly onclick="this.select()" /></form-field>
+        <h3>4 · Client secret</h3>
+        <p><em>Certificates &amp; secrets → New client secret</em> → copy the <strong>Value</strong> immediately (not the Secret ID!). Note: secrets expire (max 24 months) and must be renewed.</p>
+        <h3>5 · API permissions</h3>
+        <p><em>API permissions → Add → Microsoft Graph → Delegated permissions</em> → add <code>Calendars.ReadWrite</code>, <code>offline_access</code>, <code>openid</code>, <code>email</code>. No admin consent needed for personal accounts.</p>
+        <h3>6 · Enter in Matdo + connect</h3>
+        <p><em>Admin → Settings → Calendar → Microsoft</em>: enable, paste the <strong>Application (client) ID</strong> + secret <em>value</em>, Save. Then each user: <em>Settings → Calendar → “Connect with Microsoft”</em>.</p>
+        <p class="hint muted"><strong>Troubleshooting:</strong> <code>unauthorized_client</code> / “not supported for this application” → account type doesn’t include personal accounts (step 2) · <code>redirect_uri_mismatch</code> → URI not exact or platform not “Web” · secret rejected → you copied the Secret ID instead of the <strong>Value</strong> · stops working later → the secret expired, create a new one.</p>
     }
     else
     {
-        <p class="muted">Hier wird die <strong>einmalige App-Registrierung</strong> eingerichtet – danach verbindet sich jeder Nutzer per Klick. Kostenlos, und ein <strong>privates Google-Konto genügt</strong> – keine Kreditkarte, keine Firma, kein Workspace.</p>
+        <p class="muted">Hier wird die <strong>einmalige App-Registrierung</strong> eingerichtet – danach verbindet sich jeder Nutzer per Klick. Kostenlos, und ein <strong>privates Konto genügt</strong> – keine Kreditkarte, keine Firma.</p>
         <p class="hint muted">Reicht dir <strong>nur lesender</strong> Sync? Dann kannst du das alles überspringen und stattdessen die ICS-Optionen unter <em>Einstellungen → Kalender</em> nutzen.</p>
+        <p><strong>Springe zu:</strong> <a href="#google">Google</a> · <a href="#microsoft">Microsoft</a></p>
 
+        <h2 id="google">Google</h2>
         <h3>1 · Projekt anlegen</h3>
         <p>Öffne <a href="https://console.cloud.google.com" target="_blank" rel="noopener">console.cloud.google.com</a>, melde dich an und lege ein neues Projekt an (z. B. <code>Matdo</code>). „Google Cloud" ist nur Googles Verwaltungsoberfläche – hier kostet nichts.</p>
-
         <h3>2 · Google Calendar API aktivieren</h3>
         <p>Menü → <em>APIs &amp; Dienste → Bibliothek</em> → <strong>Google Calendar API</strong> suchen → <strong>Aktivieren</strong>.</p>
-
         <h3>3 · OAuth-Zustimmungsbildschirm</h3>
         <p>Menü → <em>APIs &amp; Dienste → OAuth-Zustimmungsbildschirm</em> → Nutzertyp <strong>Extern</strong>. App-Name + deine E-Mail ausfüllen, Scope <code>.../auth/calendar.events</code> hinzufügen.</p>
         <p class="hint muted"><strong>Wichtig:</strong> Im <em>Test</em>-Modus läuft der Refresh-Token nach 7 Tagen ab und nur eingetragene Testnutzer funktionieren. Mit <strong>„App veröffentlichen"</strong> (→ Produktion) läuft es dauerhaft – bleibt kostenlos; Nutzer bestätigen einmalig eine „nicht überprüft"-Warnseite.</p>
-
         <h3>4 · OAuth-Client-ID erstellen</h3>
         <p>Menü → <em>Anmeldedaten → Anmeldedaten erstellen → OAuth-Client-ID</em> → Typ <strong>Webanwendung</strong>. Unter <strong>Autorisierte Weiterleitungs-URIs</strong> exakt eintragen:</p>
-        <form-field><input type="text" value="@redirect" readonly onclick="this.select()" /></form-field>
+        <form-field><input type="text" value="@redirectG" readonly onclick="this.select()" /></form-field>
         <p class="hint muted">Muss exakt passen – <code>https</code>, richtige Domain, kein Schrägstrich am Ende. Danach <strong>Client-ID</strong> und <strong>Client-Secret</strong> kopieren.</p>
-
         <h3>5 · In Matdo eintragen (Admin, einmalig)</h3>
         <p><em>Admin → Einstellungen → Kalender → Google</em>: <strong>Aktivieren</strong> ankreuzen, Client-ID + Secret einfügen, <strong>Speichern</strong>.</p>
-
         <h3>6 · Jeder Nutzer verbindet sich</h3>
         <p><em>Einstellungen → Kalender → „Mit Google verbinden"</em> → anmelden → fertig (2-Wege-Sync).</p>
+        <p class="hint muted"><strong>Fehlerbehebung:</strong> <code>redirect_uri_mismatch</code> → URI nicht exakt · „Zugriff blockiert" → Konto als <strong>Testnutzer</strong> eintragen oder veröffentlichen · bricht nach ~7 Tagen ab → noch im <em>Test</em>-Modus, veröffentlichen · „App nicht überprüft" → <em>Erweitert → Fortfahren</em>.</p>
 
-        <h3>Fehlerbehebung</h3>
-        <ul>
-            <li><code>redirect_uri_mismatch</code> → die obige URI stimmt nicht exakt (https / Domain / kein End-Slash).</li>
-            <li>„Zugriff blockiert" → Konto als <strong>Testnutzer</strong> eintragen oder auf Produktion veröffentlichen.</li>
-            <li>Bricht nach ~7 Tagen ab → noch im <em>Test</em>-Modus; <strong>auf Produktion veröffentlichen</strong>.</li>
-            <li>„App nicht überprüft" → bei self-hosted normal → <em>Erweitert → Fortfahren</em>.</li>
-        </ul>
+        <h2 id="microsoft" class="mt">Microsoft</h2>
+        <h3>1 · Portal öffnen</h3>
+        <p>Öffne <a href="https://entra.microsoft.com" target="_blank" rel="noopener">entra.microsoft.com</a> (oder portal.azure.com) und melde dich mit deinem <strong>privaten Microsoft-Konto</strong> an. Kostenlos.</p>
+        <h3>2 · App registrieren</h3>
+        <p><em>Microsoft Entra ID → App-Registrierungen → Neue Registrierung</em>. Name <code>Matdo</code>.</p>
+        <p class="hint muted"><strong>Entscheidend für private Konten:</strong> Bei <em>Unterstützte Kontotypen</em> <strong>„Konten in einem beliebigen Organisationsverzeichnis und persönliche Microsoft-Konten"</strong> wählen — Matdo nutzt den <code>common</code>-Endpunkt, private outlook.com/hotmail-Konten funktionieren nur mit dieser Option.</p>
+        <h3>3 · Redirect-URI</h3>
+        <p>Plattform <strong>Web</strong> hinzufügen mit der Weiterleitungs-URI (exakt):</p>
+        <form-field><input type="text" value="@redirectM" readonly onclick="this.select()" /></form-field>
+        <h3>4 · Clientschlüssel (Secret)</h3>
+        <p><em>Zertifikate &amp; Geheimnisse → Neuer geheimer Clientschlüssel</em> → sofort den <strong>Wert</strong> kopieren (nicht die Geheimnis-ID!). Hinweis: Secrets laufen ab (max. 24 Monate) und müssen erneuert werden.</p>
+        <h3>5 · API-Berechtigungen</h3>
+        <p><em>API-Berechtigungen → Hinzufügen → Microsoft Graph → Delegierte Berechtigungen</em> → <code>Calendars.ReadWrite</code>, <code>offline_access</code>, <code>openid</code>, <code>email</code> hinzufügen. Für private Konten ist keine Administratoreinwilligung nötig.</p>
+        <h3>6 · In Matdo eintragen + verbinden</h3>
+        <p><em>Admin → Einstellungen → Kalender → Microsoft</em>: aktivieren, <strong>Anwendungs-/Client-ID</strong> + Secret-<em>Wert</em> einfügen, Speichern. Dann jeder Nutzer: <em>Einstellungen → Kalender → „Mit Microsoft verbinden"</em>.</p>
+        <p class="hint muted"><strong>Fehlerbehebung:</strong> <code>unauthorized_client</code> / „not supported for this application" → Kontotyp enthält keine persönlichen Konten (Schritt 2) · <code>redirect_uri_mismatch</code> → URI nicht exakt oder Plattform nicht „Web" · Secret abgelehnt → du hast die Geheimnis-ID statt des <strong>Werts</strong> kopiert · funktioniert später nicht mehr → das Secret ist abgelaufen, neu erstellen.</p>
     }
 
     <form-buttons>

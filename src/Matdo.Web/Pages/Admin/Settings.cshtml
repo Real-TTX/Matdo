@@ -71,7 +71,7 @@
                 <form-field label="@T["admin.settings.cal.clientSecret"]"><input asp-for="Config.Google.ClientSecret" type="password" autocomplete="new-password" /></form-field>
             </div>
             <div class="hint muted">@T["admin.settings.cal.redirectHint"] <code>@baseUrl/calendar/callback/google</code></div>
-            <div class="hint mb"><a href="/Admin/CalendarGuide" target="_blank" rel="noopener">📖 @T["admin.settings.cal.guideLink"]</a></div>
+            <div class="hint mb"><a href="/Admin/CalendarGuide#google" target="_blank" rel="noopener">📖 @T["admin.settings.cal.guideLink"]</a></div>
 
             <h3 class="mt">Microsoft</h3>
             <form-field label="@T["admin.settings.cal.enabled"]">
@@ -82,6 +82,7 @@
                 <form-field label="@T["admin.settings.cal.clientSecret"]"><input asp-for="Config.Microsoft.ClientSecret" type="password" autocomplete="new-password" /></form-field>
             </div>
             <div class="hint muted">@T["admin.settings.cal.redirectHint"] <code>@baseUrl/calendar/callback/microsoft</code></div>
+            <div class="hint"><a href="/Admin/CalendarGuide#microsoft" target="_blank" rel="noopener">📖 @T["admin.settings.cal.guideLinkMs"]</a></div>
         </div>
     </div>
 

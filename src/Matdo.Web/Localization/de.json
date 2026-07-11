@@ -53,6 +53,7 @@
   "admin.settings.cal.clientSecret": "Client-Secret",
   "admin.settings.cal.redirectHint": "Diese Redirect-URI in der OAuth-App hinterlegen:",
   "admin.settings.cal.guideLink": "Google-Einrichtung: Schritt-für-Schritt-Anleitung",
+  "admin.settings.cal.guideLinkMs": "Microsoft-Einrichtung: Schritt-für-Schritt-Anleitung",
   "admin.groups.edit.deleteConfirm": "Gruppe wirklich löschen?",
   "admin.groups.edit.members": "Mitglieder",
   "admin.groups.edit.titleEdit": "Gruppe bearbeiten",
