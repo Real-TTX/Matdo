@@ -1,0 +1,42 @@
+@page
+@model Matdo.Web.Pages.Projects.ArchiveModel
+@{
+    ViewData["Title"] = T["projects.archive.title"];
+    ViewData["Crumbs"] = new List<Matdo.Web.ViewModels.Crumb>
+    {
+        new(T["nav.myProjects"], "/Projects"),
+        new(T["projects.archive.title"])
+    };
+}
+<div class="page-head"><h1><icon name="archive" size="18" /> @T["projects.archive.title"]</h1></div>
+
+<div class="table-wrap">
+    <table class="table">
+        <tbody>
+        @foreach (var p in Model.Items)
+        {
+            <tr>
+                <td><span class="phash" style="color:@p.Color">#</span> @p.Name</td>
+                <td class="actions-cell">
+                    <form method="post" asp-page-handler="Restore" style="display:inline">
+                        <input type="hidden" name="id" value="@p.Id" />
+                        <button type="submit" class="btn small"><icon name="archive" size="14" /> @T["projects.archive.restore"]</button>
+                    </form>
+                    <form method="post" asp-page-handler="Delete" style="display:inline" data-confirm="@T["projects.edit.deleteConfirm"]">
+                        <input type="hidden" name="id" value="@p.Id" />
+                        <button type="submit" class="btn small danger"><icon name="trash" size="14" /> @T["common.delete"]</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td><div class="empty">@T["projects.archive.empty"]</div></td></tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="list-actions">
+    <a class="btn" href="/Projects"><icon name="back" size="16" /> @T["common.back"]</a>
+</div>

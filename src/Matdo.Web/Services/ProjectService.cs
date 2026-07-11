@@ -202,6 +202,18 @@ public class ProjectService
         await _db.SaveChangesAsync();
     }
 
+    /// <summary>Archivierte Projekte, die der Benutzer verwalten darf.</summary>
+    public Task<List<Project>> GetArchivedAsync() =>
+        ManageableProjects().Where(p => p.IsArchived).OrderBy(p => p.Name).ToListAsync();
+
+    public async Task UnarchiveAsync(long id)
+    {
+        var p = await ManageableProjects().FirstOrDefaultAsync(x => x.Id == id);
+        if (p is null) return;
+        p.IsArchived = false;
+        await _db.SaveChangesAsync();
+    }
+
     /// <summary>Dupliziert ein Projekt inkl. Spalten, Aufgaben (mit Unteraufgaben) und eigenen Etiketten.</summary>
     public async Task<long?> DuplicateAsync(long id)
     {
