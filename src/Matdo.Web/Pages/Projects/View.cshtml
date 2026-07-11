@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "#" + Model.Project.Name;
     var pid = Model.Project.Id;
+    var viewUrl = $"{Request.Scheme}://{Request.Host}/Projects/View?id={pid}";
     ViewData["Crumbs"] = new List<Matdo.Web.ViewModels.Crumb>
     {
         new(T["nav.myProjects"], "/Projects"),
@@ -20,13 +21,34 @@
     };
 }
 @section TopbarActions {
+    @* Ansicht: temporär die Darstellung wechseln (der gespeicherte Typ bleibt in den Einstellungen). *@
+    <div class="tb-menu" data-menu>
+        <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.edit.viewType"]" title="@T["projects.edit.viewType"]"><icon name="list" /></button>
+        <div class="menu-pop">
+            <a class="menu-item @(Model.ViewMode == "list" ? "active" : "")" href="/Projects/View?id=@pid&view=list"><icon name="list" size="15" /> @T["projects.viewType.list"]</a>
+            <a class="menu-item @(Model.ViewMode == "kanban" ? "active" : "")" href="/Projects/View?id=@pid&view=kanban"><icon name="kanban" size="15" /> @T["projects.viewType.kanban"]</a>
+            <a class="menu-item @(Model.ViewMode == "calendar" ? "active" : "")" href="/Projects/View?id=@pid&view=calendar"><icon name="calendar" size="15" /> @T["projects.viewType.calendar"]</a>
+        </div>
+    </div>
     <div class="tb-menu" data-menu>
         <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.view.settings"]"><icon name="dots" /></button>
         <div class="menu-pop">
             <a class="menu-item" href="/Projects/Edit?id=@pid"><icon name="settings" size="15" /> @T["projects.view.settings"]</a>
+            <form method="post" asp-page-handler="Favorite" asp-route-id="@pid">
+                <input type="hidden" name="favorite" value="@((!Model.Project.IsFavorite).ToString().ToLower())" />
+                <button type="submit" class="menu-item"><icon name="star" size="15" /> @(Model.Project.IsFavorite ? T["projects.menu.unfavorite"] : T["projects.menu.favorite"])</button>
+            </form>
+            <form method="post" asp-page-handler="Duplicate" asp-route-id="@pid">
+                <button type="submit" class="menu-item"><icon name="copy" size="15" /> @T["projects.menu.duplicate"]</button>
+            </form>
+            <button type="button" class="menu-item" data-copy-link="@viewUrl" data-copied="@T["projects.menu.copied"]"><icon name="link" size="15" /> @T["projects.menu.copyLink"]</button>
+            <div class="menu-sep"></div>
             <a class="menu-item" href="/projects/@pid/export.csv"><icon name="upload" size="15" /> @T["projects.menu.exportCsv"]</a>
             <a class="menu-item" href="/Account/Settings?tab=import"><icon name="inbox" size="15" /> @T["projects.menu.importCsv"]</a>
             <div class="menu-sep"></div>
+            <form method="post" asp-page-handler="Archive" asp-route-id="@pid" data-confirm="@T["projects.menu.archiveConfirm"]">
+                <button type="submit" class="menu-item"><icon name="archive" size="15" /> @T["projects.menu.archive"]</button>
+            </form>
             <form method="post" asp-page="/Projects/Edit" asp-page-handler="Delete" asp-route-id="@pid" data-confirm="@T["projects.edit.deleteConfirm"]">
                 <button type="submit" class="menu-item danger"><icon name="trash" size="15" /> @T["common.delete"]</button>
             </form>

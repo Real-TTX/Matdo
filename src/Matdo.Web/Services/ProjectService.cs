@@ -186,6 +186,95 @@ public class ProjectService
         await _db.SaveChangesAsync();
     }
 
+    public async Task SetFavoriteAsync(long id, bool favorite)
+    {
+        var p = await ManageableProjects().FirstOrDefaultAsync(x => x.Id == id);
+        if (p is null) return;
+        p.IsFavorite = favorite;
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task ArchiveAsync(long id)
+    {
+        var p = await ManageableProjects().FirstOrDefaultAsync(x => x.Id == id);
+        if (p is null) return;
+        p.IsArchived = true;
+        await _db.SaveChangesAsync();
+    }
+
+    /// <summary>Dupliziert ein Projekt inkl. Spalten, Aufgaben (mit Unteraufgaben) und eigenen Etiketten.</summary>
+    public async Task<long?> DuplicateAsync(long id)
+    {
+        var src = await AccessibleProjects().Include(p => p.Columns).FirstOrDefaultAsync(p => p.Id == id);
+        if (src is null) return null;
+        var uid = Uid;
+
+        var copy = new Project
+        {
+            Name = src.Name + " (Kopie)",
+            Color = src.Color,
+            ViewType = src.ViewType,
+            TeamId = src.TeamId,
+            ParentProjectId = src.ParentProjectId,
+            OwnerId = uid,
+            IsFavorite = false
+        };
+        _db.Projects.Add(copy);
+        await _db.SaveChangesAsync();
+
+        var colMap = new Dictionary<long, long>();
+        foreach (var c in src.Columns.OrderBy(c => c.Position))
+        {
+            var nc = new KanbanColumn { ProjectId = copy.Id, Name = c.Name, Position = c.Position };
+            _db.KanbanColumns.Add(nc);
+            await _db.SaveChangesAsync();
+            colMap[c.Id] = nc.Id;
+        }
+
+        var myLabels = (await _db.Labels.Where(l => l.OwnerId == uid).Select(l => l.Id).ToListAsync()).ToHashSet();
+        var tasks = await _db.Tasks
+            .Where(t => t.ProjectId == id && t.ParentTaskId == null)
+            .Include(t => t.TaskLabels)
+            .Include(t => t.SubTasks)
+            .OrderBy(t => t.Position)
+            .ToListAsync();
+
+        foreach (var t in tasks)
+        {
+            var nt = Clone(t, copy.Id, uid);
+            nt.KanbanColumnId = t.KanbanColumnId is long oc && colMap.TryGetValue(oc, out var ncid) ? ncid : null;
+            _db.Tasks.Add(nt);
+            await _db.SaveChangesAsync();
+            foreach (var tl in t.TaskLabels.Where(x => myLabels.Contains(x.LabelId)))
+                _db.TaskLabels.Add(new TaskLabel { TaskItemId = nt.Id, LabelId = tl.LabelId });
+            foreach (var s in t.SubTasks.OrderBy(x => x.Position))
+            {
+                var ns = Clone(s, copy.Id, uid);
+                ns.ParentTaskId = nt.Id;
+                ns.KanbanColumnId = null;
+                _db.Tasks.Add(ns);
+            }
+            await _db.SaveChangesAsync();
+        }
+        return copy.Id;
+
+        static TaskItem Clone(TaskItem t, long pid, long owner) => new()
+        {
+            Title = t.Title,
+            Description = t.Description,
+            OwnerId = owner,
+            ProjectId = pid,
+            Priority = t.Priority,
+            DueDate = t.DueDate,
+            DueHasTime = t.DueHasTime,
+            DeadlineDate = t.DeadlineDate,
+            DeadlineHasTime = t.DeadlineHasTime,
+            Position = t.Position,
+            IsCompleted = t.IsCompleted,
+            CompletedAt = t.CompletedAt
+        };
+    }
+
     // ----- Kanban-Spalten -----
 
     /// <summary>Spalten nur für Projekte, auf die der Benutzer Zugriff hat.</summary>

@@ -73,4 +73,23 @@ public class ProjectViewModel : PageModel
         await _projects.DeleteColumnAsync(columnId);
         return RedirectToPage(new { id });
     }
+
+    // ----- Projekt-Aktionen (⋯-Menü) -----
+    public async Task<IActionResult> OnPostFavoriteAsync(long id, bool favorite)
+    {
+        await _projects.SetFavoriteAsync(id, favorite);
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostArchiveAsync(long id)
+    {
+        await _projects.ArchiveAsync(id);
+        return Redirect("/Projects");
+    }
+
+    public async Task<IActionResult> OnPostDuplicateAsync(long id)
+    {
+        var newId = await _projects.DuplicateAsync(id);
+        return RedirectToPage(new { id = newId ?? id });
+    }
 }

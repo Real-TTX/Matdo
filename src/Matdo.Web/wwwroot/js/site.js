@@ -145,6 +145,16 @@
                 .then(function (r) { if (r.ok) location.reload(); });
             return;
         }
+        var cp = e.target.closest('[data-copy-link]');
+        if (cp) {
+            e.preventDefault();
+            var url = cp.getAttribute('data-copy-link');
+            var done = function () { toast(cp.getAttribute('data-copied') || 'Link'); };
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done);
+            else { try { var ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } catch (err) { } done(); }
+            document.querySelectorAll('[data-menu].open').forEach(function (m) { m.classList.remove('open'); });
+            return;
+        }
     });
 
     // ---------- Bestätigung für Löschen ----------
