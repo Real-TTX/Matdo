@@ -327,9 +327,14 @@ textarea { resize: vertical; min-height: 60px; }
 /* Composer-Felder: randlos und transparent, damit sie sich in Hell/Dunkel einfügen
    (das Titel-<input> hat kein type-Attribut und würde sonst browser-weiß gerendert). */
 .composer input.title,
-.composer textarea.desc { border: none; background: transparent; color: var(--text); padding: 2px 0; }
+.composer textarea.desc { border: none; background: transparent; color: var(--text); padding: 2px 0; width: 100%; display: block; box-sizing: border-box; }
 .composer input.title { font-size: 15px; font-weight: 500; }
-.composer textarea.desc { min-height: 32px; }
+.composer textarea.desc { min-height: 30px; }
+/* Eingeklappter Composer: „+ Aufgabe hinzufügen"-Auslöser (Todoist-artig) */
+.composer-wrap { margin: 8px 0; }
+.composer-trigger { display: inline-flex; align-items: center; gap: 8px; width: 100%; text-align: left; background: none; border: none; color: var(--text-muted); font: inherit; font-size: 15px; padding: 8px 6px; border-radius: var(--radius); cursor: pointer; }
+.composer-trigger:hover { color: var(--accent); }
+.composer-trigger svg, .composer-trigger .svg-icon { color: var(--accent); }
 .composer input.title::placeholder,
 .composer textarea.desc::placeholder { color: var(--text-muted); }
 .composer input:focus, .composer textarea:focus { box-shadow: none; }
@@ -393,7 +398,7 @@ body.modal-lock { overflow: hidden; }
 .ac-at { width: 18px; height: 18px; border-radius: 50%; background: var(--hover); color: var(--text-muted); display: inline-grid; place-items: center; font-weight: 700; font-size: 12px; flex: 0 0 auto; }
 
 /* ---------- Inline-Composer ---------- */
-.composer textarea.desc { resize: none; overflow: hidden; }
+.composer textarea.desc { resize: none; overflow-y: auto; max-height: 220px; }
 .composer-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
 .composer-chips:empty { margin: 0; }
 .ck { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border: 1px solid var(--accent); border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 12px; cursor: pointer; font-family: inherit; }

@@ -14,7 +14,12 @@
     var editLabelIds = isEdit ? edit!.TaskLabels.Select(tl => tl.LabelId).ToHashSet() : new HashSet<long>();
     var pickerOpts = new Matdo.Web.ViewModels.ProjectPickerOptions { FieldName = "Input.ProjectId", SelectedId = isEdit ? edit!.ProjectId : Model.DefaultProjectId };
 }
-<form method="post" asp-page="/Tasks/Create" class="composer @(isEdit ? "composer-edit" : "")" data-composer id="@Model.InstanceId">
+<div class="composer-wrap" data-composer-wrap>
+@if (!isEdit)
+{
+    <button type="button" class="composer-trigger" data-composer-open><icon name="plus" size="16" /> @T["nav.addTask"]</button>
+}
+<form method="post" asp-page="/Tasks/Create" class="composer @(isEdit ? "composer-edit" : "")" data-composer id="@Model.InstanceId" hidden="@(isEdit ? null : "hidden")">
     <input type="hidden" name="Input.ReturnUrl" value="@Model.ReturnUrl" />
     @if (isEdit) { <input type="hidden" name="Input.Id" value="@edit!.Id" /> }
 
@@ -131,3 +136,4 @@
         <button type="submit" class="btn btn-primary small"><icon name="@(isEdit ? "save" : "plus")" size="14" /> @(isEdit ? T["common.save"] : T["tasks.composer.addTask"])</button>
     </div>
 </form>
+</div>

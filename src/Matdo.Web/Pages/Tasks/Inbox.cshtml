@@ -9,8 +9,6 @@
     <div class="sub"><icon name="inbox" size="16" /> @Model.Items.Count @T["tasks.common.tasks"]</div>
 </div>
 
-<partial name="_Composer" model="composer" />
-
 @foreach (var t in Model.Items)
 {
     <partial name="_TaskRow" model="t" />
@@ -19,3 +17,5 @@
 {
     <div class="empty">@T["tasks.inbox.empty"]</div>
 }
+
+<partial name="_Composer" model="composer" />

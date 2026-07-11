@@ -64,8 +64,6 @@
    festgelegt – hier wird das Projekt in seinem konfigurierten Typ dargestellt. *@
 @if (Model.ViewMode == "list")
 {
-    <partial name="_Composer" model="composer" />
-
     @* Aufgaben nach Abschnitt (= Kanban-Spalte) gruppieren. Ohne Abschnitt zuerst. *@
     var noSec = Model.Tasks.Where(t => t.KanbanColumnId == null).ToList();
     var bySec = Model.Tasks.Where(t => t.KanbanColumnId != null)
@@ -73,6 +71,7 @@
         .ToDictionary(g => g.Key, g => g.ToList());
 
     foreach (var t in noSec) { <partial name="_TaskRow" model="t" /> }
+    <partial name="_Composer" model="composer" />
 
     foreach (var col in Model.Columns)
     {

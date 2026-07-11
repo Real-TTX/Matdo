@@ -43,8 +43,6 @@
 <div class="task-group">
     <h3>@DateTime.Now.ToString("d. MMM") · @T["tasks.common.today"] · @DateTime.Now.ToString("dddd")</h3>
 
-    <partial name="_Composer" model="composer" />
-
     @foreach (var t in Model.DueToday)
     {
         <partial name="_TaskRow" model="t" />
@@ -53,4 +51,6 @@
     {
         <div class="empty">@T["tasks.today.empty"]</div>
     }
+
+    <partial name="_Composer" model="composer" />
 </div>

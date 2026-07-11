@@ -166,8 +166,38 @@
         document.querySelectorAll('.popover.open').forEach(function (p) { if (p !== except) p.classList.remove('open'); });
     }
 
+    // Beschreibung wächst mit dem Inhalt (bis max-height per CSS).
+    function autoGrow(ta) { if (!ta) return; ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 220) + 'px'; }
+
+    // Eingeklappten Composer aufklappen / wieder einklappen.
+    function expandComposer(trigger) {
+        var wrap = trigger.closest('[data-composer-wrap]');
+        if (!wrap) return;
+        var form = wrap.querySelector('.composer');
+        trigger.hidden = true;
+        form.removeAttribute('hidden');
+        var title = form.querySelector('.title');
+        if (title) title.focus();
+        autoGrow(form.querySelector('.desc'));
+    }
+    function collapseComposer(form) {
+        var wrap = form.closest('[data-composer-wrap]');
+        var trigger = wrap && wrap.querySelector('[data-composer-open]');
+        if (!trigger) return;            // Bearbeiten-Modus hat keinen Auslöser
+        form.setAttribute('hidden', 'hidden');
+        trigger.hidden = false;
+    }
+
     // ---- Events ----
+    document.addEventListener('input', function (e) {
+        if (e.target.classList && e.target.classList.contains('desc') && e.target.closest('.composer')) autoGrow(e.target);
+    });
+
     document.addEventListener('click', function (e) {
+        // Composer aufklappen
+        var opener = e.target.closest('[data-composer-open]');
+        if (opener) { e.preventDefault(); expandComposer(opener); return; }
+
         // Popover öffnen/schließen
         var btn = e.target.closest('.cbtn[data-pop]');
         if (btn) {
@@ -252,7 +282,7 @@
     document.addEventListener('reset', function (e) {
         var form = e.target.closest('.composer');
         if (!form) return;
-        setTimeout(function () { toggleReminder(form); refreshChips(form); closeAllPopovers(); }, 0);
+        setTimeout(function () { toggleReminder(form); refreshChips(form); closeAllPopovers(); collapseComposer(form); }, 0);
     });
 
     // Initiale Chips (z.B. Fälligkeit „heute“ vorbelegt)
@@ -260,6 +290,7 @@
         document.querySelectorAll('.composer[data-composer]').forEach(function (form) {
             toggleReminder(form);
             refreshChips(form);
+            autoGrow(form.querySelector('.desc'));
         });
     });
 })();
