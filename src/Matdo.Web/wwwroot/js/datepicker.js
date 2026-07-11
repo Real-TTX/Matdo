@@ -14,13 +14,13 @@
             months: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
             mon: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
             days: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
-            today: 'Heute', tomorrow: 'Morgen', nextWeek: 'Nächste Woche', noDate: 'Kein Datum', time: 'Uhrzeit', pick: 'Datum wählen'
+            today: 'Heute', tomorrow: 'Morgen', nextWeek: 'Nächste Woche', weekend: 'Wochenende', noDate: 'Kein Datum', time: 'Uhrzeit', pick: 'Datum wählen'
         },
         en: {
             months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
             mon: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             days: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-            today: 'Today', tomorrow: 'Tomorrow', nextWeek: 'Next week', noDate: 'No date', time: 'Time', pick: 'Pick a date'
+            today: 'Today', tomorrow: 'Tomorrow', nextWeek: 'Next week', weekend: 'Weekend', noDate: 'No date', time: 'Time', pick: 'Pick a date'
         }
     };
     var L = I18N[LANG] || I18N.de;
@@ -88,6 +88,7 @@
             + "<button type='button' class='dp-chip' data-set='0'>" + L.today + "</button>"
             + "<button type='button' class='dp-chip' data-set='1'>" + L.tomorrow + "</button>"
             + "<button type='button' class='dp-chip' data-set='7'>" + L.nextWeek + "</button>"
+            + "<button type='button' class='dp-chip' data-wk='1'>" + L.weekend + "</button>"
             + "</div>";
         h += "<div class='dp-head'><button type='button' class='dp-nav' data-nav='-1' aria-label='‹'>‹</button>"
             + "<span class='dp-title'>" + L.months[c._m] + " " + c._y + "</span>"
@@ -130,6 +131,12 @@
             if (nav) { e.preventDefault(); e.stopPropagation(); c._m += (+nav.getAttribute('data-nav')); if (c._m < 0) { c._m = 11; c._y--; } else if (c._m > 11) { c._m = 0; c._y++; } paint(c); return; }
             var chip = e.target.closest('[data-set]');
             if (chip) { e.preventDefault(); e.stopPropagation(); setDate(c._dpInput, addDays(today(), +chip.getAttribute('data-set'))); if (isPopup) closePop(); else paint(c); return; }
+            var wk = e.target.closest('[data-wk]');
+            if (wk) {
+                e.preventDefault(); e.stopPropagation();
+                var t2 = today(); var toSat = (6 - t2.getDay() + 7) % 7; if (toSat === 0) toSat = 7; // nächster Samstag
+                setDate(c._dpInput, addDays(t2, toSat)); if (isPopup) closePop(); else paint(c); return;
+            }
             var day = e.target.closest('[data-day]');
             if (day) { e.preventDefault(); e.stopPropagation(); setDate(c._dpInput, new Date(c._y, c._m, +day.getAttribute('data-day'))); if (isPopup) closePop(); else paint(c); return; }
             if (e.target.closest('.dp-nodate')) { e.preventDefault(); e.stopPropagation(); clearVal(c._dpInput); if (isPopup) closePop(); else paint(c); return; }
