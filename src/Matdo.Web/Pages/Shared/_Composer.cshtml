@@ -5,13 +5,21 @@
     var labels = await LabelSvc.GetAllAsync();
     var today = DateTime.Today.ToString("yyyy-MM-dd");
     var prios = new[] { (1, T["tasks.priority.p1"]), (2, T["tasks.priority.p2"]), (3, T["tasks.priority.p3"]), (4, T["tasks.priority.p4"]) };
-    var pickerOpts = new Matdo.Web.ViewModels.ProjectPickerOptions { FieldName = "Input.ProjectId", SelectedId = Model.DefaultProjectId };
+    var edit = Model.EditTask;
+    var isEdit = edit != null;
+    string Loc(DateTime? d) => d?.ToLocalTime().ToString("yyyy-MM-dd") ?? "";
+    string LocT(DateTime? d, bool has) => (d.HasValue && has) ? d.Value.ToLocalTime().ToString("HH:mm") : "";
+    var selPrio = isEdit ? (int)edit!.Priority : 4;
+    var dueVal = isEdit ? Loc(edit!.DueDate) : (Model.DefaultDueToday ? today : "");
+    var editLabelIds = isEdit ? edit!.TaskLabels.Select(tl => tl.LabelId).ToHashSet() : new HashSet<long>();
+    var pickerOpts = new Matdo.Web.ViewModels.ProjectPickerOptions { FieldName = "Input.ProjectId", SelectedId = isEdit ? edit!.ProjectId : Model.DefaultProjectId };
 }
-<form method="post" asp-page="/Tasks/Create" class="composer" data-composer id="@Model.InstanceId">
+<form method="post" asp-page="/Tasks/Create" class="composer @(isEdit ? "composer-edit" : "")" data-composer id="@Model.InstanceId">
     <input type="hidden" name="Input.ReturnUrl" value="@Model.ReturnUrl" />
+    @if (isEdit) { <input type="hidden" name="Input.Id" value="@edit!.Id" /> }
 
-    <input class="title" name="Input.Title" placeholder="@T["tasks.composer.namePlaceholder"]" autocomplete="off" data-smart="1" required />
-    <textarea class="desc" name="Input.Description" placeholder="@T["common.description"]" rows="1"></textarea>
+    <input class="title" name="Input.Title" placeholder="@T["tasks.composer.namePlaceholder"]" autocomplete="off" data-smart="1" required value="@(edit?.Title)" />
+    <textarea class="desc" name="Input.Description" placeholder="@T["common.description"]" rows="1">@(edit?.Description)</textarea>
 
     <!-- Gesetzte Eigenschaften als Chips (Klick entfernt die Eigenschaft) -->
     <div class="composer-chips" data-chips></div>
@@ -21,8 +29,8 @@
         <div class="cbtn-wrap">
             <button type="button" class="cbtn" data-pop="due"><icon name="calendar" size="15" /> @T["tasks.edit.due"]</button>
             <div class="popover popover-cal" data-pop-panel="due">
-                <input type="date" name="Input.DueDate" data-f="dueDate" data-dp-inline value="@(Model.DefaultDueToday ? today : "")" />
-                <input type="time" name="Input.DueTime" data-f="dueTime" />
+                <input type="date" name="Input.DueDate" data-f="dueDate" data-dp-inline value="@dueVal" />
+                <input type="time" name="Input.DueTime" data-f="dueTime" value="@LocT(edit?.DueDate, edit?.DueHasTime ?? false)" />
             </div>
         </div>
 
@@ -34,7 +42,7 @@
                     @foreach (var (val, text) in prios)
                     {
                         <label class="chip @(val == 4 ? "" : "")">
-                            <input type="radio" name="Input.Priority" value="@val" data-f="priority" @(val == 4 ? "checked" : "") style="display:none" />
+                            <input type="radio" name="Input.Priority" value="@val" data-f="priority" @(val == selPrio ? "checked" : "") style="display:none" />
                             <span class="pri-@val"><icon name="flag" size="13" /></span> @text
                         </label>
                     }
@@ -90,7 +98,7 @@
                         @foreach (var l in labels)
                         {
                             <label class="pop-check">
-                                <input type="checkbox" name="Input.LabelIds" value="@l.Id" data-f="label" data-name="@l.Name" data-color="@l.Color" />
+                                <input type="checkbox" name="Input.LabelIds" value="@l.Id" data-f="label" data-name="@l.Name" data-color="@l.Color" @(editLabelIds.Contains(l.Id) ? "checked" : "") />
                                 <span class="tag-swatch" style="background:@l.Color"></span> @l.Name
                             </label>
                         }
@@ -103,8 +111,8 @@
         <div class="cbtn-wrap">
             <button type="button" class="cbtn" data-pop="deadline"><icon name="flag" size="15" /> @T["tasks.edit.deadline"]</button>
             <div class="popover popover-cal" data-pop-panel="deadline">
-                <input type="date" name="Input.DeadlineDate" data-f="deadlineDate" data-dp-inline />
-                <input type="time" name="Input.DeadlineTime" data-f="deadlineTime" />
+                <input type="date" name="Input.DeadlineDate" data-f="deadlineDate" data-dp-inline value="@Loc(edit?.DeadlineDate)" />
+                <input type="time" name="Input.DeadlineTime" data-f="deadlineTime" value="@LocT(edit?.DeadlineDate, edit?.DeadlineHasTime ?? false)" />
             </div>
         </div>
     </div>
@@ -112,7 +120,14 @@
     <div class="composer-foot">
         <partial name="_ProjectPicker" model="pickerOpts" />
         <div class="spacer"></div>
-        <button type="reset" class="btn small" data-composer-cancel>@T["common.cancel"]</button>
-        <button type="submit" class="btn btn-primary small"><icon name="plus" size="14" /> @T["tasks.composer.addTask"]</button>
+        @if (isEdit)
+        {
+            <a class="btn small" href="@Model.ReturnUrl">@T["common.cancel"]</a>
+        }
+        else
+        {
+            <button type="reset" class="btn small" data-composer-cancel>@T["common.cancel"]</button>
+        }
+        <button type="submit" class="btn btn-primary small"><icon name="@(isEdit ? "save" : "plus")" size="14" /> @(isEdit ? T["common.save"] : T["tasks.composer.addTask"])</button>
     </div>
 </form>

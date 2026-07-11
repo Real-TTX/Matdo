@@ -25,6 +25,8 @@ public class TaskCreateModel : PageModel
 
     public class InputModel
     {
+        /// <summary>Gesetzt beim Inline-Bearbeiten (sonst wird angelegt).</summary>
+        public long? Id { get; set; }
         [Required] public string Title { get; set; } = "";
         public string? Description { get; set; }
         public long? ProjectId { get; set; }
@@ -54,6 +56,31 @@ public class TaskCreateModel : PageModel
         var target = SafeReturn(Input.ReturnUrl);
         if (string.IsNullOrWhiteSpace(Input.Title))
             return Redirect(target);
+
+        // ----- Inline-Bearbeiten: explizite Felder, kein Smart-Parsing (Titel bleibt wörtlich). -----
+        if (Input.Id is long editId && editId > 0)
+        {
+            var existing = await _tasks.GetAsync(editId);
+            if (existing is null) return Redirect(target);   // kein Zugriff / nicht gefunden
+            var upd = new TaskItem
+            {
+                Id = editId,
+                Title = Input.Title.Trim(),
+                Description = string.IsNullOrWhiteSpace(Input.Description) ? null : Input.Description.Trim(),
+                ProjectId = Input.ProjectId,
+                Priority = (TaskPriority)Math.Clamp(Input.Priority, 1, 4),
+                DueDate = DateHelper.ToUtc(Input.DueDate, Input.DueTime),
+                DueHasTime = !string.IsNullOrWhiteSpace(Input.DueTime),
+                DeadlineDate = DateHelper.ToUtc(Input.DeadlineDate, Input.DeadlineTime),
+                DeadlineHasTime = !string.IsNullOrWhiteSpace(Input.DeadlineTime),
+                // Nicht im Composer bearbeitbare Felder erhalten:
+                KanbanColumnId = existing.KanbanColumnId,
+                ParentTaskId = existing.ParentTaskId,
+                AssigneeId = existing.AssigneeId
+            };
+            await _tasks.UpdateAsync(upd, Input.LabelIds);
+            return Redirect(target);
+        }
 
         // Schnell-Eingabe parsen: #Projekt, +Etikett, @Person und Zeitangaben aus dem Titel.
         var parsed = await _parser.ParseAsync(Input.Title);

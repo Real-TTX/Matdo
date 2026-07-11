@@ -14,4 +14,8 @@ public class ComposerOptions
 
     /// <summary>Eindeutige Instanz-Id, damit mehrere Composer pro Seite kollisionsfrei sind.</summary>
     public string InstanceId { get; set; } = "c" + Guid.NewGuid().ToString("N")[..8];
+
+    /// <summary>Wenn gesetzt: Composer im Bearbeiten-Modus für diese Aufgabe (statt Anlegen).
+    /// Erwartet TaskLabels geladen (für vorausgewählte Etiketten).</summary>
+    public Matdo.Web.Data.Entities.TaskItem? EditTask { get; set; }
 }

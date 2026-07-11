@@ -34,7 +34,20 @@
     var prioNum = t.Priority switch { TaskPriority.P1 => 1, TaskPriority.P2 => 2, TaskPriority.P3 => 3, _ => 4 };
     string? prioText = prioNum switch { 1 => T["tasks.priority.p1"], 2 => T["tasks.priority.p2"], 3 => T["tasks.priority.p3"], _ => null };
     var reminderCount = t.Reminders?.Count ?? 0;
+
+    // Inline-Bearbeiten: ?edit=<id> ersetzt diese Zeile durch den Composer im Bearbeiten-Modus.
+    var _req = ViewContext.HttpContext.Request;
+    long? _editId = long.TryParse(_req.Query["edit"], out var _eid) ? _eid : (long?)null;
+    var _other = _req.Query.Where(kv => kv.Key != "edit").Select(kv => kv.Key + "=" + Uri.EscapeDataString(kv.Value.ToString()));
+    var retUrl = _req.Path + (_other.Any() ? "?" + string.Join("&", _other) : "");
+    var editUrl = retUrl + (retUrl.Contains('?') ? "&" : "?") + "edit=" + t.Id;
 }
+@if (_editId == t.Id)
+{
+    <partial name="_Composer" model="new Matdo.Web.ViewModels.ComposerOptions { EditTask = t, ReturnUrl = retUrl }" />
+}
+else
+{
 <div class="task-row @(t.IsCompleted ? "done" : "")">
     <div class="task-check @prioClass @(t.IsCompleted ? "checked" : "")"
          data-complete-task="@t.Id" data-completed="@(t.IsCompleted ? "true" : "false")"
@@ -92,7 +105,7 @@
         </div>
     </div>
     <div class="task-actions">
-        <a class="icon-btn sm" href="/Tasks/Edit?id=@t.Id" title="@T["common.edit"]" aria-label="@T["common.edit"]"><icon name="edit" size="15" /></a>
+        <a class="icon-btn sm" href="@editUrl" title="@T["common.edit"]" aria-label="@T["common.edit"]"><icon name="edit" size="15" /></a>
         <div class="tb-menu" data-menu>
             <button type="button" class="icon-btn sm" data-menu-toggle aria-label="@T["common.edit"]"><icon name="dots" size="16" /></button>
             <div class="menu-pop">
@@ -104,3 +117,4 @@
         </div>
     </div>
 </div>
+}
