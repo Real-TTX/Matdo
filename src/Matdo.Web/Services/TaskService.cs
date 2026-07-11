@@ -56,6 +56,7 @@ public class TaskService
 
     private IQueryable<TaskItem> WithDetails(IQueryable<TaskItem> q) => q
         .Include(t => t.Project)
+        .Include(t => t.KanbanColumn)
         .Include(t => t.Assignee)
         .Include(t => t.TaskLabels).ThenInclude(tl => tl.Label)
         .Include(t => t.Reminders)

@@ -54,4 +54,23 @@ public class ProjectViewModel : PageModel
         }
         return Page();
     }
+
+    // ----- Abschnitte (= Kanban-Spalten) direkt in der Projektansicht verwalten -----
+    public async Task<IActionResult> OnPostAddSectionAsync(long id, string? sectionName)
+    {
+        if (!string.IsNullOrWhiteSpace(sectionName)) await _projects.AddColumnAsync(id, sectionName.Trim());
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostRenameSectionAsync(long id, long columnId, string? sectionName)
+    {
+        if (!string.IsNullOrWhiteSpace(sectionName)) await _projects.RenameColumnAsync(columnId, sectionName.Trim());
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostDeleteSectionAsync(long id, long columnId)
+    {
+        await _projects.DeleteColumnAsync(columnId);
+        return RedirectToPage(new { id });
+    }
 }

@@ -30,6 +30,7 @@ public class TaskCreateModel : PageModel
         [Required] public string Title { get; set; } = "";
         public string? Description { get; set; }
         public long? ProjectId { get; set; }
+        public long? KanbanColumnId { get; set; }   // Abschnitt (= Spalte), z.B. Schnell-Anlegen je Abschnitt
         public int Priority { get; set; } = 4;
 
         public string? DueDate { get; set; }
@@ -97,6 +98,7 @@ public class TaskCreateModel : PageModel
             Title = parsed.Title,
             Description = string.IsNullOrWhiteSpace(Input.Description) ? null : Input.Description.Trim(),
             ProjectId = Input.ProjectId ?? parsed.ProjectId,
+            KanbanColumnId = Input.KanbanColumnId,
             AssigneeId = parsed.AssigneeId,
             Priority = (TaskPriority)Math.Clamp(Input.Priority, 1, 4),
             DueDate = due,

@@ -44,14 +44,55 @@
 {
     <partial name="_Composer" model="composer" />
 
-    @foreach (var t in Model.Tasks)
+    @* Aufgaben nach Abschnitt (= Kanban-Spalte) gruppieren. Ohne Abschnitt zuerst. *@
+    var noSec = Model.Tasks.Where(t => t.KanbanColumnId == null).ToList();
+    var bySec = Model.Tasks.Where(t => t.KanbanColumnId != null)
+        .GroupBy(t => t.KanbanColumnId!.Value)
+        .ToDictionary(g => g.Key, g => g.ToList());
+
+    foreach (var t in noSec) { <partial name="_TaskRow" model="t" /> }
+
+    foreach (var col in Model.Columns)
     {
-        <partial name="_TaskRow" model="t" />
+        var secTasks = bySec.TryGetValue(col.Id, out var st) ? st : new List<Matdo.Web.Data.Entities.TaskItem>();
+        <div class="sec-head">
+            <h3 class="sec-name">@col.Name</h3>
+            <span class="sec-count">@secTasks.Count</span>
+            <div class="tb-menu" data-menu>
+                <button type="button" class="icon-btn sm" data-menu-toggle aria-label="@T["common.edit"]"><icon name="dots" size="16" /></button>
+                <div class="menu-pop">
+                    <form method="post" asp-page-handler="RenameSection" asp-route-id="@pid" class="menu-inline">
+                        <input type="hidden" name="columnId" value="@col.Id" />
+                        <input type="text" name="sectionName" value="@col.Name" aria-label="@T["common.name"]" />
+                        <button type="submit" class="btn small btn-primary"><icon name="save" size="14" /></button>
+                    </form>
+                    <div class="menu-sep"></div>
+                    <form method="post" asp-page-handler="DeleteSection" asp-route-id="@pid" data-confirm="@T["projects.edit.deleteColumnConfirm"]">
+                        <input type="hidden" name="columnId" value="@col.Id" />
+                        <button type="submit" class="menu-item danger"><icon name="trash" size="15" /> @T["common.delete"]</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        foreach (var t in secTasks) { <partial name="_TaskRow" model="t" /> }
+        <form method="post" asp-page="/Tasks/Create" class="sec-add">
+            <input type="hidden" name="Input.ProjectId" value="@pid" />
+            <input type="hidden" name="Input.KanbanColumnId" value="@col.Id" />
+            <input type="hidden" name="Input.ReturnUrl" value="/Projects/View?id=@pid" />
+            <input type="text" name="Input.Title" placeholder="@T["projects.view.addTask"]" />
+            <button type="submit" class="btn small"><icon name="plus" size="14" /></button>
+        </form>
     }
-    @if (Model.Tasks.Count == 0)
+
+    if (Model.Tasks.Count == 0 && Model.Columns.Count == 0)
     {
         <div class="empty">@T["projects.view.noOpenTasks"]</div>
     }
+
+    <form method="post" asp-page-handler="AddSection" asp-route-id="@pid" class="sec-add sec-add-new">
+        <input type="text" name="sectionName" placeholder="@T["projects.view.addSection"]" />
+        <button type="submit" class="btn small"><icon name="plus" size="14" /> @T["projects.view.addSection"]</button>
+    </form>
 }
 else if (Model.ViewMode == "calendar")
 {

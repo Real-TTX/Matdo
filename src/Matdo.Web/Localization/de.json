@@ -247,6 +247,8 @@
   "projects.index.sortView": "Ansicht",
   "projects.index.title": "Projekte",
   "projects.view.addTask": "Aufgabe hinzufügen",
+  "projects.view.addSection": "Abschnitt hinzufügen",
+  "projects.view.section": "Abschnitt",
   "projects.view.defineColumns": "Spalten definieren",
   "projects.view.noColumn": "Ohne Spalte",
   "projects.view.noColumnsYet": "Noch keine Spalten.",

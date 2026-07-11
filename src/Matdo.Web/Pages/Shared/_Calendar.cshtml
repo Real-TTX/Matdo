@@ -76,7 +76,8 @@
                             foreach (var t in dayTasks.OrderBy(x => x.Priority))
                             {
                                 var pc = t.Priority switch { TaskPriority.P1 => "p1", TaskPriority.P2 => "p2", TaskPriority.P3 => "p3", _ => "" };
-                                <a class="cal-task @(t.IsCompleted ? "done" : "")" href="/Tasks/Edit?id=@t.Id" title="@t.Title"><span class="cal-dot @pc"></span>@t.Title</a>
+                                var secTip = t.KanbanColumn != null ? $"{t.Title} · {T["projects.view.section"]}: {t.KanbanColumn.Name}" : t.Title;
+                                <a class="cal-task @(t.IsCompleted ? "done" : "")" href="/Tasks/Edit?id=@t.Id" title="@secTip"><span class="cal-dot @pc"></span>@t.Title</a>
                             }
                         }
                     </div>

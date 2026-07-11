@@ -247,6 +247,8 @@
   "projects.index.sortView": "View",
   "projects.index.title": "Projects",
   "projects.view.addTask": "Add task",
+  "projects.view.addSection": "Add section",
+  "projects.view.section": "Section",
   "projects.view.defineColumns": "Define columns",
   "projects.view.noColumn": "No column",
   "projects.view.noColumnsYet": "No columns yet.",
