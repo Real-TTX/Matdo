@@ -1,13 +1,12 @@
-name: Publish images to GHCR
+name: Publish image to GHCR
 
-# Baut & veröffentlicht die beiden Images für docker-compose.public.yml:
-#   ghcr.io/real-ttx/matdo       (App)
-#   ghcr.io/real-ttx/matdo-db    (Postgres mit fest hinterlegten Zugangsdaten)
+# Baut & veröffentlicht das App-Image für docker-compose.public.yml:
+#   ghcr.io/real-ttx/matdo   (App; die Datenbank ist das offizielle postgres-Image)
 #
 # Nutzt das eingebaute GITHUB_TOKEN – keine Secrets nötig.
-# Hinweis: Die Packages nach dem ersten Lauf einmalig auf "Public" stellen
-# (GitHub -> Packages -> jeweiliges Paket -> Package settings -> Change visibility),
-# damit `docker compose up` sie ohne Login ziehen kann.
+# Hinweis: Das Package nach dem ersten Lauf einmalig auf "Public" stellen
+# (GitHub -> Packages -> matdo -> Package settings -> Change visibility),
+# damit `docker compose up` es ohne Login ziehen kann.
 
 on:
   push:
@@ -41,11 +40,3 @@ jobs:
           build-args: |
             MATDO_VERSION=${{ github.ref_name }}
           tags: ghcr.io/real-ttx/matdo:latest
-
-      - name: Build & push db image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./docker/db.Dockerfile
-          push: true
-          tags: ghcr.io/real-ttx/matdo-db:latest

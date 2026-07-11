@@ -1,10 +1,14 @@
-# Matdo – einfachste Variante für Homelab/Public (zieht fertige Images von GHCR).
+# Matdo – einfachster Stack für Homelab/Public: deine App + offizielles Postgres.
 # Start:  docker compose -f docker-compose.public.yml up -d
 # Dann:   http://<host>:6006   (beim ersten Start: Admin anlegen)
 services:
   db:
-    image: ghcr.io/real-ttx/matdo-db:latest
+    image: postgres:17-alpine
     restart: unless-stopped
+    environment:
+      POSTGRES_USER: matdo
+      POSTGRES_PASSWORD: matdo
+      POSTGRES_DB: matdo
     volumes:
       - db:/var/lib/postgresql/data
 
