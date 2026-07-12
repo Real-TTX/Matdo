@@ -157,6 +157,26 @@
         }
     });
 
+    // ---------- Abschnitt-Dropdown im Aufgaben-Editor bei Projektwechsel nachladen ----------
+    function escAttr(s) { return (s || '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    document.addEventListener('change', function (e) {
+        if (e.target.name !== 'Input.ProjectId') return;
+        var form = e.target.closest('form'); if (!form) return;
+        var field = form.querySelector('[data-section-field]'); if (!field) return;
+        var sel = field.querySelector('select[name="Input.KanbanColumnId"]'); if (!sel) return;
+        var noneOpt = sel.querySelector('option[value=""]');
+        var noneHtml = noneOpt ? noneOpt.outerHTML : '<option value=""></option>';
+        var pid = e.target.value;
+        if (!pid) { sel.innerHTML = noneHtml; field.style.display = 'none'; return; }
+        fetch('/api/projects/' + pid + '/columns')
+            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (cols) {
+                sel.innerHTML = noneHtml + cols.map(function (c) { return '<option value="' + c.id + '">' + escAttr(c.name) + '</option>'; }).join('');
+                field.style.display = cols.length ? '' : 'none';
+            })
+            .catch(function () { });
+    });
+
     // ---------- Bestätigung für Löschen ----------
     document.addEventListener('submit', function (e) {
         var form = e.target;

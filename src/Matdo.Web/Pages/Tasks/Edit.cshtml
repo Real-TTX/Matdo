@@ -41,8 +41,8 @@
         </form-field>
     </div>
 
-    @if (Model.SectionOptions.Count > 0)
-    {
+    @* Abschnitt-Dropdown: bei leerem Projekt ausgeblendet; wird per JS bei Projektwechsel nachgeladen. *@
+    <div data-section-field style="@(Model.SectionOptions.Count == 0 ? "display:none" : "")">
         <form-field label="@T["projects.view.section"]" for="Input_KanbanColumnId">
             <select asp-for="Input.KanbanColumnId">
                 <option value="">@T["tasks.edit.sectionNone"]</option>
@@ -52,11 +52,7 @@
                 }
             </select>
         </form-field>
-    }
-    else
-    {
-        <input type="hidden" asp-for="Input.KanbanColumnId" />
-    }
+    </div>
 
     @if (Model.TeamMembers.Count > 0)
     {
