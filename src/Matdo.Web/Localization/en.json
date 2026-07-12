@@ -218,6 +218,7 @@
   "projects.menu.unfavorite": "Remove from favorites",
   "projects.menu.duplicate": "Duplicate",
   "projects.menu.copyLink": "Copy link to project",
+  "projects.section.moveTo": "Move to another project",
   "projects.menu.copied": "Link copied",
   "projects.menu.archive": "Archive",
   "projects.menu.archiveConfirm": "Archive project? It disappears from the list.",

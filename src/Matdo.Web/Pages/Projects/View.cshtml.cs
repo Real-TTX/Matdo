@@ -25,6 +25,8 @@ public class ProjectViewModel : PageModel
     public string ViewMode { get; set; } = "list";
     public int CalYear { get; set; }
     public int CalMonth { get; set; }
+    /// <summary>Andere Projekte (für „Abschnitt in anderes Projekt verschieben").</summary>
+    public List<Project> MoveTargets { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync(long id, string? view, string? ym)
     {
@@ -33,6 +35,7 @@ public class ProjectViewModel : PageModel
         Project = p;
         Columns = p.Columns.OrderBy(c => c.Position).ToList();
         Tasks = await _tasks.GetByProjectAsync(id);
+        MoveTargets = (await _projects.GetAllAsync()).Where(x => x.Id != id).ToList();
 
         ViewMode = view ?? p.ViewType switch
         {
@@ -71,6 +74,18 @@ public class ProjectViewModel : PageModel
     public async Task<IActionResult> OnPostDeleteSectionAsync(long id, long columnId)
     {
         await _projects.DeleteColumnAsync(columnId);
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostDuplicateSectionAsync(long id, long columnId)
+    {
+        await _projects.DuplicateColumnAsync(columnId);
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostMoveSectionAsync(long id, long columnId, long targetProjectId)
+    {
+        await _projects.MoveColumnToProjectAsync(columnId, targetProjectId);
         return RedirectToPage(new { id });
     }
 

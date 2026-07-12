@@ -87,6 +87,20 @@
                         <input type="text" name="sectionName" value="@col.Name" aria-label="@T["common.name"]" />
                         <button type="submit" class="btn small btn-primary"><icon name="save" size="14" /></button>
                     </form>
+                    <form method="post" asp-page-handler="DuplicateSection" asp-route-id="@pid">
+                        <input type="hidden" name="columnId" value="@col.Id" />
+                        <button type="submit" class="menu-item"><icon name="copy" size="15" /> @T["projects.menu.duplicate"]</button>
+                    </form>
+                    @if (Model.MoveTargets.Count > 0)
+                    {
+                        <form method="post" asp-page-handler="MoveSection" asp-route-id="@pid" class="menu-inline">
+                            <input type="hidden" name="columnId" value="@col.Id" />
+                            <select name="targetProjectId" aria-label="@T["projects.section.moveTo"]">
+                                @foreach (var mt in Model.MoveTargets) { <option value="@mt.Id">@mt.Name</option> }
+                            </select>
+                            <button type="submit" class="btn small" title="@T["projects.section.moveTo"]"><icon name="chevron-right" size="14" /></button>
+                        </form>
+                    }
                     <div class="menu-sep"></div>
                     <form method="post" asp-page-handler="DeleteSection" asp-route-id="@pid" data-confirm="@T["projects.edit.deleteColumnConfirm"]">
                         <input type="hidden" name="columnId" value="@col.Id" />
@@ -136,6 +150,20 @@ else
                                 <input type="text" name="sectionName" value="@col.Name" aria-label="@T["common.name"]" />
                                 <button type="submit" class="btn small btn-primary"><icon name="save" size="14" /></button>
                             </form>
+                            <form method="post" asp-page-handler="DuplicateSection" asp-route-id="@pid">
+                                <input type="hidden" name="columnId" value="@col.Id" />
+                                <button type="submit" class="menu-item"><icon name="copy" size="15" /> @T["projects.menu.duplicate"]</button>
+                            </form>
+                            @if (Model.MoveTargets.Count > 0)
+                            {
+                                <form method="post" asp-page-handler="MoveSection" asp-route-id="@pid" class="menu-inline">
+                                    <input type="hidden" name="columnId" value="@col.Id" />
+                                    <select name="targetProjectId" aria-label="@T["projects.section.moveTo"]">
+                                        @foreach (var mt in Model.MoveTargets) { <option value="@mt.Id">@mt.Name</option> }
+                                    </select>
+                                    <button type="submit" class="btn small" title="@T["projects.section.moveTo"]"><icon name="chevron-right" size="14" /></button>
+                                </form>
+                            }
                             <div class="menu-sep"></div>
                             <form method="post" asp-page-handler="DeleteSection" asp-route-id="@pid" data-confirm="@T["projects.edit.deleteColumnConfirm"]">
                                 <input type="hidden" name="columnId" value="@col.Id" />

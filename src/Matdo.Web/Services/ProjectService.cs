@@ -327,4 +327,60 @@ public class ProjectService
         _db.KanbanColumns.Remove(col);
         await _db.SaveChangesAsync();
     }
+
+    /// <summary>Dupliziert einen Abschnitt (Spalte) samt seiner Aufgaben + Unteraufgaben.</summary>
+    public async Task<long?> DuplicateColumnAsync(long columnId)
+    {
+        var col = await _db.KanbanColumns.FindAsync(columnId);
+        if (col is null || !await CanManageAsync(col.ProjectId)) return null;
+        var uid = Uid;
+        var pos = await _db.KanbanColumns.CountAsync(c => c.ProjectId == col.ProjectId);
+        var nc = new KanbanColumn { ProjectId = col.ProjectId, Name = col.Name + " (Kopie)", Position = pos };
+        _db.KanbanColumns.Add(nc);
+        await _db.SaveChangesAsync();
+
+        var tasks = await _db.Tasks
+            .Where(t => t.KanbanColumnId == columnId && t.ParentTaskId == null)
+            .Include(t => t.SubTasks)
+            .OrderBy(t => t.Position)
+            .ToListAsync();
+        foreach (var t in tasks)
+        {
+            var copy = new TaskItem
+            {
+                Title = t.Title, Description = t.Description, OwnerId = uid, ProjectId = col.ProjectId,
+                KanbanColumnId = nc.Id, Priority = t.Priority, DueDate = t.DueDate, DueHasTime = t.DueHasTime,
+                DeadlineDate = t.DeadlineDate, DeadlineHasTime = t.DeadlineHasTime, Position = t.Position
+            };
+            _db.Tasks.Add(copy);
+            await _db.SaveChangesAsync();
+            foreach (var s in t.SubTasks.OrderBy(x => x.Position))
+                _db.Tasks.Add(new TaskItem
+                {
+                    Title = s.Title, Description = s.Description, OwnerId = uid, ProjectId = col.ProjectId,
+                    ParentTaskId = copy.Id, Priority = s.Priority, Position = s.Position
+                });
+            await _db.SaveChangesAsync();
+        }
+        return nc.Id;
+    }
+
+    /// <summary>Verschiebt einen Abschnitt (Spalte) inkl. Aufgaben in ein anderes verwaltbares Projekt.</summary>
+    public async Task MoveColumnToProjectAsync(long columnId, long targetProjectId)
+    {
+        var col = await _db.KanbanColumns.FindAsync(columnId);
+        if (col is null || col.ProjectId == targetProjectId) return;
+        if (!await CanManageAsync(col.ProjectId) || !await CanManageAsync(targetProjectId)) return;
+
+        var pos = await _db.KanbanColumns.CountAsync(c => c.ProjectId == targetProjectId);
+        // Aufgaben dieser Spalte (Top-Level) + deren Unteraufgaben mitnehmen.
+        var topIds = await _db.Tasks.Where(t => t.KanbanColumnId == columnId).Select(t => t.Id).ToListAsync();
+        var affected = await _db.Tasks
+            .Where(t => t.KanbanColumnId == columnId || (t.ParentTaskId != null && topIds.Contains(t.ParentTaskId.Value)))
+            .ToListAsync();
+        foreach (var t in affected) t.ProjectId = targetProjectId;
+        col.ProjectId = targetProjectId;
+        col.Position = pos;
+        await _db.SaveChangesAsync();
+    }
 }
