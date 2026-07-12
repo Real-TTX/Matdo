@@ -145,6 +145,20 @@
                 .then(function (r) { if (r.ok) location.reload(); });
             return;
         }
+        var secOpen = e.target.closest('[data-sec-add-open]');
+        if (secOpen) {
+            e.preventDefault();
+            var zone = secOpen.closest('[data-sec-add]');
+            if (zone) { zone.classList.add('open'); var inp = zone.querySelector('input[name="sectionName"]'); if (inp) inp.focus(); }
+            return;
+        }
+        var secCancel = e.target.closest('[data-sec-add-cancel]');
+        if (secCancel) {
+            e.preventDefault();
+            var z2 = secCancel.closest('[data-sec-add]');
+            if (z2) z2.classList.remove('open');
+            return;
+        }
         var cp = e.target.closest('[data-copy-link]');
         if (cp) {
             e.preventDefault();

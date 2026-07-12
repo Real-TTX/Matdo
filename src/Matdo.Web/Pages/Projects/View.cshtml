@@ -124,10 +124,14 @@
         <div class="empty">@T["projects.view.noOpenTasks"]</div>
     }
 
-    <form method="post" asp-page-handler="AddSection" asp-route-id="@pid" class="sec-add sec-add-new">
-        <input type="text" name="sectionName" placeholder="@T["projects.view.addSection"]" />
-        <button type="submit" class="btn small"><icon name="plus" size="14" /> @T["projects.view.addSection"]</button>
-    </form>
+    <div class="sec-add-zone" data-sec-add>
+        <button type="button" class="sec-add-line" data-sec-add-open>@T["projects.view.addSection"]</button>
+        <form method="post" asp-page-handler="AddSection" asp-route-id="@pid" class="sec-add sec-add-form">
+            <input type="text" name="sectionName" placeholder="@T["projects.view.addSection"]" />
+            <button type="submit" class="btn small"><icon name="plus" size="14" /> @T["projects.view.addSection"]</button>
+            <button type="button" class="btn small" data-sec-add-cancel>@T["common.cancel"]</button>
+        </form>
+    </div>
 }
 else if (Model.ViewMode == "calendar")
 {

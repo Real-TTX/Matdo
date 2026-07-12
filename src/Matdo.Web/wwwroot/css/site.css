@@ -279,10 +279,15 @@ textarea { resize: vertical; min-height: 60px; }
 .sec-head .tb-menu { margin-left: auto; }
 .sec-add { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
 .sec-add input[type=text] { flex: 1; max-width: 420px; }
-/* „Abschnitt hinzufügen" (Liste) nur bei Mouseover am unteren Rand zeigen. */
-.sec-add-new { margin-top: 16px; opacity: 0; transition: opacity .12s; }
-.sec-add-new:hover, .sec-add-new:focus-within { opacity: 1; }
-@media (hover: none) { .sec-add-new { opacity: 1; } }
+/* „Abschnitt hinzufügen" (Liste): bei Hover eine Linie in Akzentfarbe, Klick öffnet das Eingabefeld. */
+.sec-add-zone { margin: 14px 0 4px; }
+.sec-add-line { width: 100%; display: flex; align-items: center; gap: 10px; border: none; background: none; cursor: pointer; padding: 4px 0; font: inherit; font-size: 13px; font-weight: 600; color: var(--accent); opacity: 0; transition: opacity .1s; }
+.sec-add-line::before, .sec-add-line::after { content: ""; flex: 1; height: 2px; background: var(--accent); border-radius: 2px; opacity: .55; }
+.sec-add-zone:hover .sec-add-line { opacity: 1; }
+.sec-add-form { display: none; }
+.sec-add-zone.open .sec-add-form { display: flex; }
+.sec-add-zone.open .sec-add-line { display: none; }
+@media (hover: none) { .sec-add-line { opacity: 1; } }
 .menu-inline { display: flex; gap: 6px; padding: 2px; }
 .menu-inline input[type=text] { flex: 1; min-width: 140px; }
 .overdue-head { color: var(--danger); font-weight: 700; }
