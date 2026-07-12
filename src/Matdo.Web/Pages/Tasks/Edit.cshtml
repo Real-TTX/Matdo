@@ -89,6 +89,21 @@
         </form-field>
     </div>
 
+    <div class="field-row">
+        <form-field label="@T["tasks.edit.repeat"]" for="Input_RecurrenceUnit">
+            <select asp-for="Input.RecurrenceUnit">
+                <option value="0">@T["tasks.edit.repeatNone"]</option>
+                <option value="1">@T["tasks.edit.repeatDaily"]</option>
+                <option value="2">@T["tasks.edit.repeatWeekly"]</option>
+                <option value="3">@T["tasks.edit.repeatMonthly"]</option>
+                <option value="4">@T["tasks.edit.repeatYearly"]</option>
+            </select>
+        </form-field>
+        <form-field label="@T["tasks.edit.repeatEvery"]" for="Input_RecurrenceInterval" hint="@T["tasks.edit.repeatEveryHint"]">
+            <input asp-for="Input.RecurrenceInterval" type="number" min="1" />
+        </form-field>
+    </div>
+
     <form-field label="@T["tasks.edit.labels"]">
         @if (Model.AllLabels.Count == 0)
         {

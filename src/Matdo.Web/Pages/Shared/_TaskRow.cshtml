@@ -78,6 +78,10 @@ else
             {
                 <span class="pill-label"><icon name="bell" size="12" />@(reminderCount > 1 ? " " + reminderCount : "")</span>
             }
+            @if (t.RecurrenceUnit != Matdo.Web.Data.Entities.RecurrenceUnit.None)
+            {
+                <span class="pill-label"><icon name="repeat" size="12" /> @T["tasks.row.repeat"]</span>
+            }
             @if (subCount > 0)
             {
                 <span class="pill-label"><icon name="list" size="12" /> @doneSub/@subCount</span>

@@ -17,6 +17,16 @@ public enum TaskPriority
     P4 = 4
 }
 
+/// <summary>Wiederhol-Einheit für wiederkehrende Aufgaben.</summary>
+public enum RecurrenceUnit
+{
+    None = 0,
+    Day = 1,
+    Week = 2,
+    Month = 3,
+    Year = 4
+}
+
 /// <summary>Art der Erinnerung.</summary>
 public enum ReminderType
 {

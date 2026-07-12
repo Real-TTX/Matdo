@@ -216,6 +216,8 @@ public class TaskService
         task.DeadlineDate = updated.DeadlineDate;
         task.DeadlineHasTime = updated.DeadlineHasTime;
         task.Priority = updated.Priority;
+        task.RecurrenceUnit = updated.RecurrenceUnit;
+        task.RecurrenceInterval = updated.RecurrenceInterval < 1 ? 1 : updated.RecurrenceInterval;
         task.ParentTaskId = await ValidatedParentIdAsync(updated.ParentTaskId);
         task.AssigneeId = await ValidatedAssigneeAsync(updated.AssigneeId, task.AssigneeId);
 
@@ -228,10 +230,29 @@ public class TaskService
     {
         var task = await EditableTasks().FirstOrDefaultAsync(t => t.Id == id);
         if (task is null) return;
-        task.IsCompleted = completed;
-        task.CompletedAt = completed ? DateTime.UtcNow : null;
+        // Wiederkehrende Aufgabe mit Fälligkeit: Abhaken erzeugt die nächste Fälligkeit statt Abschluss.
+        if (completed && task.RecurrenceUnit != RecurrenceUnit.None && task.DueDate.HasValue)
+        {
+            task.DueDate = AdvanceDue(task.DueDate.Value, task.RecurrenceUnit, Math.Max(1, task.RecurrenceInterval));
+            task.IsCompleted = false;
+            task.CompletedAt = null;
+        }
+        else
+        {
+            task.IsCompleted = completed;
+            task.CompletedAt = completed ? DateTime.UtcNow : null;
+        }
         await _db.SaveChangesAsync();
     }
+
+    private static DateTime AdvanceDue(DateTime d, RecurrenceUnit u, int n) => u switch
+    {
+        RecurrenceUnit.Day => d.AddDays(n),
+        RecurrenceUnit.Week => d.AddDays(7 * n),
+        RecurrenceUnit.Month => d.AddMonths(n),
+        RecurrenceUnit.Year => d.AddYears(n),
+        _ => d
+    };
 
     /// <summary>Löschen ist nur dem Eigentümer erlaubt.</summary>
     public async Task DeleteAsync(long id)

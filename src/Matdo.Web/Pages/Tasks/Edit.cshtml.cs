@@ -47,6 +47,8 @@ public class TaskEditModel : PageModel
         public long? KanbanColumnId { get; set; }   // Abschnitt (= Kanban-Spalte)
         public long? AssigneeId { get; set; }
         public int Priority { get; set; } = 4;
+        public int RecurrenceUnit { get; set; }      // 0 = keine Wiederholung
+        public int RecurrenceInterval { get; set; } = 1;
 
         public string? DueDate { get; set; }
         public string? DueTime { get; set; }
@@ -109,6 +111,8 @@ public class TaskEditModel : PageModel
                 KanbanColumnId = t.KanbanColumnId,
                 AssigneeId = t.AssigneeId,
                 Priority = (int)t.Priority,
+                RecurrenceUnit = (int)t.RecurrenceUnit,
+                RecurrenceInterval = t.RecurrenceInterval,
                 DueDate = DateHelper.ToDateInput(t.DueDate),
                 DueTime = DateHelper.ToTimeInput(t.DueDate, t.DueHasTime),
                 DeadlineDate = DateHelper.ToDateInput(t.DeadlineDate),
@@ -151,6 +155,8 @@ public class TaskEditModel : PageModel
             KanbanColumnId = Input.KanbanColumnId,
             AssigneeId = Input.AssigneeId,
             Priority = (TaskPriority)Math.Clamp(Input.Priority, 1, 4),
+            RecurrenceUnit = (RecurrenceUnit)Math.Clamp(Input.RecurrenceUnit, 0, 4),
+            RecurrenceInterval = Input.RecurrenceInterval < 1 ? 1 : Input.RecurrenceInterval,
             DueDate = DateHelper.ToUtc(Input.DueDate, Input.DueTime),
             DueHasTime = !string.IsNullOrWhiteSpace(Input.DueTime),
             DeadlineDate = DateHelper.ToUtc(Input.DeadlineDate, Input.DeadlineTime),

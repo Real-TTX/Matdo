@@ -39,6 +39,10 @@ public class TaskItem : BaseEntity
 
     public TaskPriority Priority { get; set; } = TaskPriority.P4;
 
+    /// <summary>Wiederholung: None = einmalig. Beim Abhaken rückt die Fälligkeit um Interval×Unit vor.</summary>
+    public RecurrenceUnit RecurrenceUnit { get; set; } = RecurrenceUnit.None;
+    public int RecurrenceInterval { get; set; } = 1;
+
     public bool IsCompleted { get; set; }
     public DateTime? CompletedAt { get; set; }
 
