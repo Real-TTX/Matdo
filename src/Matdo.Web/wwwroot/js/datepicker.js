@@ -109,9 +109,10 @@
         h += "<div class='dp-days'>" + cells + "</div>";
 
         h += "<div class='dp-foot'>";
+        h += "<button type='button' class='dp-nodate'>" + IC.x + " " + L.noDate + "</button>";
+        // Uhrzeit rechts unten (Todoist-artig).
         var ti = partnerTime(input);
         if (ti) h += "<label class='dp-time'>" + IC.clock + "<select class='dp-time-sel'><option value=''>" + L.time + "</option>" + timeOptions(ti.value) + "</select></label>";
-        h += "<button type='button' class='dp-nodate'>" + IC.x + " " + L.noDate + "</button>";
         h += "</div>";
 
         c.innerHTML = h;
