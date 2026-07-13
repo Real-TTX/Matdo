@@ -486,7 +486,7 @@ body.modal-lock { overflow: hidden; }
 }
 
 /* ---------- Auth pages ---------- */
-.auth-wrap { min-height: 100vh; display: grid; place-items: center; background: var(--sidebar-bg); padding: 20px; }
+.auth-wrap { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; background: var(--sidebar-bg); padding: 20px; }
 .auth-card { width: 100%; max-width: 400px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; box-shadow: var(--shadow); }
 .auth-card .logo { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 18px; font-size: 22px; font-weight: 800; color: var(--accent); }
 .auth-card h1 { font-size: 20px; text-align: center; }
@@ -494,6 +494,11 @@ body.modal-lock { overflow: hidden; }
 .auth-card .btn { width: 100%; justify-content: center; }
 .auth-alt { text-align: center; margin-top: 16px; color: var(--text-muted); }
 .auth-alt a { color: var(--accent); font-weight: 600; }
+/* Mobil: Karte ohne Rahmen/Schatten, volle Breite, oben ausgerichtet. */
+@media (max-width: 480px) {
+    .auth-wrap { padding: 18px 16px; align-items: start; }
+    .auth-card { padding: 24px 16px; border: none; box-shadow: none; background: transparent; margin-top: 5vh; max-width: 440px; }
+}
 .alert { padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
 .alert.error { background: #fdecea; color: var(--danger); }
 .alert.success { background: #eaf6ec; color: var(--green); }
