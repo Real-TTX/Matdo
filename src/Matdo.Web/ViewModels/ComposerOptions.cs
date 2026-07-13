@@ -9,6 +9,10 @@ public class ComposerOptions
     /// <summary>Vorbelegtes Projekt (z.B. in der Projektansicht).</summary>
     public long? DefaultProjectId { get; set; }
 
+    /// <summary>Vorbelegter Abschnitt (= Kanban-Spalte). Wenn gesetzt, wird das Projekt fixiert
+    /// (kein Projekt-Picker) und die Aufgabe landet in diesem Abschnitt.</summary>
+    public long? DefaultColumnId { get; set; }
+
     /// <summary>Fälligkeit standardmäßig auf heute setzen (Ansicht „Heute“).</summary>
     public bool DefaultDueToday { get; set; }
 

@@ -22,6 +22,7 @@
 <form method="post" asp-page="/Tasks/Create" class="composer @(isEdit ? "composer-edit" : "")" data-composer id="@Model.InstanceId" hidden="@(isEdit ? null : "hidden")">
     <input type="hidden" name="Input.ReturnUrl" value="@Model.ReturnUrl" />
     @if (isEdit) { <input type="hidden" name="Input.Id" value="@edit!.Id" /> }
+    @if (Model.DefaultColumnId is long dcol) { <input type="hidden" name="Input.KanbanColumnId" value="@dcol" /> }
 
     <input class="title" name="Input.Title" placeholder="@T["tasks.composer.namePlaceholder"]" autocomplete="off" data-smart="1" required value="@(edit?.Title)" />
     <textarea class="desc" name="Input.Description" placeholder="@T["common.description"]" rows="1">@(edit?.Description)</textarea>
@@ -123,7 +124,15 @@
     </div>
 
     <div class="composer-foot">
-        <partial name="_ProjectPicker" model="pickerOpts" />
+        @if (Model.DefaultColumnId is not null)
+        {
+            @* Abschnitts-Composer: Projekt+Abschnitt sind fix (kein Projekt-Picker). *@
+            <input type="hidden" name="Input.ProjectId" value="@Model.DefaultProjectId" />
+        }
+        else
+        {
+            <partial name="_ProjectPicker" model="pickerOpts" />
+        }
         <div class="spacer"></div>
         @if (isEdit)
         {

@@ -110,13 +110,7 @@
             </div>
         </div>
         foreach (var t in secTasks) { <partial name="_TaskRow" model="t" /> }
-        <form method="post" asp-page="/Tasks/Create" class="sec-add">
-            <input type="hidden" name="Input.ProjectId" value="@pid" />
-            <input type="hidden" name="Input.KanbanColumnId" value="@col.Id" />
-            <input type="hidden" name="Input.ReturnUrl" value="/Projects/View?id=@pid" />
-            <input type="text" name="Input.Title" placeholder="@T["projects.view.addTask"]" />
-            <button type="submit" class="btn small"><icon name="plus" size="14" /></button>
-        </form>
+        <partial name="_Composer" model="@(new ComposerOptions { ReturnUrl = $"/Projects/View?id={pid}", DefaultProjectId = pid, DefaultColumnId = col.Id })" />
     }
 
     if (Model.Tasks.Count == 0 && Model.Columns.Count == 0)
