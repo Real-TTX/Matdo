@@ -191,6 +191,13 @@ public class TaskService
         task.ProjectId = await ValidatedProjectIdAsync(task.ProjectId);
         task.KanbanColumnId = await ValidatedColumnIdAsync(task.KanbanColumnId, task.ProjectId);
         task.ParentTaskId = await ValidatedParentIdAsync(task.ParentTaskId);
+        // Standard-Abschnitt: Top-Level-Aufgabe ohne Spalte in die erste Spalte des Projekts legen
+        // (damit Aufgaben nicht in „Ohne Spalte" landen).
+        if (task.KanbanColumnId is null && task.ParentTaskId is null && task.ProjectId is long dpid)
+        {
+            task.KanbanColumnId = await _db.KanbanColumns.Where(c => c.ProjectId == dpid)
+                .OrderBy(c => c.Position).ThenBy(c => c.Id).Select(c => (long?)c.Id).FirstOrDefaultAsync();
+        }
         task.AssigneeId = await ValidatedAssigneeAsync(task.AssigneeId);
         task.Position = await NextPositionAsync(task.ProjectId);
 
