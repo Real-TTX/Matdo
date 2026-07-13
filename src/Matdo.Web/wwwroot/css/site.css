@@ -131,7 +131,14 @@ a.crumb:hover { color: var(--text); }
     background: var(--sidebar-bg); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0;
     padding: 8px 6px; overflow-y: auto;
+    /* Scrollbalken standardmäßig unsichtbar, erscheint erst beim Überfahren der Seitenleiste. */
+    scrollbar-width: thin; scrollbar-color: transparent transparent;
 }
+.sidebar:hover { scrollbar-color: var(--border-strong) transparent; }
+.sidebar::-webkit-scrollbar { width: 8px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+.sidebar:hover::-webkit-scrollbar-thumb { background: var(--border-strong); }
 .sidebar-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 10px; }
 .user-chip { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
