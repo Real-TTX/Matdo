@@ -186,6 +186,15 @@ public class ProjectService
         await _db.SaveChangesAsync();
     }
 
+    public async Task RenameAsync(long id, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return;
+        var p = await ManageableProjects().FirstOrDefaultAsync(x => x.Id == id);
+        if (p is null) return;
+        p.Name = name.Trim();
+        await _db.SaveChangesAsync();
+    }
+
     public async Task SetFavoriteAsync(long id, bool favorite)
     {
         var p = await ManageableProjects().FirstOrDefaultAsync(x => x.Id == id);

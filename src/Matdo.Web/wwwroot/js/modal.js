@@ -86,12 +86,16 @@
         var submitter = e.submitter;
         var action = (submitter && submitter.getAttribute('formaction')) || form.getAttribute('action') || currentEditUrl;
         var handler = (action.match(/[?&]handler=([^&]*)/) || [])[1] || '';
+        // data-modal-nav (an Button oder Formular): nach dem Redirect zur Zielseite navigieren
+        // statt die aktuelle Seite neu zu laden (z.B. Projekt archivieren/löschen -> zur Projektliste).
+        var navAway = (submitter && submitter.hasAttribute('data-modal-nav')) || form.hasAttribute('data-modal-nav');
         var fd = new FormData(form, submitter);
 
         fetch(withModal(action), { method: 'POST', body: fd, headers: { 'X-Requested-With': 'fetch' } })
-            .then(function (r) { return r.text().then(function (html) { return { redirected: r.redirected, html: html }; }); })
+            .then(function (r) { return r.text().then(function (html) { return { redirected: r.redirected, html: html, url: r.url }; }); })
             .then(function (res) {
                 if (!res.redirected) { setPanel(res.html); return; }   // Validierungsfehler / Re-Render
+                if (navAway) { closeModal(); window.location.href = res.url; return; }
                 if (form.hasAttribute('data-modal-reload') || handler === '' || /delete/i.test(handler)) { closeModal(); window.location.reload(); }
                 else {
                     // Unter-Aktion -> Modal neu laden und den passenden Tab wieder aktivieren

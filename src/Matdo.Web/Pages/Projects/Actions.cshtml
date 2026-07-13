@@ -1,0 +1,43 @@
+@page
+@model Matdo.Web.Pages.Projects.ActionsModel
+@{
+    ViewData["Title"] = Model.Project.Name;
+    if (Request.Query.ContainsKey("modal")) { Layout = null; }
+    var id = Model.Project.Id;
+    var viewUrl = $"{Request.Scheme}://{Request.Host}/Projects/View?id={id}";
+    var fav = Model.Project.IsFavorite;
+}
+<div class="page-head"><h1><span class="phash" style="color:@Model.Project.Color">#</span>@Model.Project.Name</h1></div>
+
+<form method="post" asp-page-handler="Rename" class="form-card" data-modal-reload>
+    <input type="hidden" name="id" value="@id" />
+
+    <form-field label="@T["common.name"]" for="name" required="true">
+        <input name="name" type="text" value="@Model.Project.Name" required autofocus />
+    </form-field>
+
+    @* Aktionen (formnovalidate, damit das Pflicht-Namensfeld sie nicht blockiert). *@
+    <div class="form-buttons" style="flex-wrap:wrap">
+        <button type="submit" class="btn small" asp-page-handler="Favorite" name="favorite" value="@((!fav).ToString().ToLower())" formnovalidate>
+            <icon name="star" size="14" /> @(fav ? T["projects.menu.unfavorite"] : T["projects.menu.favorite"])
+        </button>
+        <button type="submit" class="btn small" asp-page-handler="Duplicate" formnovalidate><icon name="copy" size="14" /> @T["projects.menu.duplicate"]</button>
+        <button type="button" class="btn small" data-copy-link="@viewUrl" data-copied="@T["projects.menu.copied"]"><icon name="link" size="14" /> @T["projects.menu.copyLink"]</button>
+        <a class="btn small" href="/projects/@id/export.csv"><icon name="upload" size="14" /> @T["projects.menu.exportCsv"]</a>
+        <a class="btn small" href="/Account/Settings?tab=import"><icon name="inbox" size="14" /> @T["projects.menu.importCsv"]</a>
+    </div>
+
+    <div class="form-buttons" style="flex-wrap:wrap; margin-top:6px">
+        <a class="btn small" href="/Projects/Edit?id=@id"><icon name="settings" size="14" /> @T["projects.actions.allSettings"]</a>
+        <button type="submit" class="btn small" asp-page-handler="Archive" formnovalidate data-modal-nav onclick="return confirm('@T["projects.menu.archiveConfirm"]')"><icon name="archive" size="14" /> @T["projects.menu.archive"]</button>
+        <button type="submit" class="btn small danger" asp-page-handler="Delete" formnovalidate data-modal-nav onclick="return confirm('@T["projects.edit.deleteConfirm"]')"><icon name="trash" size="14" /> @T["common.delete"]</button>
+    </div>
+
+    <div class="menu-sep"></div>
+
+    @* Primär: Speichern / Abbrechen immer ganz unten. *@
+    <form-buttons>
+        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> @T["common.save"]</button>
+        <a class="btn" href="/Projects/View?id=@id" data-modal-close><icon name="back" size="16" /> @T["common.cancel"]</a>
+    </form-buttons>
+</form>
