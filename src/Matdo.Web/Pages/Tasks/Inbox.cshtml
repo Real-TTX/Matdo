@@ -4,6 +4,14 @@
     ViewData["Title"] = T["tasks.inbox.title"];
     var composer = new ComposerOptions { ReturnUrl = "/Tasks/Inbox" };
 }
+@section TopbarActions {
+    <div class="tb-menu" data-menu>
+        <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.view.display"]" title="@T["projects.view.display"]"><icon name="list" /></button>
+        <div class="menu-pop">
+            <a class="menu-item @(Model.ShowCompleted ? "active" : "")" href="/Tasks/Inbox@(Model.ShowCompleted ? "" : "?done=true")"><icon name="check" size="15" /> @T["projects.view.showCompleted"]</a>
+        </div>
+    </div>
+}
 <div class="page-head">
     <h1>@T["tasks.inbox.title"]</h1>
     <div class="sub"><icon name="inbox" size="16" /> @Model.Items.Count @T["tasks.common.tasks"]</div>

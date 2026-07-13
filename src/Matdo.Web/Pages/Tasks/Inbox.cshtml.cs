@@ -11,6 +11,11 @@ public class InboxModel : PageModel
     public InboxModel(TaskService tasks) => _tasks = tasks;
 
     public List<TaskItem> Items { get; set; } = new();
+    public bool ShowCompleted { get; set; }
 
-    public async Task OnGetAsync() => Items = await _tasks.GetInboxAsync();
+    public async Task OnGetAsync(bool done)
+    {
+        ShowCompleted = done;
+        Items = await _tasks.GetInboxAsync(includeCompleted: done);
+    }
 }

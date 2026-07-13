@@ -20,13 +20,17 @@
     };
 }
 @section TopbarActions {
-    @* Ansicht: temporär die Darstellung wechseln (der gespeicherte Typ bleibt in den Einstellungen). *@
+    @* Anzeige: Layout wechseln (temporär) + erledigte Aufgaben einblenden. *@
+    @{ var doneKeep = Model.ShowCompleted ? "&done=true" : ""; }
     <div class="tb-menu" data-menu>
-        <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.edit.viewType"]" title="@T["projects.edit.viewType"]"><icon name="list" /></button>
+        <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.view.display"]" title="@T["projects.view.display"]"><icon name="list" /></button>
         <div class="menu-pop">
-            <a class="menu-item @(Model.ViewMode == "list" ? "active" : "")" href="/Projects/View?id=@pid&view=list"><icon name="list" size="15" /> @T["projects.viewType.list"]</a>
-            <a class="menu-item @(Model.ViewMode == "kanban" ? "active" : "")" href="/Projects/View?id=@pid&view=kanban"><icon name="kanban" size="15" /> @T["projects.viewType.kanban"]</a>
-            <a class="menu-item @(Model.ViewMode == "calendar" ? "active" : "")" href="/Projects/View?id=@pid&view=calendar"><icon name="calendar" size="15" /> @T["projects.viewType.calendar"]</a>
+            <div class="pop-title">@T["projects.view.layout"]</div>
+            <a class="menu-item @(Model.ViewMode == "list" ? "active" : "")" href="/Projects/View?id=@pid&view=list@(doneKeep)"><icon name="list" size="15" /> @T["projects.viewType.list"]</a>
+            <a class="menu-item @(Model.ViewMode == "kanban" ? "active" : "")" href="/Projects/View?id=@pid&view=kanban@(doneKeep)"><icon name="kanban" size="15" /> @T["projects.viewType.kanban"]</a>
+            <a class="menu-item @(Model.ViewMode == "calendar" ? "active" : "")" href="/Projects/View?id=@pid&view=calendar@(doneKeep)"><icon name="calendar" size="15" /> @T["projects.viewType.calendar"]</a>
+            <div class="menu-sep"></div>
+            <a class="menu-item @(Model.ShowCompleted ? "active" : "")" href="/Projects/View?id=@pid&view=@Model.ViewMode@(Model.ShowCompleted ? "" : "&done=true")"><icon name="check" size="15" /> @T["projects.view.showCompleted"]</a>
         </div>
     </div>
     <a class="icon-btn" href="/Projects/Actions?id=@pid" data-modal aria-label="@T["projects.view.settings"]" title="@T["projects.view.settings"]"><icon name="dots" /></a>

@@ -90,11 +90,11 @@ public class TaskService
     }
 
     /// <summary>Aufgaben ohne Projekt (Ansicht "Eingang").</summary>
-    public async Task<List<TaskItem>> GetInboxAsync()
+    public async Task<List<TaskItem>> GetInboxAsync(bool includeCompleted = false)
     {
         var uid = Uid;
         return await WithDetails(AccessibleTasks())
-            .Where(t => !t.IsCompleted && t.ParentTaskId == null && t.ProjectId == null && t.OwnerId == uid)
+            .Where(t => (includeCompleted || !t.IsCompleted) && t.ParentTaskId == null && t.ProjectId == null && t.OwnerId == uid)
             .OrderBy(t => t.Priority).ThenBy(t => t.Position)
             .ToListAsync();
     }

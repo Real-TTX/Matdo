@@ -25,16 +25,18 @@ public class ProjectViewModel : PageModel
     public string ViewMode { get; set; } = "list";
     public int CalYear { get; set; }
     public int CalMonth { get; set; }
+    public bool ShowCompleted { get; set; }
     /// <summary>Andere Projekte (für „Abschnitt in anderes Projekt verschieben").</summary>
     public List<Project> MoveTargets { get; set; } = new();
 
-    public async Task<IActionResult> OnGetAsync(long id, string? view, string? ym)
+    public async Task<IActionResult> OnGetAsync(long id, string? view, string? ym, bool done)
     {
         var p = await _projects.GetAsync(id);
         if (p is null) return NotFound();
         Project = p;
+        ShowCompleted = done;
         Columns = p.Columns.OrderBy(c => c.Position).ToList();
-        Tasks = await _tasks.GetByProjectAsync(id);
+        Tasks = await _tasks.GetByProjectAsync(id, includeCompleted: done);
         MoveTargets = (await _projects.GetAllAsync()).Where(x => x.Id != id).ToList();
 
         ViewMode = view ?? p.ViewType switch
