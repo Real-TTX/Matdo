@@ -79,35 +79,7 @@
         <div class="sec-head">
             <h3 class="sec-name">@col.Name</h3>
             <span class="sec-count">@secTasks.Count</span>
-            <div class="tb-menu" data-menu>
-                <button type="button" class="icon-btn sm" data-menu-toggle aria-label="@T["common.edit"]"><icon name="dots" size="16" /></button>
-                <div class="menu-pop">
-                    <form method="post" asp-page-handler="RenameSection" asp-route-id="@pid" class="menu-inline">
-                        <input type="hidden" name="columnId" value="@col.Id" />
-                        <input type="text" name="sectionName" value="@col.Name" aria-label="@T["common.name"]" />
-                        <button type="submit" class="btn small btn-primary"><icon name="save" size="14" /></button>
-                    </form>
-                    <form method="post" asp-page-handler="DuplicateSection" asp-route-id="@pid">
-                        <input type="hidden" name="columnId" value="@col.Id" />
-                        <button type="submit" class="menu-item"><icon name="copy" size="15" /> @T["projects.menu.duplicate"]</button>
-                    </form>
-                    @if (Model.MoveTargets.Count > 0)
-                    {
-                        <form method="post" asp-page-handler="MoveSection" asp-route-id="@pid" class="menu-inline">
-                            <input type="hidden" name="columnId" value="@col.Id" />
-                            <select name="targetProjectId" aria-label="@T["projects.section.moveTo"]">
-                                @foreach (var mt in Model.MoveTargets) { <option value="@mt.Id">@mt.Name</option> }
-                            </select>
-                            <button type="submit" class="btn small" title="@T["projects.section.moveTo"]"><icon name="chevron-right" size="14" /></button>
-                        </form>
-                    }
-                    <div class="menu-sep"></div>
-                    <form method="post" asp-page-handler="DeleteSection" asp-route-id="@pid" data-confirm="@T["projects.edit.deleteColumnConfirm"]">
-                        <input type="hidden" name="columnId" value="@col.Id" />
-                        <button type="submit" class="menu-item danger"><icon name="trash" size="15" /> @T["common.delete"]</button>
-                    </form>
-                </div>
-            </div>
+            <a class="icon-btn sm" href="/Projects/Section?id=@col.Id" data-modal aria-label="@T["projects.section.edit"]" title="@T["projects.section.edit"]"><icon name="dots" size="16" /></a>
         </div>
         foreach (var t in secTasks) { <partial name="_TaskRow" model="t" /> }
         <partial name="_Composer" model="@(new ComposerOptions { ReturnUrl = $"/Projects/View?id={pid}", DefaultProjectId = pid, DefaultColumnId = col.Id })" />
@@ -140,35 +112,7 @@ else
             <div class="kanban-col">
                 <div class="kanban-col-head">
                     <h4>@col.Name <span class="col-count">@colTasks.Count</span></h4>
-                    <div class="tb-menu" data-menu>
-                        <button type="button" class="icon-btn sm" data-menu-toggle aria-label="@T["common.edit"]"><icon name="dots" size="16" /></button>
-                        <div class="menu-pop">
-                            <form method="post" asp-page-handler="RenameSection" asp-route-id="@pid" class="menu-inline">
-                                <input type="hidden" name="columnId" value="@col.Id" />
-                                <input type="text" name="sectionName" value="@col.Name" aria-label="@T["common.name"]" />
-                                <button type="submit" class="btn small btn-primary"><icon name="save" size="14" /></button>
-                            </form>
-                            <form method="post" asp-page-handler="DuplicateSection" asp-route-id="@pid">
-                                <input type="hidden" name="columnId" value="@col.Id" />
-                                <button type="submit" class="menu-item"><icon name="copy" size="15" /> @T["projects.menu.duplicate"]</button>
-                            </form>
-                            @if (Model.MoveTargets.Count > 0)
-                            {
-                                <form method="post" asp-page-handler="MoveSection" asp-route-id="@pid" class="menu-inline">
-                                    <input type="hidden" name="columnId" value="@col.Id" />
-                                    <select name="targetProjectId" aria-label="@T["projects.section.moveTo"]">
-                                        @foreach (var mt in Model.MoveTargets) { <option value="@mt.Id">@mt.Name</option> }
-                                    </select>
-                                    <button type="submit" class="btn small" title="@T["projects.section.moveTo"]"><icon name="chevron-right" size="14" /></button>
-                                </form>
-                            }
-                            <div class="menu-sep"></div>
-                            <form method="post" asp-page-handler="DeleteSection" asp-route-id="@pid" data-confirm="@T["projects.edit.deleteColumnConfirm"]">
-                                <input type="hidden" name="columnId" value="@col.Id" />
-                                <button type="submit" class="menu-item danger"><icon name="trash" size="15" /> @T["common.delete"]</button>
-                            </form>
-                        </div>
-                    </div>
+                    <a class="icon-btn sm" href="/Projects/Section?id=@col.Id" data-modal aria-label="@T["projects.section.edit"]" title="@T["projects.section.edit"]"><icon name="dots" size="16" /></a>
                 </div>
                 <div class="kanban-cards" data-column-id="@col.Id">
                     @foreach (var t in colTasks)

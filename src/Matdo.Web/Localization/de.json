@@ -228,6 +228,7 @@
   "projects.menu.duplicate": "Duplizieren",
   "projects.menu.copyLink": "Link zum Projekt kopieren",
   "projects.section.moveTo": "In anderes Projekt verschieben",
+  "projects.section.edit": "Abschnitt bearbeiten",
   "projects.menu.copied": "Link kopiert",
   "projects.menu.archive": "Archivieren",
   "projects.menu.archiveConfirm": "Projekt archivieren? Es verschwindet aus der Liste.",

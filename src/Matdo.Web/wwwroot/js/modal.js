@@ -58,7 +58,7 @@
     }
 
     document.addEventListener('click', function (e) {
-        var a = e.target.closest('a[href^="/Tasks/Edit"]');
+        var a = e.target.closest('a[href^="/Tasks/Edit"], a[data-modal]');
         if (a && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
             e.preventDefault();
             openModal(a.getAttribute('href'));
@@ -92,7 +92,7 @@
             .then(function (r) { return r.text().then(function (html) { return { redirected: r.redirected, html: html }; }); })
             .then(function (res) {
                 if (!res.redirected) { setPanel(res.html); return; }   // Validierungsfehler / Re-Render
-                if (handler === '' || /delete/i.test(handler)) { closeModal(); window.location.reload(); }
+                if (form.hasAttribute('data-modal-reload') || handler === '' || /delete/i.test(handler)) { closeModal(); window.location.reload(); }
                 else {
                     // Unter-Aktion -> Modal neu laden und den passenden Tab wieder aktivieren
                     var tabFor = { addsubtask: 'subtasks', addreminder: 'reminders', removereminder: 'reminders', share: 'share', unshare: 'share' };

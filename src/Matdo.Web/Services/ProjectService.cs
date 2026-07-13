@@ -302,6 +302,14 @@ public class ProjectService
             .ToListAsync();
     }
 
+    /// <summary>Eine Spalte laden, wenn der Benutzer sie verwalten darf – sonst null.</summary>
+    public async Task<KanbanColumn?> GetManagedColumnAsync(long columnId)
+    {
+        var col = await _db.KanbanColumns.FindAsync(columnId);
+        if (col is null || !await CanManageAsync(col.ProjectId)) return null;
+        return col;
+    }
+
     public async Task<KanbanColumn?> AddColumnAsync(long projectId, string name)
     {
         if (!await CanManageAsync(projectId)) return null;

@@ -1,0 +1,53 @@
+@page
+@model Matdo.Web.Pages.Projects.SectionModel
+@{
+    ViewData["Title"] = T["projects.section.edit"];
+    if (Request.Query.ContainsKey("modal")) { Layout = null; }
+    var cid = Model.Column.Id;
+    var pid = Model.ProjectId;
+}
+<div class="page-head"><h1>@T["projects.section.edit"]</h1></div>
+
+<form method="post" asp-page-handler="Rename" class="form-card" data-modal-reload>
+    <input type="hidden" name="id" value="@cid" />
+    <input type="hidden" name="pid" value="@pid" />
+    <form-field label="@T["common.name"]" for="name" required="true">
+        <input name="name" type="text" value="@Model.Column.Name" required autofocus />
+    </form-field>
+    <form-buttons>
+        <button type="submit" class="btn btn-primary"><icon name="save" size="16" /> @T["common.save"]</button>
+        <a class="btn" href="/Projects/View?id=@pid" data-modal-close><icon name="back" size="16" /> @T["common.back"]</a>
+    </form-buttons>
+</form>
+
+<div class="form-card mt">
+    <div class="form-buttons">
+        <form method="post" asp-page-handler="Duplicate" data-modal-reload style="display:inline">
+            <input type="hidden" name="id" value="@cid" />
+            <input type="hidden" name="pid" value="@pid" />
+            <button type="submit" class="btn"><icon name="copy" size="16" /> @T["projects.menu.duplicate"]</button>
+        </form>
+        <form method="post" asp-page-handler="Delete" data-modal-reload style="display:inline">
+            <input type="hidden" name="id" value="@cid" />
+            <input type="hidden" name="pid" value="@pid" />
+            <button type="submit" class="btn danger" onclick="return confirm('@T["projects.edit.deleteColumnConfirm"]')"><icon name="trash" size="16" /> @T["common.delete"]</button>
+        </form>
+    </div>
+
+    @if (Model.MoveTargets.Count > 0)
+    {
+        <form method="post" asp-page-handler="Move" data-modal-reload class="field-row" style="margin-top:12px; align-items:flex-end">
+            <input type="hidden" name="id" value="@cid" />
+            <input type="hidden" name="pid" value="@pid" />
+            <form-field label="@T["projects.section.moveTo"]">
+                <select name="targetProjectId">
+                    @foreach (var mt in Model.MoveTargets)
+                    {
+                        <option value="@mt.Id">@mt.Name</option>
+                    }
+                </select>
+            </form-field>
+            <button type="submit" class="btn"><icon name="chevron-right" size="16" /> @T["projects.section.moveTo"]</button>
+        </form>
+    }
+</div>
