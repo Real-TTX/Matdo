@@ -65,24 +65,6 @@
                 <div class="spacer"></div>
                 <div class="topbar-actions">
                     @await RenderSectionAsync("TopbarActions", required: false)
-                    <div class="tb-menu" data-menu>
-                        <button type="button" class="icon-btn avatar-btn" data-menu-toggle aria-label="@T["nav.settings"]" aria-haspopup="true">
-                            <span class="avatar sm">@(string.IsNullOrEmpty(CurrentUser.DisplayName) ? "?" : CurrentUser.DisplayName![..1].ToUpper())</span>
-                        </button>
-                        <div class="menu-pop">
-                            <a class="menu-item" href="/Account/Settings"><icon name="user" size="15" /> @T["nav.settings"]</a>
-                            <a class="menu-item" href="/Reporting"><icon name="chart" size="15" /> @T["nav.reporting"]</a>
-                            <a class="menu-item" href="/Search"><icon name="search" size="15" /> @T["nav.search"]</a>
-                            @if (CurrentUser.IsAdmin)
-                            {
-                                <a class="menu-item" href="/Admin"><icon name="settings" size="15" /> @T["nav.administration"]</a>
-                            }
-                            <div class="menu-sep"></div>
-                            <form method="post" action="/Account/Logout">
-                                <button type="submit" class="menu-item danger"><icon name="logout" size="15" /> @T["nav.logout"]</button>
-                            </form>
-                        </div>
-                    </div>
                 </div>
             </header>
             <div id="offline-bar" class="offline-bar" hidden data-saved="@T["offline.saved"]">

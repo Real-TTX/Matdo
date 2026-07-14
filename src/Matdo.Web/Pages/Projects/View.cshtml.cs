@@ -26,10 +26,12 @@ public class ProjectViewModel : PageModel
     public int CalYear { get; set; }
     public int CalMonth { get; set; }
     public bool ShowCompleted { get; set; }
+    public string Sort { get; set; } = "manual";
+    public int PrioFilter { get; set; }   // 0 = alle
     /// <summary>Andere Projekte (für „Abschnitt in anderes Projekt verschieben").</summary>
     public List<Project> MoveTargets { get; set; } = new();
 
-    public async Task<IActionResult> OnGetAsync(long id, string? view, string? ym, bool done)
+    public async Task<IActionResult> OnGetAsync(long id, string? view, string? ym, bool done, string? sort, int prio)
     {
         var p = await _projects.GetAsync(id);
         if (p is null) return NotFound();
@@ -38,6 +40,18 @@ public class ProjectViewModel : PageModel
         Columns = p.Columns.OrderBy(c => c.Position).ToList();
         Tasks = await _tasks.GetByProjectAsync(id, includeCompleted: done);
         MoveTargets = (await _projects.GetAllAsync()).Where(x => x.Id != id).ToList();
+
+        // Sortierung & Priorität-Filter (Anzeige-Menü).
+        Sort = sort is "due" or "priority" or "name" ? sort : "manual";
+        PrioFilter = prio is >= 1 and <= 4 ? prio : 0;
+        if (PrioFilter > 0) Tasks = Tasks.Where(t => (int)t.Priority == PrioFilter).ToList();
+        Tasks = Sort switch
+        {
+            "due" => Tasks.OrderBy(t => !t.DueDate.HasValue).ThenBy(t => t.DueDate).ThenBy(t => t.Priority).ToList(),
+            "priority" => Tasks.OrderBy(t => t.Priority).ThenBy(t => t.Position).ToList(),
+            "name" => Tasks.OrderBy(t => t.Title).ToList(),
+            _ => Tasks
+        };
 
         ViewMode = view ?? p.ViewType switch
         {

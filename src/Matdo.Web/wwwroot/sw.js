@@ -1,5 +1,5 @@
 // Matdo Service Worker – App-Shell-Caching + Push-Benachrichtigungen
-const CACHE = 'matdo-v31';
+const CACHE = 'matdo-v32';
 const APP_SHELL = [
     '/offline.html',
     '/offline.js',

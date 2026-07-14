@@ -20,17 +20,41 @@
     };
 }
 @section TopbarActions {
-    @* Anzeige: Layout wechseln (temporär) + erledigte Aufgaben einblenden. *@
-    @{ var doneKeep = Model.ShowCompleted ? "&done=true" : ""; }
+    @* Anzeige: Layout + Sortieren + Priorität-Filter + erledigte Aufgaben. *@
+    @{
+        string DUrl(string? v = null, bool? done = null, string? sort = null, int? prio = null)
+        {
+            var q = $"/Projects/View?id={pid}&view={v ?? Model.ViewMode}";
+            if (done ?? Model.ShowCompleted) q += "&done=true";
+            var ss = sort ?? Model.Sort;
+            if (ss != "manual") q += "&sort=" + ss;
+            var pp = prio ?? Model.PrioFilter;
+            if (pp > 0) q += "&prio=" + pp;
+            return q;
+        }
+    }
     <div class="tb-menu" data-menu>
         <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.view.display"]" title="@T["projects.view.display"]"><icon name="list" /></button>
-        <div class="menu-pop">
+        <div class="menu-pop menu-scroll">
             <div class="pop-title">@T["projects.view.layout"]</div>
-            <a class="menu-item @(Model.ViewMode == "list" ? "active" : "")" href="/Projects/View?id=@pid&view=list@(doneKeep)"><icon name="list" size="15" /> @T["projects.viewType.list"]</a>
-            <a class="menu-item @(Model.ViewMode == "kanban" ? "active" : "")" href="/Projects/View?id=@pid&view=kanban@(doneKeep)"><icon name="kanban" size="15" /> @T["projects.viewType.kanban"]</a>
-            <a class="menu-item @(Model.ViewMode == "calendar" ? "active" : "")" href="/Projects/View?id=@pid&view=calendar@(doneKeep)"><icon name="calendar" size="15" /> @T["projects.viewType.calendar"]</a>
+            <a class="menu-item @(Model.ViewMode == "list" ? "active" : "")" href="@DUrl(v: "list")"><icon name="list" size="15" /> @T["projects.viewType.list"]</a>
+            <a class="menu-item @(Model.ViewMode == "kanban" ? "active" : "")" href="@DUrl(v: "kanban")"><icon name="kanban" size="15" /> @T["projects.viewType.kanban"]</a>
+            <a class="menu-item @(Model.ViewMode == "calendar" ? "active" : "")" href="@DUrl(v: "calendar")"><icon name="calendar" size="15" /> @T["projects.viewType.calendar"]</a>
             <div class="menu-sep"></div>
-            <a class="menu-item @(Model.ShowCompleted ? "active" : "")" href="/Projects/View?id=@pid&view=@Model.ViewMode@(Model.ShowCompleted ? "" : "&done=true")"><icon name="check" size="15" /> @T["projects.view.showCompleted"]</a>
+            <div class="pop-title">@T["projects.view.sortBy"]</div>
+            <a class="menu-item @(Model.Sort == "manual" ? "active" : "")" href="@DUrl(sort: "manual")">@T["projects.view.sortManual"]</a>
+            <a class="menu-item @(Model.Sort == "due" ? "active" : "")" href="@DUrl(sort: "due")">@T["projects.view.sortDue"]</a>
+            <a class="menu-item @(Model.Sort == "priority" ? "active" : "")" href="@DUrl(sort: "priority")">@T["projects.view.sortPriority"]</a>
+            <a class="menu-item @(Model.Sort == "name" ? "active" : "")" href="@DUrl(sort: "name")">@T["projects.view.sortName"]</a>
+            <div class="menu-sep"></div>
+            <div class="pop-title">@T["projects.view.filterPriority"]</div>
+            <a class="menu-item @(Model.PrioFilter == 0 ? "active" : "")" href="@DUrl(prio: 0)">@T["projects.view.filterAll"]</a>
+            <a class="menu-item @(Model.PrioFilter == 1 ? "active" : "")" href="@DUrl(prio: 1)">P1</a>
+            <a class="menu-item @(Model.PrioFilter == 2 ? "active" : "")" href="@DUrl(prio: 2)">P2</a>
+            <a class="menu-item @(Model.PrioFilter == 3 ? "active" : "")" href="@DUrl(prio: 3)">P3</a>
+            <a class="menu-item @(Model.PrioFilter == 4 ? "active" : "")" href="@DUrl(prio: 4)">P4</a>
+            <div class="menu-sep"></div>
+            <a class="menu-item @(Model.ShowCompleted ? "active" : "")" href="@DUrl(done: !Model.ShowCompleted)"><icon name="check" size="15" /> @T["projects.view.showCompleted"]</a>
         </div>
     </div>
     <a class="icon-btn" href="/Projects/Actions?id=@pid" data-modal aria-label="@T["projects.view.settings"]" title="@T["projects.view.settings"]"><icon name="dots" /></a>

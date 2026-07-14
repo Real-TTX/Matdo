@@ -106,6 +106,8 @@ a.crumb:hover { color: var(--text); }
 .tb-menu { position: relative; }
 .menu-pop { position: absolute; right: 0; top: calc(100% + 6px); min-width: 224px; background: var(--card); border: 1px solid var(--border-strong); border-radius: 12px; box-shadow: var(--shadow); padding: 6px; display: none; z-index: 60; }
 .tb-menu.open .menu-pop { display: block; }
+.menu-pop.menu-scroll { max-height: 72vh; overflow-y: auto; }
+.menu-pop .pop-title { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); padding: 6px 10px 2px; font-weight: 700; }
 .menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 8px; color: var(--text); background: none; border: none; font: inherit; font-size: 14px; text-align: left; cursor: pointer; text-decoration: none; }
 .menu-item:hover { background: var(--hover); }
 .menu-item svg, .menu-item .svg-icon { color: var(--text-muted); flex: 0 0 auto; }

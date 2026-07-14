@@ -5,10 +5,35 @@
     var composer = new ComposerOptions { ReturnUrl = "/Tasks/Inbox" };
 }
 @section TopbarActions {
+    @{
+        string DUrl(bool? done = null, string? sort = null, int? prio = null)
+        {
+            var parts = new List<string>();
+            if (done ?? Model.ShowCompleted) parts.Add("done=true");
+            var ss = sort ?? Model.Sort;
+            if (ss != "manual") parts.Add("sort=" + ss);
+            var pp = prio ?? Model.PrioFilter;
+            if (pp > 0) parts.Add("prio=" + pp);
+            return "/Tasks/Inbox" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
+        }
+    }
     <div class="tb-menu" data-menu>
         <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.view.display"]" title="@T["projects.view.display"]"><icon name="list" /></button>
-        <div class="menu-pop">
-            <a class="menu-item @(Model.ShowCompleted ? "active" : "")" href="/Tasks/Inbox@(Model.ShowCompleted ? "" : "?done=true")"><icon name="check" size="15" /> @T["projects.view.showCompleted"]</a>
+        <div class="menu-pop menu-scroll">
+            <div class="pop-title">@T["projects.view.sortBy"]</div>
+            <a class="menu-item @(Model.Sort == "manual" ? "active" : "")" href="@DUrl(sort: "manual")">@T["projects.view.sortManual"]</a>
+            <a class="menu-item @(Model.Sort == "due" ? "active" : "")" href="@DUrl(sort: "due")">@T["projects.view.sortDue"]</a>
+            <a class="menu-item @(Model.Sort == "priority" ? "active" : "")" href="@DUrl(sort: "priority")">@T["projects.view.sortPriority"]</a>
+            <a class="menu-item @(Model.Sort == "name" ? "active" : "")" href="@DUrl(sort: "name")">@T["projects.view.sortName"]</a>
+            <div class="menu-sep"></div>
+            <div class="pop-title">@T["projects.view.filterPriority"]</div>
+            <a class="menu-item @(Model.PrioFilter == 0 ? "active" : "")" href="@DUrl(prio: 0)">@T["projects.view.filterAll"]</a>
+            <a class="menu-item @(Model.PrioFilter == 1 ? "active" : "")" href="@DUrl(prio: 1)">P1</a>
+            <a class="menu-item @(Model.PrioFilter == 2 ? "active" : "")" href="@DUrl(prio: 2)">P2</a>
+            <a class="menu-item @(Model.PrioFilter == 3 ? "active" : "")" href="@DUrl(prio: 3)">P3</a>
+            <a class="menu-item @(Model.PrioFilter == 4 ? "active" : "")" href="@DUrl(prio: 4)">P4</a>
+            <div class="menu-sep"></div>
+            <a class="menu-item @(Model.ShowCompleted ? "active" : "")" href="@DUrl(done: !Model.ShowCompleted)"><icon name="check" size="15" /> @T["projects.view.showCompleted"]</a>
         </div>
     </div>
 }
