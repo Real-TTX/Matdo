@@ -124,7 +124,7 @@
             <a class="nav-item @Active("/admin")" href="/Admin"><icon name="settings" /> @T["nav.administration"]</a>
         }
         <a class="nav-item @Active("/account/settings")" href="/Account/Settings"><icon name="user" /> @T["nav.settings"]</a>
-        <form method="post" action="/Account/Logout" class="logout-form">
+        <form method="post" asp-page="/Account/Logout" class="logout-form">
             <button type="submit" class="nav-item as-button"><icon name="logout" /> @T["nav.logout"]</button>
         </form>
         <div style="padding:6px 10px; font-size:11px; color:var(--text-faint)">Matdo @Matdo.Web.Services.BuildInfo.Version</div>
