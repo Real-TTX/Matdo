@@ -187,10 +187,10 @@ public class SmartInputParser
             if (m.Success) { date = now.Date.AddDays(int.Parse(m.Groups[1].Value)); text = text.Remove(m.Index, m.Length); }
         }
 
-        // (5) Wochenende: "am Wochenende", "this weekend" -> nächster Samstag
+        // (5) Wochenende: "am/dieses/kommendes Wochenende", "this weekend" -> nächster Samstag
         if (date is null)
         {
-            var m = Regex.Match(text, @"(?<=^|\s)(?:am\s+|übers?\s+|this\s+|at\s+the\s+)?(?:wochenende|weekend)(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
+            var m = Regex.Match(text, @"(?<=^|\s)(?:(?:diese[smnr]?|kommende[nrs]?|am|übers?|this|at\s+the)\s+)?(?:wochenende|weekend)(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
             if (m.Success) { date = NextWeekday(now, DayOfWeek.Saturday); text = text.Remove(m.Index, m.Length); }
         }
 
@@ -206,10 +206,10 @@ public class SmartInputParser
         {
             foreach (var kv in Weekdays)
             {
-                var m = Regex.Match(text, $@"(?<=^|\s)(n(?:ä|ae)chste[rn]?\s+|next\s+)?{kv.Key}(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
+                var m = Regex.Match(text, $@"(?<=^|\s)(?:(?<next>n(?:ä|ae)chste[rn]?|next)\s+|(?:diese[smnr]?|this)\s+)?{kv.Key}(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
                 if (!m.Success) continue;
                 var d = NextWeekday(now, kv.Value);
-                if (m.Groups[1].Success) d = d.AddDays(7);   // "nächsten"
+                if (m.Groups["next"].Success) d = d.AddDays(7);   // "nächsten/next" -> übernächster
                 date = d;
                 text = text.Remove(m.Index, m.Length);
                 break;
