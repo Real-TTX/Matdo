@@ -69,11 +69,11 @@ public class TaskService
     // ----- Ansichten (lesend) -----
 
     /// <summary>Überfällige + heute fällige Aufgaben (Ansicht "Heute").</summary>
-    public async Task<List<TaskItem>> GetTodayAsync()
+    public async Task<List<TaskItem>> GetTodayAsync(bool includeCompleted = false)
     {
         var endOfTodayUtc = DateTime.Today.AddDays(1).ToUniversalTime();
         return await WithDetails(AccessibleTasks())
-            .Where(t => !t.IsCompleted && t.ParentTaskId == null && t.DueDate != null && t.DueDate < endOfTodayUtc)
+            .Where(t => (includeCompleted || !t.IsCompleted) && t.ParentTaskId == null && t.DueDate != null && t.DueDate < endOfTodayUtc)
             .OrderBy(t => t.DueDate).ThenBy(t => t.Priority)
             .ToListAsync();
     }
