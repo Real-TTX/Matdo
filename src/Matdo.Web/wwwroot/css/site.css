@@ -131,7 +131,7 @@ a.crumb:hover { color: var(--text); }
 .sidebar {
     width: var(--sidebar-w); flex: 0 0 var(--sidebar-w);
     background: var(--sidebar-bg); border-right: 1px solid var(--border);
-    display: flex; flex-direction: column; height: 100vh; position: sticky; top: 0;
+    display: flex; flex-direction: column; height: 100vh; height: 100dvh; position: sticky; top: 0;
     padding: 8px 6px; overflow-y: auto;
     /* Scrollbalken standardmäßig unsichtbar, erscheint erst beim Überfahren der Seitenleiste. */
     scrollbar-width: thin; scrollbar-color: transparent transparent;
@@ -168,7 +168,7 @@ a.crumb:hover { color: var(--text); }
 .nav-section-title { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-muted); padding: 4px 10px; }
 .nav-section-title .mini-add { opacity: .6; display: inline-flex; }
 .nav-section-title .mini-add:hover { opacity: 1; color: var(--accent); }
-.sidebar-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--border); }
+.sidebar-foot { margin-top: auto; padding-top: 10px; padding-bottom: env(safe-area-inset-bottom); border-top: 1px solid var(--border); }
 .logout-form { margin: 0; }
 
 /* ---------- Buttons ---------- */
@@ -536,7 +536,7 @@ body.modal-lock { overflow: hidden; }
     .only-mobile { display: inline-flex !important; }
     .app-content { padding: 8px 16px 90px; }
     .sidebar {
-        position: fixed; z-index: 60; left: 0; top: 0; height: 100vh;
+        position: fixed; z-index: 60; left: 0; top: 0; height: 100vh; height: 100dvh;
         transform: translateX(-100%); transition: transform .22s ease; box-shadow: var(--shadow);
     }
     body.sidebar-open .sidebar { transform: translateX(0); }
