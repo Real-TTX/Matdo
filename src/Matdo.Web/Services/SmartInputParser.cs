@@ -106,28 +106,67 @@ public class SmartInputParser
         ["sonntag"] = DayOfWeek.Sunday, ["sunday"] = DayOfWeek.Sunday,
     };
 
+    // Kürzel (mehrdeutig, z.B. „Do"/„So") – nur zusammen mit einer Uhrzeit ausgewertet.
+    private static readonly Dictionary<string, DayOfWeek> WeekdayAbbr = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["mo"] = DayOfWeek.Monday, ["mon"] = DayOfWeek.Monday,
+        ["di"] = DayOfWeek.Tuesday, ["tue"] = DayOfWeek.Tuesday, ["tues"] = DayOfWeek.Tuesday,
+        ["mi"] = DayOfWeek.Wednesday, ["wed"] = DayOfWeek.Wednesday,
+        ["do"] = DayOfWeek.Thursday, ["thu"] = DayOfWeek.Thursday, ["thur"] = DayOfWeek.Thursday, ["thurs"] = DayOfWeek.Thursday,
+        ["fr"] = DayOfWeek.Friday, ["fri"] = DayOfWeek.Friday,
+        ["sa"] = DayOfWeek.Saturday, ["sat"] = DayOfWeek.Saturday,
+        ["so"] = DayOfWeek.Sunday, ["sun"] = DayOfWeek.Sunday,
+    };
+
+    private static DateTime NextWeekday(DateTime now, DayOfWeek target)
+    {
+        var days = (((int)target - (int)now.DayOfWeek) + 7) % 7;
+        if (days == 0) days = 7;   // Wochentagsname = nächstes Vorkommen
+        return now.Date.AddDays(days);
+    }
+
+    /// <summary>Baut eine Uhrzeit aus Stunde/Minute (+ optional am/pm). Null bei ungültig.</summary>
+    private static TimeSpan? BuildTime(string hStr, string? mStr, string? apRaw)
+    {
+        if (!int.TryParse(hStr, out var h)) return null;
+        var min = int.TryParse(mStr, out var mv) ? mv : 0;
+        var ap = (apRaw ?? "").ToLowerInvariant();
+        if (ap == "pm" && h < 12) h += 12;
+        if (ap == "am" && h == 12) h = 0;
+        return h is >= 0 and < 24 && min is >= 0 and < 60 ? new TimeSpan(h, min, 0) : null;
+    }
+
     private static (string text, DateTime? dueUtc, bool hasTime) ParseDate(string text)
     {
         var now = DateTime.Now;
         DateTime? date = null;
         TimeSpan? time = null;
 
-        // Uhrzeit: "11:30", "10 Uhr", "11:30 Uhr", "10am/pm"
-        var tm = Regex.Match(text, @"(?<=^|\s)(\d{1,2}):(\d{2})(?:\s*uhr)?(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
-        if (!tm.Success)
-            tm = Regex.Match(text, @"(?<=^|\s)(\d{1,2})\s*uhr(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
-        if (tm.Success)
+        // (1) Wochentags-Kürzel MIT Uhrzeit: "Mo 17:00", "Fr 23 Uhr", "Fri 5pm".
+        //     Kürzel nur mit direkt folgender Uhrzeit, sonst zu viele Fehltreffer ("Do the dishes").
+        var abbrPattern = string.Join("|", WeekdayAbbr.Keys.Select(Regex.Escape));
+        var combo = Regex.Match(text, $@"(?<=^|\s)({abbrPattern})\s+(\d{{1,2}})(?::(\d{{2}}))?\s*(uhr|am|pm)?(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
+        if (combo.Success && WeekdayAbbr.TryGetValue(combo.Groups[1].Value, out var cwd)
+            && BuildTime(combo.Groups[2].Value, combo.Groups[3].Value, combo.Groups[4].Value) is { } ct)
         {
-            var h = int.Parse(tm.Groups[1].Value);
-            var min = tm.Groups.Count > 2 && tm.Groups[2].Success ? int.Parse(tm.Groups[2].Value) : 0;
-            if (h is >= 0 and < 24 && min is >= 0 and < 60)
+            date = NextWeekday(now, cwd);
+            time = ct;
+            text = text.Remove(combo.Index, combo.Length);
+        }
+
+        // (2) Uhrzeit einzeln: "11:30", "10 Uhr", "11:30 Uhr", "5pm", "5:30pm", "23 Uhr"
+        if (time is null)
+        {
+            var tm = Regex.Match(text, @"(?<=^|\s)(\d{1,2})(?::(\d{2}))?\s*(uhr|am|pm)(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
+            if (!tm.Success) tm = Regex.Match(text, @"(?<=^|\s)(\d{1,2}):(\d{2})(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
+            if (tm.Success && BuildTime(tm.Groups[1].Value, tm.Groups[2].Value, tm.Groups.Count > 3 ? tm.Groups[3].Value : "") is { } t2)
             {
-                time = new TimeSpan(h, min, 0);
+                time = t2;
                 text = text.Remove(tm.Index, tm.Length);
             }
         }
 
-        // Relative Tagesangaben
+        // (3) Relative Tagesangaben
         (string term, int offset)[] rel =
         {
             ("übermorgen", 2), ("uebermorgen", 2), ("day after tomorrow", 2),
@@ -141,24 +180,37 @@ public class SmartInputParser
             if (m.Success) { date = now.Date.AddDays(offset); text = text.Remove(m.Index, m.Length); break; }
         }
 
-        // "in X Tagen" / "in X days"
+        // (4) "in X Tagen" / "in X days"
         if (date is null)
         {
             var m = Regex.Match(text, @"(?<=^|\s)in\s+(\d{1,3})\s+(tag(?:en)?|days?)(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
             if (m.Success) { date = now.Date.AddDays(int.Parse(m.Groups[1].Value)); text = text.Remove(m.Index, m.Length); }
         }
 
-        // Wochentage (optional "nächsten/next")
+        // (5) Wochenende: "am Wochenende", "this weekend" -> nächster Samstag
+        if (date is null)
+        {
+            var m = Regex.Match(text, @"(?<=^|\s)(?:am\s+|übers?\s+|this\s+|at\s+the\s+)?(?:wochenende|weekend)(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
+            if (m.Success) { date = NextWeekday(now, DayOfWeek.Saturday); text = text.Remove(m.Index, m.Length); }
+        }
+
+        // (6) "nächste Woche" / "next week" -> nächster Montag
+        if (date is null)
+        {
+            var m = Regex.Match(text, @"(?<=^|\s)(?:n(?:ä|ae)chste\s+woche|next\s+week)(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
+            if (m.Success) { date = NextWeekday(now, DayOfWeek.Monday); text = text.Remove(m.Index, m.Length); }
+        }
+
+        // (7) Volle Wochentagsnamen (optional "nächsten/next")
         if (date is null)
         {
             foreach (var kv in Weekdays)
             {
                 var m = Regex.Match(text, $@"(?<=^|\s)(n(?:ä|ae)chste[rn]?\s+|next\s+)?{kv.Key}(?=\s|$|[.,;!?])", RegexOptions.IgnoreCase);
                 if (!m.Success) continue;
-                var days = (((int)kv.Value - (int)now.DayOfWeek) + 7) % 7;
-                if (days == 0) days = 7;                 // Wochentagsname = nächstes Vorkommen
-                if (m.Groups[1].Success) days += 7;       // "nächsten"
-                date = now.Date.AddDays(days);
+                var d = NextWeekday(now, kv.Value);
+                if (m.Groups[1].Success) d = d.AddDays(7);   // "nächsten"
+                date = d;
                 text = text.Remove(m.Index, m.Length);
                 break;
             }
