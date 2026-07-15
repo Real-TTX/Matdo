@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
 using Matdo.Web.Data;
@@ -17,6 +18,10 @@ namespace Matdo.Web.Services;
 public class TodoistImportService
 {
     private const int MaxTasks = 5000;   // Obergrenze gegen sehr große/bösartige Dateien
+    private const int MaxBackupProjects = 300;            // max. CSVs (Projekte) je Backup-ZIP
+    private const long MaxEntryBytes = 8L * 1024 * 1024;  // max. entpackte Größe je CSV
+    private const long MaxTotalUncompressed = 150L * 1024 * 1024; // Zip-Bomben-Schutz gesamt
+    private const int MaxWarnings = 40;                   // Warnungen für die Anzeige begrenzen
 
     private readonly MatdoDbContext _db;
     private readonly ICurrentUserAccessor _me;
@@ -32,6 +37,9 @@ public class TodoistImportService
     private long Uid => _me.UserId ?? throw new InvalidOperationException("Kein angemeldeter Benutzer.");
 
     public record ImportResult(bool Ok, int Sections, int Tasks, int Labels, List<string> Warnings, string? ProjectName = null, long ProjectId = 0);
+
+    /// <summary>Ergebnis eines Backup-Imports (ZIP mit mehreren Projekt-CSVs).</summary>
+    public record BackupResult(bool Ok, int Projects, int Tasks, int Sections, List<string> Warnings);
 
     // @label-Token: muss mit einem Buchstaben beginnen (schließt @30min, @/munich u.ä. aus).
     private static readonly Regex LabelRx = new(@"(?<=^|\s)@([\p{L}][\p{L}\p{N}_-]*)", RegexOptions.Compiled);
@@ -168,6 +176,105 @@ public class TodoistImportService
 
         if (truncated) warnings.Insert(0, $"Es wurden nur die ersten {MaxTasks} Aufgaben importiert.");
         return new ImportResult(true, columnByName.Count, taskCount, labelCache.Count, warnings, project.Name, project.Id);
+    }
+
+    /// <summary>
+    /// Importiert ein Todoist-Backup-ZIP (eine CSV je Projekt) als mehrere Matdo-Projekte.
+    /// Jede CSV wird eigenständig (eigene Transaktion) importiert; scheitert eine, laufen die
+    /// übrigen trotzdem durch (der ChangeTracker wird zwischen den CSVs geleert).
+    /// </summary>
+    public async Task<BackupResult> ImportTodoistBackupZipAsync(Stream zipStream)
+    {
+        var warnings = new List<string>();
+        int projects = 0, tasks = 0, sections = 0;
+
+        ZipArchive archive;
+        try { archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true); }
+        catch (InvalidDataException)
+        {
+            return new BackupResult(false, 0, 0, 0, new() { "Die Datei ist kein gültiges ZIP-Archiv." });
+        }
+
+        using (archive)
+        {
+            // Nur echte CSV-Dateien; macOS-Beiwerk (__MACOSX/…, ._*) ignorieren; stabile Reihenfolge.
+            var entries = archive.Entries
+                .Where(e => e.Name.Length > 0
+                    && e.FullName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+                    && !e.FullName.StartsWith("__MACOSX", StringComparison.OrdinalIgnoreCase)
+                    && !e.Name.StartsWith("._", StringComparison.Ordinal))
+                .OrderBy(e => e.FullName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (entries.Count == 0)
+                return new BackupResult(false, 0, 0, 0, new() { "Das ZIP enthält keine CSV-Dateien. Bitte ein Todoist-Backup hochladen." });
+
+            long totalBytes = 0;
+            var processed = 0;
+            foreach (var entry in entries)
+            {
+                if (processed >= MaxBackupProjects)
+                { warnings.Add($"Es wurden nur die ersten {MaxBackupProjects} Projekte importiert."); break; }
+                totalBytes += entry.Length;
+                if (totalBytes > MaxTotalUncompressed)
+                { warnings.Add("Das Backup ist zu groß – die restlichen Projekte wurden übersprungen."); break; }
+
+                var name = DeriveName(entry.Name);
+                string content;
+                try { content = await ReadEntryTextAsync(entry, MaxEntryBytes); }
+                catch (Exception)
+                { warnings.Add($"„{name}“: konnte nicht gelesen werden – übersprungen."); processed++; continue; }
+
+                try
+                {
+                    var r = await ImportTodoistCsvAsync(entry.Name, content, name);
+                    if (r.Ok)
+                    {
+                        projects++; tasks += r.Tasks; sections += r.Sections;
+                        foreach (var w in r.Warnings) warnings.Add($"„{name}“: {w}");
+                    }
+                    else warnings.Add($"„{name}“ übersprungen: {r.Warnings.FirstOrDefault() ?? "unbekanntes Format"}");
+                }
+                catch (Exception)
+                {
+                    warnings.Add($"„{name}“ konnte nicht importiert werden – übersprungen.");
+                }
+                finally
+                {
+                    // Wichtig: Reste (auch zurückgerollte Entitäten) verwerfen, damit das nächste
+                    // Projekt sauberen Zustand hat und nichts doppelt eingefügt wird.
+                    _db.ChangeTracker.Clear();
+                }
+                processed++;
+            }
+        }
+
+        if (warnings.Count > MaxWarnings)
+        {
+            var extra = warnings.Count - MaxWarnings;
+            warnings = warnings.Take(MaxWarnings).ToList();
+            warnings.Add($"… und {extra} weitere Hinweise.");
+        }
+        return new BackupResult(projects > 0, projects, tasks, sections, warnings);
+    }
+
+    /// <summary>Liest einen ZIP-Eintrag als Text (UTF-8, BOM-aware) mit harter Byte-Obergrenze.</summary>
+    private static async Task<string> ReadEntryTextAsync(ZipArchiveEntry entry, long maxBytes)
+    {
+        await using var es = entry.Open();
+        using var ms = new MemoryStream();
+        var buffer = new byte[81920];
+        long total = 0;
+        int read;
+        while ((read = await es.ReadAsync(buffer)) > 0)
+        {
+            total += read;
+            if (total > maxBytes) throw new InvalidOperationException("Eintrag zu groß.");
+            ms.Write(buffer, 0, read);
+        }
+        ms.Position = 0;
+        using var reader = new StreamReader(ms, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return await reader.ReadToEndAsync();
     }
 
     /// <summary>Todoist-CSV-Priorität (1 = höchste/P1 … 4 = niedrigste/P4) auf unser Enum (P1=1…P4=4) abbilden.</summary>

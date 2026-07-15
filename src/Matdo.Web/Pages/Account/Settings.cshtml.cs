@@ -185,7 +185,7 @@ public class SettingsModel : PageModel
         return BackToCalendar();
     }
 
-    // ----- Import (Todoist-CSV) -----
+    // ----- Import (Todoist-CSV oder Backup-ZIP) -----
 
     public async Task<IActionResult> OnPostImportAsync(IFormFile? file, string? projectName)
     {
@@ -198,35 +198,65 @@ public class SettingsModel : PageModel
 
         if (file is null || file.Length == 0)
         {
-            Error = "Bitte eine CSV-Datei auswählen.";
+            Error = "Bitte eine CSV- oder ZIP-Datei auswählen.";
             return Page();
         }
-        if (file.Length > 5 * 1024 * 1024)
+        if (file.Length > 25 * 1024 * 1024)
         {
-            Error = "Die Datei ist zu groß (max. 5 MB).";
+            Error = "Die Datei ist zu groß (max. 25 MB).";
             return Page();
         }
 
-        string content;
-        using (var reader = new StreamReader(file.OpenReadStream(), Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
-            content = await reader.ReadToEndAsync();
+        // Datei in den Speicher lesen und per Magic-Bytes entscheiden: ZIP-Backup oder einzelne CSV.
+        using var ms = new MemoryStream();
+        await using (var upload = file.OpenReadStream())
+            await upload.CopyToAsync(ms);
+        ms.Position = 0;
+
+        var head = new byte[4];
+        var n = await ms.ReadAsync(head.AsMemory(0, 4));
+        ms.Position = 0;
+        // ZIP-Signatur "PK" + lokaler Header (03 04) | leeres Archiv (05 06) | gesplittet (07 08).
+        var isZip = n >= 4 && head[0] == 0x50 && head[1] == 0x4B
+            && (head[2] == 0x03 || head[2] == 0x05 || head[2] == 0x07)
+            && (head[3] == 0x04 || head[3] == 0x06 || head[3] == 0x08);
 
         try
         {
-            var result = await _import.ImportTodoistCsvAsync(file.FileName, content, projectName);
-            if (!result.Ok)
+            if (isZip)
             {
-                Error = result.Warnings.FirstOrDefault() ?? "Import fehlgeschlagen.";
-                return Page();
+                var res = await _import.ImportTodoistBackupZipAsync(ms);
+                if (!res.Ok)
+                {
+                    Error = res.Warnings.FirstOrDefault() ?? "Import fehlgeschlagen.";
+                    ImportWarnings = res.Warnings;
+                    return Page();
+                }
+                var secPart = res.Sections > 0 ? $", {res.Sections} Spalten" : "";
+                ImportResult = $"Backup importiert: {res.Projects} Projekte, {res.Tasks} Aufgaben{secPart}.";
+                ImportWarnings = res.Warnings;
             }
-            var sectionPart = result.Sections > 0 ? $", {result.Sections} Spalten" : "";
-            ImportResult = $"„{result.ProjectName}“ importiert: {result.Tasks} Aufgaben{sectionPart}.";
-            ImportWarnings = result.Warnings;
+            else
+            {
+                string content;
+                using (var reader = new StreamReader(ms, Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
+                    content = await reader.ReadToEndAsync();
+
+                var result = await _import.ImportTodoistCsvAsync(file.FileName, content, projectName);
+                if (!result.Ok)
+                {
+                    Error = result.Warnings.FirstOrDefault() ?? "Import fehlgeschlagen.";
+                    return Page();
+                }
+                var sectionPart = result.Sections > 0 ? $", {result.Sections} Spalten" : "";
+                ImportResult = $"„{result.ProjectName}“ importiert: {result.Tasks} Aufgaben{sectionPart}.";
+                ImportWarnings = result.Warnings;
+            }
         }
         catch (Exception)
         {
             // Keine internen Details nach außen geben.
-            Error = "Import fehlgeschlagen. Bitte prüfe, ob es sich um einen gültigen Todoist-CSV-Export handelt.";
+            Error = "Import fehlgeschlagen. Bitte prüfe, ob es sich um einen gültigen Todoist-CSV-Export oder ein Backup-ZIP handelt.";
         }
         return Page();
     }

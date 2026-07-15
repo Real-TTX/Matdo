@@ -282,7 +282,7 @@
             <p class="hint muted">@T["import.todoist.help"]</p>
             <form method="post" asp-page-handler="Import" enctype="multipart/form-data">
                 <form-field label="@T["import.file"]" hint="@T["import.fileHint"]" required="true">
-                    <input type="file" name="file" accept=".csv,text/csv" required />
+                    <input type="file" name="file" accept=".csv,.zip,text/csv,application/zip,application/x-zip-compressed" required />
                 </form-field>
                 <form-field label="@T["import.projectName"]" hint="@T["import.projectNameHint"]">
                     <input type="text" name="projectName" placeholder="@T["import.projectNamePlaceholder"]" />
