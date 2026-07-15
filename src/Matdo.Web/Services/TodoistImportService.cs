@@ -18,6 +18,8 @@ namespace Matdo.Web.Services;
 public class TodoistImportService
 {
     private const int MaxTasks = 5000;   // Obergrenze gegen sehr große/bösartige Dateien
+    private const int MaxLabels = 200;   // max. neue Etiketten je CSV (begrenzt DB-Roundtrips)
+    private const int MaxRows = 100_000; // max. CSV-Zeilen (begrenzt Parser-Speicher/-CPU)
     private const int MaxBackupProjects = 300;            // max. CSVs (Projekte) je Backup-ZIP
     private const long MaxEntryBytes = 8L * 1024 * 1024;  // max. entpackte Größe je CSV
     private const long MaxTotalUncompressed = 150L * 1024 * 1024; // Zip-Bomben-Schutz gesamt
@@ -98,17 +100,24 @@ public class TodoistImportService
         }
 
         // Etiketten vorab auflösen (einmal je Name; nutzt/erweitert die persönlichen Labels).
+        // Hart begrenzt: jede neue Bezeichnung ist ein DB-Roundtrip in der offenen Transaktion –
+        // ohne Deckel könnte eine Datei mit Millionen @Tokens die DB lahmlegen und die Label-Tabelle fluten.
         var labelCache = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        var labelCapHit = false;
         foreach (var r in data)
         {
+            if (labelCache.Count >= MaxLabels) { labelCapHit = true; break; }
             if (!string.Equals(Get(r, cType).Trim(), "task", StringComparison.Ordinal)) continue;
             foreach (Match m in LabelRx.Matches(Get(r, cContent)))
             {
                 var ln = m.Groups[1].Value;
-                if (!labelCache.ContainsKey(ln))
-                    labelCache[ln] = (await _labels.GetOrCreateByNameAsync(ln)).Id;
+                if (labelCache.ContainsKey(ln)) continue;
+                if (labelCache.Count >= MaxLabels) { labelCapHit = true; break; }
+                labelCache[ln] = (await _labels.GetOrCreateByNameAsync(ln)).Id;
             }
+            if (labelCapHit) break;
         }
+        if (labelCapHit) warnings.Add($"Sehr viele Etiketten – nur die ersten {MaxLabels} wurden übernommen.");
 
         long? currentColumn = null;
         int taskCount = 0, position = 0;
@@ -185,7 +194,9 @@ public class TodoistImportService
     /// </summary>
     public async Task<BackupResult> ImportTodoistBackupZipAsync(Stream zipStream)
     {
-        var warnings = new List<string>();
+        // Fehler/„Projekt übersprungen“ (immer zeigen) getrennt von Detailhinweisen (Datumswarnungen).
+        var failures = new List<string>();
+        var details = new List<string>();
         int projects = 0, tasks = 0, sections = 0;
 
         ZipArchive archive;
@@ -214,16 +225,20 @@ public class TodoistImportService
             foreach (var entry in entries)
             {
                 if (processed >= MaxBackupProjects)
-                { warnings.Add($"Es wurden nur die ersten {MaxBackupProjects} Projekte importiert."); break; }
-                totalBytes += entry.Length;
-                if (totalBytes > MaxTotalUncompressed)
-                { warnings.Add("Das Backup ist zu groß – die restlichen Projekte wurden übersprungen."); break; }
+                { failures.Add($"Es wurden nur die ersten {MaxBackupProjects} Projekte importiert."); break; }
 
                 var name = DeriveName(entry.Name);
                 string content;
-                try { content = await ReadEntryTextAsync(entry, MaxEntryBytes); }
+                long entryBytes;
+                try { (content, entryBytes) = await ReadEntryTextAsync(entry, MaxEntryBytes); }
                 catch (Exception)
-                { warnings.Add($"„{name}“: konnte nicht gelesen werden – übersprungen."); processed++; continue; }
+                { failures.Add($"„{name}“: konnte nicht gelesen werden – übersprungen."); processed++; continue; }
+
+                // Gesamt-Obergrenze auf TATSÄCHLICH entpackten Bytes (nicht der fälschbaren
+                // Größenangabe aus dem ZIP-Verzeichnis) – Schutz gegen Zip-Bomben.
+                totalBytes += entryBytes;
+                if (totalBytes > MaxTotalUncompressed)
+                { failures.Add("Das Backup ist zu groß – die restlichen Projekte wurden übersprungen."); break; }
 
                 try
                 {
@@ -231,13 +246,13 @@ public class TodoistImportService
                     if (r.Ok)
                     {
                         projects++; tasks += r.Tasks; sections += r.Sections;
-                        foreach (var w in r.Warnings) warnings.Add($"„{name}“: {w}");
+                        foreach (var w in r.Warnings) details.Add($"„{name}“: {w}");
                     }
-                    else warnings.Add($"„{name}“ übersprungen: {r.Warnings.FirstOrDefault() ?? "unbekanntes Format"}");
+                    else failures.Add($"„{name}“ übersprungen: {r.Warnings.FirstOrDefault() ?? "unbekanntes Format"}");
                 }
                 catch (Exception)
                 {
-                    warnings.Add($"„{name}“ konnte nicht importiert werden – übersprungen.");
+                    failures.Add($"„{name}“ konnte nicht importiert werden – übersprungen.");
                 }
                 finally
                 {
@@ -249,17 +264,19 @@ public class TodoistImportService
             }
         }
 
-        if (warnings.Count > MaxWarnings)
-        {
-            var extra = warnings.Count - MaxWarnings;
-            warnings = warnings.Take(MaxWarnings).ToList();
-            warnings.Add($"… und {extra} weitere Hinweise.");
-        }
+        // Fehlerhinweise zuerst (die sind am wichtigsten), dann Detailhinweise bis zum Deckel.
+        var warnings = new List<string>();
+        warnings.AddRange(failures.Take(MaxWarnings));
+        foreach (var d in details) { if (warnings.Count >= MaxWarnings) break; warnings.Add(d); }
+        var total = failures.Count + details.Count;
+        if (total > warnings.Count) warnings.Add($"… und {total - warnings.Count} weitere Hinweise.");
+
         return new BackupResult(projects > 0, projects, tasks, sections, warnings);
     }
 
-    /// <summary>Liest einen ZIP-Eintrag als Text (UTF-8, BOM-aware) mit harter Byte-Obergrenze.</summary>
-    private static async Task<string> ReadEntryTextAsync(ZipArchiveEntry entry, long maxBytes)
+    /// <summary>Liest einen ZIP-Eintrag als Text (UTF-8, BOM-aware) mit harter Byte-Obergrenze.
+    /// Gibt Text und die Anzahl tatsächlich entpackter Bytes zurück.</summary>
+    private static async Task<(string Text, long Bytes)> ReadEntryTextAsync(ZipArchiveEntry entry, long maxBytes)
     {
         await using var es = entry.Open();
         using var ms = new MemoryStream();
@@ -274,7 +291,7 @@ public class TodoistImportService
         }
         ms.Position = 0;
         using var reader = new StreamReader(ms, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        return await reader.ReadToEndAsync();
+        return (await reader.ReadToEndAsync(), total);
     }
 
     /// <summary>Todoist-CSV-Priorität (1 = höchste/P1 … 4 = niedrigste/P4) auf unser Enum (P1=1…P4=4) abbilden.</summary>
@@ -354,6 +371,9 @@ public class TodoistImportService
 
         for (var i = 0; i < text.Length; i++)
         {
+            // Zeilen-Obergrenze: verhindert, dass eine Datei aus lauter Zeilenumbrüchen Millionen
+            // winziger Zeilen materialisiert (Speicher/CPU), lange bevor MaxTasks greifen würde.
+            if (rows.Count >= MaxRows) break;
             var c = text[i];
             if (inQuotes)
             {
