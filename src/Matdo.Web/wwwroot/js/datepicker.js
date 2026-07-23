@@ -14,13 +14,13 @@
             months: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
             mon: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
             days: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
-            today: 'Heute', tomorrow: 'Morgen', nextWeek: 'Nächste Woche', weekend: 'Wochenende', noDate: 'Kein Datum', time: 'Uhrzeit', pick: 'Datum wählen'
+            today: 'Heute', tomorrow: 'Morgen', dayAfter: 'Übermorgen', nextWeek: 'Nächste Woche', weekend: 'Wochenende', noDate: 'Kein Datum', time: 'Uhrzeit', pick: 'Datum wählen'
         },
         en: {
             months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
             mon: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             days: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-            today: 'Today', tomorrow: 'Tomorrow', nextWeek: 'Next week', weekend: 'Weekend', noDate: 'No date', time: 'Time', pick: 'Pick a date'
+            today: 'Today', tomorrow: 'Tomorrow', dayAfter: 'Day after', nextWeek: 'Next week', weekend: 'Weekend', noDate: 'No date', time: 'Time', pick: 'Pick a date'
         }
     };
     var L = I18N[LANG] || I18N.de;
@@ -37,7 +37,13 @@
     var IC = {
         cal: svg("<rect width='18' height='18' x='3' y='4' rx='2'/><path d='M3 10h18M8 2v4M16 2v4'/>"),
         clock: svg("<circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/>"),
-        x: svg("<path d='M18 6 6 18M6 6l12 12'/>")
+        x: svg("<path d='M18 6 6 18M6 6l12 12'/>"),
+        // Schnellauswahl-Icons
+        sun: svg("<circle cx='12' cy='12' r='4'/><path d='M12 3v1.5M12 19.5V21M4.6 4.6l1 1M18.4 18.4l1 1M3 12h1.5M19.5 12H21M4.6 19.4l1-1M18.4 5.6l1-1'/>"),        // Heute
+        sunrise: svg("<path d='M12 3v6'/><path d='m8 7 4-4 4 4'/><path d='M3 20h18'/><path d='M5.6 16a6.5 6.5 0 0 1 12.8 0'/>"),                                       // Morgen
+        chevrons: svg("<path d='m6 17 5-5-5-5'/><path d='m13 17 5-5-5-5'/>"),                                                                                        // Übermorgen
+        sofa: svg("<path d='M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3'/><path d='M2 12a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z'/><path d='M4 18v2M20 18v2M12 5v7'/>"), // Wochenende
+        arrow: svg("<path d='M5 12h14'/><path d='m13 5 7 7-7 7'/>")                                                                                                  // Nächste Woche
     };
 
     // Partner-Zeitfeld zu einem Datumsfeld (…Date -> …Time) im selben Formular.
@@ -84,12 +90,20 @@
         var input = c._dpInput, t = today(), sel = parseISO(input.value);
         if (c._y == null) { var base = sel || t; c._y = base.getFullYear(); c._m = base.getMonth(); }
 
-        var h = "<div class='dp-quick'>"
-            + "<button type='button' class='dp-chip' data-set='0'>" + L.today + "</button>"
-            + "<button type='button' class='dp-chip' data-set='1'>" + L.tomorrow + "</button>"
-            + "<button type='button' class='dp-chip' data-set='7'>" + L.nextWeek + "</button>"
-            + "<button type='button' class='dp-chip' data-wk='1'>" + L.weekend + "</button>"
-            + "</div>";
+        // Nächstes Vorkommen eines Wochentags (0=So..6=Sa); heute -> +7.
+        function nextOf(dow) { var diff = (dow - t.getDay() + 7) % 7; if (diff === 0) diff = 7; return addDays(t, diff); }
+        var quick = [
+            { l: L.today, d: t, ic: IC.sun },
+            { l: L.tomorrow, d: addDays(t, 1), ic: IC.sunrise },
+            { l: L.dayAfter, d: addDays(t, 2), ic: IC.chevrons },
+            { l: L.weekend, d: nextOf(6), ic: IC.sofa },        // nächster Samstag
+            { l: L.nextWeek, d: nextOf(1), ic: IC.arrow }        // nächster Montag
+        ];
+        var h = "<div class='dp-quick'>" + quick.map(function (o) {
+            var wd = L.days[(o.d.getDay() + 6) % 7];             // Wochentags-Kürzel (Mo…So)
+            return "<button type='button' class='dp-q' data-date='" + iso(o.d) + "'>"
+                + o.ic + "<span class='dp-q-lbl'>" + o.l + "</span><span class='dp-q-day'>" + wd + "</span></button>";
+        }).join('') + "</div>";
         h += "<div class='dp-head'><button type='button' class='dp-nav' data-nav='-1' aria-label='‹'>‹</button>"
             + "<span class='dp-title'>" + L.months[c._m] + " " + c._y + "</span>"
             + "<button type='button' class='dp-nav' data-nav='1' aria-label='›'>›</button></div>";
@@ -130,14 +144,8 @@
             // Composer sonst das Popover schließen würde.
             var nav = e.target.closest('[data-nav]');
             if (nav) { e.preventDefault(); e.stopPropagation(); c._m += (+nav.getAttribute('data-nav')); if (c._m < 0) { c._m = 11; c._y--; } else if (c._m > 11) { c._m = 0; c._y++; } paint(c); return; }
-            var chip = e.target.closest('[data-set]');
-            if (chip) { e.preventDefault(); e.stopPropagation(); setDate(c._dpInput, addDays(today(), +chip.getAttribute('data-set'))); if (isPopup) closePop(); else paint(c); return; }
-            var wk = e.target.closest('[data-wk]');
-            if (wk) {
-                e.preventDefault(); e.stopPropagation();
-                var t2 = today(); var toSat = (6 - t2.getDay() + 7) % 7; if (toSat === 0) toSat = 7; // nächster Samstag
-                setDate(c._dpInput, addDays(t2, toSat)); if (isPopup) closePop(); else paint(c); return;
-            }
+            var quick = e.target.closest('[data-date]');
+            if (quick) { e.preventDefault(); e.stopPropagation(); setDate(c._dpInput, parseISO(quick.getAttribute('data-date'))); if (isPopup) closePop(); else paint(c); return; }
             var day = e.target.closest('[data-day]');
             if (day) { e.preventDefault(); e.stopPropagation(); setDate(c._dpInput, new Date(c._y, c._m, +day.getAttribute('data-day'))); if (isPopup) closePop(); else paint(c); return; }
             if (e.target.closest('.dp-nodate')) { e.preventDefault(); e.stopPropagation(); clearVal(c._dpInput); if (isPopup) closePop(); else paint(c); return; }

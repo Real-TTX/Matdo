@@ -458,9 +458,14 @@ body.modal-lock { overflow: hidden; }
 .dp-pop { position: absolute; z-index: 300; padding: 10px; width: 270px; max-width: calc(100vw - 16px); background: var(--card); border: 1px solid var(--border-strong); border-radius: 12px; box-shadow: var(--shadow); }
 .dp-inline { width: 262px; max-width: 100%; }
 
-.dp-quick { display: flex; gap: 6px; margin-bottom: 8px; }
-.dp-chip { flex: 1; min-width: 0; padding: 5px 4px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--card); color: var(--text); font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dp-chip:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+.dp-quick { display: flex; flex-direction: column; gap: 1px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.dp-q { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; border: none; border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
+.dp-q:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.dp-q svg { color: var(--text-muted); flex: 0 0 auto; }
+.dp-q:hover svg { color: var(--accent); }
+.dp-q-lbl { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dp-q-day { color: var(--text-faint); font-size: 12px; flex: 0 0 auto; }
+.dp-q:hover .dp-q-day { color: var(--accent-ink); }
 
 .dp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .dp-title { font-weight: 600; font-size: 13px; }
@@ -485,6 +490,15 @@ body.modal-lock { overflow: hidden; }
 .dp-nodate:hover { color: var(--danger); background: var(--hover); }
 @media (max-width: 860px) {
     .popover { position: fixed; left: 12px; right: 12px; top: auto; bottom: 12px; min-width: 0; }
+    /* Datepicker: volle Breite + größere Tap-Ziele auf Mobile */
+    .dp-pop { width: calc(100vw - 16px); max-width: none; padding: 14px; border-radius: 14px; }
+    .dp-inline { width: 100%; }
+    .dp-cell { height: 40px; }
+    .dp-day { font-size: 15px; }
+    .dp-q { padding: 12px 10px; font-size: 15px; }
+    .dp-q-day { font-size: 13px; }
+    .dp-nodate { font-size: 14px; padding: 6px 8px; }
+    .dp-time-sel { font-size: 14px; padding: 6px; }
 }
 
 /* ---------- Auth pages ---------- */
