@@ -74,6 +74,15 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+/* Mobile: kein Gummiband-/Bounce-Overscroll und kein Rand-Wisch, der versehentlich
+   die Seite verlässt bzw. Pull-to-Refresh auslöst. Wirkt auf iOS Safari 16+ und Android Chrome;
+   die reine iOS-Safari-System-Wischgeste am Bildschirmrand bleibt OS-seitig bestehen (nicht via CSS steuerbar,
+   in der installierten PWA aber ohnehin nicht vorhanden). */
+html { overscroll-behavior: none; }
+/* Innere Scrollbereiche fangen ihren Overscroll ab (kein Weiterreichen an die Seite);
+   horizontale Scroller (Board/Tabellen) lösen dadurch auch keine Zurück-Navigation aus. */
+.kanban, .table-wrap, .modal-panel, .sidebar,
+.menu-pop.menu-scroll, .ppick-list, .pop-list, .ac-box, .composer textarea.desc { overscroll-behavior: contain; }
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
