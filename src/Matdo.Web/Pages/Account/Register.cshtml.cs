@@ -2,9 +2,11 @@ using System.ComponentModel.DataAnnotations;
 using Matdo.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Matdo.Web.Pages.Account;
 
+[EnableRateLimiting("auth")]
 public class RegisterModel : PageModel
 {
     private readonly AuthService _auth;
@@ -31,7 +33,7 @@ public class RegisterModel : PageModel
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Bitte Passwort angeben.")]
-        [MinLength(6, ErrorMessage = "Das Passwort muss mindestens 6 Zeichen haben.")]
+        [MinLength(8, ErrorMessage = "Das Passwort muss mindestens 8 Zeichen haben.")]
         public string Password { get; set; } = string.Empty;
 
         [Compare(nameof(Password), ErrorMessage = "Die Passwörter stimmen nicht überein.")]

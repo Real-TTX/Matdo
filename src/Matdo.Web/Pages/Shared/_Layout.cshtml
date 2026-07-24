@@ -70,6 +70,13 @@
             <div id="offline-bar" class="offline-bar" hidden data-saved="@T["offline.saved"]">
                 <span class="dot"></span> @T["offline.banner"] <span id="offline-count"></span>
             </div>
+            @if (User.FindFirst("email_confirmed")?.Value == "0")
+            {
+                <div class="verify-bar">
+                    <span><icon name="mail" size="15" /> @T["auth.verifyBanner"]</span>
+                    <a href="/Account/ConfirmEmail">@T["auth.verifyBannerAction"]</a>
+                </div>
+            }
             <div class="app-content">
                 @RenderBody()
             </div>

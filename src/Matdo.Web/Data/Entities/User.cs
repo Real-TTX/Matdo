@@ -24,6 +24,19 @@ public class User : BaseEntity
 
     public bool IsActive { get; set; } = true;
 
+    // ----- Konto-Sicherheit (Public-Platform) -----
+    /// <summary>Ob die E-Mail-Adresse bestätigt wurde. Bestandsnutzer gelten als bestätigt (Migration).</summary>
+    public bool EmailConfirmed { get; set; }
+    /// <summary>Einmal-Token für den E-Mail-Bestätigungslink (null = bestätigt/keiner offen).</summary>
+    public Guid? EmailConfirmToken { get; set; }
+    /// <summary>Einmal-Token für das Zurücksetzen des Passworts (+ Ablaufzeitpunkt).</summary>
+    public Guid? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetExpiresUtc { get; set; }
+    /// <summary>Fehlversuche in Folge; ab Schwellwert greift eine temporäre Sperre.</summary>
+    public int FailedLoginCount { get; set; }
+    /// <summary>Gesperrt bis (UTC); solange werden Anmeldungen abgelehnt.</summary>
+    public DateTime? LockoutUntilUtc { get; set; }
+
     /// <summary>Optionale Zeitzone (IANA), für Erinnerungen relevant.</summary>
     public string? TimeZone { get; set; }
 

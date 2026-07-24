@@ -1,0 +1,33 @@
+@page
+@model Matdo.Web.Pages.Account.ConfirmEmailModel
+@{
+    ViewData["Title"] = T["auth.confirmTitle"];
+}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="logo"><icon name="check" size="26" /> Matdo</div>
+        <h1>@T["auth.confirmTitle"]</h1>
+
+        @if (Model.Ok)
+        {
+            <div class="alert success">@T["auth.confirmOk"]</div>
+            <div class="auth-alt"><a href="/">@T["auth.toApp"]</a></div>
+        }
+        else if (Model.Resent)
+        {
+            <div class="alert info">@T["auth.confirmResent"]</div>
+            <div class="auth-alt"><a href="/">@T["auth.toApp"]</a></div>
+        }
+        else
+        {
+            <div class="alert error">@T["auth.confirmFail"]</div>
+            @if (Model.ShowResend)
+            {
+                <form method="post" asp-page-handler="Resend">
+                    <button type="submit" class="btn btn-primary">@T["auth.resend"]</button>
+                </form>
+            }
+            <div class="auth-alt"><a href="/">@T["auth.toApp"]</a></div>
+        }
+    </div>
+</div>

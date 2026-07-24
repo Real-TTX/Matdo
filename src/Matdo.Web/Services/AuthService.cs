@@ -1,3 +1,4 @@
+using System.Net;
 using Matdo.Web.Data;
 using Matdo.Web.Data.Entities;
 using Microsoft.AspNetCore.Http;
@@ -12,16 +13,24 @@ namespace Matdo.Web.Services;
 public class AuthService
 {
     public const int SessionDays = 30;
+    private const int MaxFailedLogins = 5;      // danach temporäre Sperre
+    private const int LockoutMinutes = 15;
+    private const int ResetValidHours = 2;      // Gültigkeit des Passwort-Reset-Links
 
     private readonly MatdoDbContext _db;
     private readonly IHttpContextAccessor _http;
     private readonly JsonConfigService _config;
+    private readonly EmailSender _email;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(MatdoDbContext db, IHttpContextAccessor http, JsonConfigService config)
+    public AuthService(MatdoDbContext db, IHttpContextAccessor http, JsonConfigService config,
+        EmailSender email, ILogger<AuthService> logger)
     {
         _db = db;
         _http = http;
         _config = config;
+        _email = email;
+        _logger = logger;
     }
 
     public record AuthResult(bool Success, string? Error = null);
@@ -73,7 +82,11 @@ public class AuthService
                 DisplayName = string.IsNullOrWhiteSpace(displayName) ? email.Split('@')[0] : displayName.Trim(),
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
                 RoleId = role.Id,
-                IsActive = true
+                IsActive = true,
+                // Der erste Nutzer (Admin, Ersteinrichtung) gilt sofort als bestätigt; alle
+                // weiteren müssen ihre E-Mail per Link bestätigen.
+                EmailConfirmed = isFirst,
+                EmailConfirmToken = isFirst ? null : Guid.NewGuid()
             };
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
@@ -85,18 +98,136 @@ public class AuthService
         }
 
         await CreateSessionAsync(user);
+        // Bestätigungs-Mail nach dem Commit verschicken (weiches Gate: Login ist schon möglich).
+        if (!user.EmailConfirmed && user.EmailConfirmToken is Guid vtok)
+            await SendVerificationEmailAsync(user, vtok);
         return new AuthResult(true);
     }
 
     public async Task<AuthResult> LoginAsync(string email, string password)
     {
         email = email.Trim().ToLowerInvariant();
+        var now = DateTime.UtcNow;
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
-        if (user is null || !user.IsActive || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            return new AuthResult(false, "E-Mail-Adresse oder Passwort ist ungültig.");
+        // Einheitliche Fehlermeldung – verrät nicht, ob das Konto existiert oder gesperrt ist
+        // (keine Nutzer-Enumeration). Die Sperre wirkt unabhängig von der Meldung.
+        const string invalid = "E-Mail-Adresse oder Passwort ist ungültig.";
 
+        if (user is null || !user.IsActive) return new AuthResult(false, invalid);
+        if (user.LockoutUntilUtc is DateTime until && until > now) return new AuthResult(false, invalid);
+
+        if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        {
+            user.FailedLoginCount++;
+            if (user.FailedLoginCount >= MaxFailedLogins)
+            {
+                user.LockoutUntilUtc = now.AddMinutes(LockoutMinutes);
+                user.FailedLoginCount = 0;
+            }
+            await _db.SaveChangesAsync();
+            return new AuthResult(false, invalid);
+        }
+
+        if (user.FailedLoginCount != 0 || user.LockoutUntilUtc != null)
+        {
+            user.FailedLoginCount = 0;
+            user.LockoutUntilUtc = null;
+            await _db.SaveChangesAsync();
+        }
         await CreateSessionAsync(user);
         return new AuthResult(true);
+    }
+
+    // ----- E-Mail-Bestätigung -----
+
+    /// <summary>Bestätigt die E-Mail-Adresse anhand des Tokens aus dem Link.</summary>
+    public async Task<bool> ConfirmEmailAsync(Guid token)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.EmailConfirmToken == token);
+        if (user is null) return false;
+        user.EmailConfirmed = true;
+        user.EmailConfirmToken = null;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    /// <summary>Verschickt dem (noch unbestätigten) Nutzer erneut den Bestätigungslink.</summary>
+    public async Task ResendVerificationAsync(long userId)
+    {
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null || user.EmailConfirmed) return;
+        user.EmailConfirmToken ??= Guid.NewGuid();
+        await _db.SaveChangesAsync();
+        await SendVerificationEmailAsync(user, user.EmailConfirmToken.Value);
+    }
+
+    // ----- Passwort zurücksetzen -----
+
+    /// <summary>Erzeugt (falls das Konto existiert) einen Reset-Token und mailt den Link.
+    /// Gibt bewusst nichts zurück – der Aufrufer zeigt immer dieselbe neutrale Meldung.</summary>
+    public async Task RequestPasswordResetAsync(string email)
+    {
+        email = (email ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(email)) return;
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
+        if (user is null) return;   // neutral: kein Hinweis auf Existenz
+
+        user.PasswordResetToken = Guid.NewGuid();
+        user.PasswordResetExpiresUtc = DateTime.UtcNow.AddHours(ResetValidHours);
+        await _db.SaveChangesAsync();
+
+        var link = BuildLink($"/Account/ResetPassword?token={user.PasswordResetToken}");
+        var html = $"<p>Hallo {WebUtility.HtmlEncode(user.DisplayName)},</p>"
+            + "<p>zum Zurücksetzen deines Matdo-Passworts klicke auf den folgenden Link "
+            + $"(gültig {ResetValidHours} Stunden):</p><p><a href=\"{link}\">{link}</a></p>"
+            + "<p>Wenn du das nicht angefordert hast, ignoriere diese E-Mail einfach.</p>";
+        await SendMailOrLogAsync(user.Email, user.DisplayName, "Passwort zurücksetzen · Matdo", html, link);
+    }
+
+    /// <summary>Setzt das Passwort per gültigem Token. Invalidiert alle bestehenden Sessions.</summary>
+    public async Task<AuthResult> ResetPasswordAsync(Guid token, string newPassword)
+    {
+        var now = DateTime.UtcNow;
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == token && u.PasswordResetExpiresUtc > now);
+        if (user is null) return new AuthResult(false, "Der Link ist ungültig oder abgelaufen.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetExpiresUtc = null;
+        user.FailedLoginCount = 0;
+        user.LockoutUntilUtc = null;
+        user.EmailConfirmed = true;   // Zugriff auf das Postfach ist damit belegt
+        await _db.SaveChangesAsync();
+
+        await RevokeAllSessionsAsync(user.Id);   // Sicherheit: alte Sessions entwerten
+        return new AuthResult(true);
+    }
+
+    /// <summary>Entfernt alle Sessions eines Nutzers (z.B. nach Passwortänderung/-reset).</summary>
+    public async Task RevokeAllSessionsAsync(long userId)
+    {
+        var sessions = await _db.UserSessions.Where(s => s.UserId == userId).ToListAsync();
+        if (sessions.Count == 0) return;
+        _db.UserSessions.RemoveRange(sessions);
+        await _db.SaveChangesAsync();
+    }
+
+    private string BuildLink(string path) => _config.Current.PublicBaseUrl.TrimEnd('/') + path;
+
+    private async Task SendVerificationEmailAsync(User u, Guid token)
+    {
+        var link = BuildLink($"/Account/ConfirmEmail?token={token}");
+        var html = $"<p>Hallo {WebUtility.HtmlEncode(u.DisplayName)},</p>"
+            + "<p>bitte bestätige deine E-Mail-Adresse für Matdo:</p>"
+            + $"<p><a href=\"{link}\">{link}</a></p>";
+        await SendMailOrLogAsync(u.Email, u.DisplayName, "E-Mail bestätigen · Matdo", html, link);
+    }
+
+    private async Task SendMailOrLogAsync(string to, string name, string subject, string html, string link)
+    {
+        var sent = await _email.SendAsync(to, name, subject, html);
+        // SMTP-los (Dev/Self-Host ohne Mail): Link protokollieren, damit der Ablauf trotzdem nutzbar ist.
+        if (!sent) _logger.LogWarning("E-Mail an {To} nicht versendet (SMTP aus/fehlgeschlagen). Link: {Link}", to, link);
     }
 
     public async Task LogoutAsync()

@@ -2,9 +2,11 @@ using System.ComponentModel.DataAnnotations;
 using Matdo.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Matdo.Web.Pages.Account;
 
+[EnableRateLimiting("auth")]
 public class LoginModel : PageModel
 {
     private readonly AuthService _auth;

@@ -128,6 +128,9 @@ a.crumb:hover { color: var(--text); }
 /* Offline-Banner + Toast (PWA) */
 .offline-bar { position: sticky; top: 44px; z-index: 15; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--bg)); border-bottom: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border)); }
 .offline-bar[hidden] { display: none; }
+.verify-bar { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 7px 12px; font-size: 13px; color: var(--accent-ink); background: var(--accent-soft); border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); }
+.verify-bar span { display: inline-flex; align-items: center; gap: 6px; }
+.verify-bar a { font-weight: 700; text-decoration: underline; }
 .offline-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
 #offline-count { color: var(--text-muted); font-weight: 500; }
 .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(16px); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; box-shadow: var(--shadow); opacity: 0; transition: opacity .25s, transform .25s; z-index: 400; max-width: 90vw; text-align: center; }

@@ -58,7 +58,8 @@ public class SessionAuthenticationHandler : AuthenticationHandler<Authentication
             new(MatdoClaims.DisplayName, u.DisplayName),
             new(ClaimTypes.Email, u.Email),
             new(ClaimTypes.Name, u.Email),
-            new(ClaimTypes.Role, u.Role?.Name ?? "User")
+            new(ClaimTypes.Role, u.Role?.Name ?? "User"),
+            new("email_confirmed", u.EmailConfirmed ? "1" : "0")
         };
 
         var identity = new ClaimsIdentity(claims, SchemeName);

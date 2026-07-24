@@ -2,25 +2,23 @@ using System.ComponentModel.DataAnnotations;
 using Matdo.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Matdo.Web.Pages.Account;
 
-/// <summary>Ersteinrichtung: legt beim ersten Start das Administrator-Konto an.</summary>
-public class SetupModel : PageModel
+[EnableRateLimiting("auth")]
+public class ResetPasswordModel : PageModel
 {
     private readonly AuthService _auth;
-    public SetupModel(AuthService auth) => _auth = auth;
+    public ResetPasswordModel(AuthService auth) => _auth = auth;
 
     [BindProperty] public InputModel Input { get; set; } = new();
     public string? Error { get; set; }
+    public bool Done { get; set; }
 
     public class InputModel
     {
-        public string? DisplayName { get; set; }
-
-        [Required(ErrorMessage = "Bitte E-Mail-Adresse angeben.")]
-        [EmailAddress(ErrorMessage = "Ungültige E-Mail-Adresse.")]
-        public string Email { get; set; } = string.Empty;
+        [Required] public string Token { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Bitte Passwort angeben.")]
         [MinLength(8, ErrorMessage = "Das Passwort muss mindestens 8 Zeichen haben.")]
@@ -30,24 +28,32 @@ public class SetupModel : PageModel
         public string PasswordConfirm { get; set; } = string.Empty;
     }
 
-    public async Task<IActionResult> OnGetAsync()
+    public IActionResult OnGet(string? token)
     {
-        // Nach der Einrichtung nicht mehr erreichbar.
-        if (await _auth.AnyUsersAsync()) return Redirect("/Account/Login");
+        if (string.IsNullOrWhiteSpace(token) || !Guid.TryParse(token, out _))
+        {
+            Error = "invalid";
+            return Page();
+        }
+        Input.Token = token;
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (await _auth.AnyUsersAsync()) return Redirect("/Account/Login");
         if (!ModelState.IsValid) return Page();
-
-        var result = await _auth.RegisterAsync(Input.Email, Input.Password, Input.DisplayName ?? "");
+        if (!Guid.TryParse(Input.Token, out var token))
+        {
+            Error = "invalid";
+            return Page();
+        }
+        var result = await _auth.ResetPasswordAsync(token, Input.Password);
         if (!result.Success)
         {
             Error = result.Error;
             return Page();
         }
-        return Redirect("/");   // erster Benutzer wird automatisch Admin + eingeloggt
+        Done = true;
+        return Page();
     }
 }
