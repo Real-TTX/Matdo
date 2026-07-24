@@ -18,7 +18,6 @@ public class TeamViewModel : PageModel
 
     public Team Team { get; set; } = null!;
     public List<Invitation> Pending { get; set; } = new();
-    public List<User> Invitable { get; set; } = new();
     public bool IsManager { get; set; }
     public bool IsOwner { get; set; }
     public long MeId { get; set; }
@@ -33,7 +32,6 @@ public class TeamViewModel : PageModel
         IsManager = await _teams.IsManagerAsync(id);
         IsOwner = await _teams.IsOwnerAsync(id);
         Pending = await _teams.GetPendingInvitationsAsync(id);
-        if (IsManager) Invitable = await _teams.GetInvitableUsersAsync(id);
         Message = TempData["TeamMsg"] as string;
         return true;
     }
@@ -41,26 +39,18 @@ public class TeamViewModel : PageModel
     public async Task<IActionResult> OnGetAsync(long id)
         => await LoadAsync(id) ? Page() : NotFound();
 
-    public async Task<IActionResult> OnPostInviteAsync(long id, string? email, long? userId, int role)
+    public async Task<IActionResult> OnPostInviteAsync(long id, string? email, int role)
     {
         try
         {
-            TeamService.InviteOutcome? outcome = null;
-            if (userId is long uid && uid > 0)
-                outcome = await _teams.InviteUserAsync(id, uid, (TeamRole)role);
-            else if (!string.IsNullOrWhiteSpace(email))
-                outcome = await _teams.InviteToTeamAsync(id, email, (TeamRole)role);
-
-            if (outcome is TeamService.InviteOutcome o)
-                TempData["TeamMsg"] = o switch
-                {
-                    TeamService.InviteOutcome.AddedDirectly => "Mitglied hinzugefügt.",
-                    TeamService.InviteOutcome.PendingInvite => "Einladung gespeichert – sie greift automatisch bei der Registrierung.",
-                    TeamService.InviteOutcome.AlreadyMember => "Diese Person ist bereits Mitglied.",
-                    TeamService.InviteOutcome.AlreadyInvited => "Es besteht bereits eine Einladung.",
-                    TeamService.InviteOutcome.Self => "Du bist bereits im Team.",
-                    _ => null
-                };
+            if (string.IsNullOrWhiteSpace(email)) return RedirectToPage(new { id });
+            var o = await _teams.InviteToTeamAsync(id, email, (TeamRole)role);
+            // Neutrale Einheitsmeldung: verrät nicht, ob zur Adresse schon ein Konto existiert.
+            TempData["TeamMsg"] = o switch
+            {
+                TeamService.InviteOutcome.Self => "Du bist bereits im Team.",
+                _ => "Eingeladen. Sobald die Person die Einladung annimmt, wird sie Mitglied."
+            };
         }
         catch (InvalidOperationException ex)
         {

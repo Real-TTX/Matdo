@@ -64,14 +64,8 @@
         <h3>@T["teams.inviteHeading"]</h3>
         <form method="post" asp-page-handler="Invite" asp-route-id="@Model.Team.Id">
             <div class="field-row">
-                <form-field label="@T["teams.invitePickUser"]">
-                    <select name="userId">
-                        <option value="">@T["teams.inviteByEmailOpt"]</option>
-                        @foreach (var u in Model.Invitable)
-                        {
-                            <option value="@u.Id">@u.DisplayName (@u.Email)</option>
-                        }
-                    </select>
+                <form-field label="@T["teams.inviteEmailLabel"]">
+                    <input type="email" name="email" placeholder="du@beispiel.de" required />
                 </form-field>
                 <form-field label="@T["teams.roleColumn"]">
                     <select name="role">
@@ -80,9 +74,6 @@
                     </select>
                 </form-field>
             </div>
-            <form-field label="@T["teams.inviteEmailLabel"]">
-                <input type="email" name="email" placeholder="du@beispiel.de" />
-            </form-field>
             <div class="form-buttons" style="margin-top:6px">
                 <button type="submit" class="btn btn-primary"><icon name="plus" size="16" /> @T["teams.invite"]</button>
             </div>

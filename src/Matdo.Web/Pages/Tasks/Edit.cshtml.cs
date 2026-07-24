@@ -85,7 +85,7 @@ public class TaskEditModel : PageModel
         SubTasks = Existing.SubTasks?.OrderBy(s => s.Position).ToList() ?? new();
         Reminders = Existing.Reminders?.OrderBy(r => r.RemindAt).ToList() ?? new();
         Shares = await _shares.GetTaskSharesAsync(id);
-        ShareableUsers = await _shares.GetShareableUsersAsync();
+        ShareableUsers = await _shares.GetCollaboratorsAsync();
 
         // Aktuellen Zugewiesenen als Option sicherstellen, auch wenn er kein Mitstreiter
         // des Bearbeiters ist – sonst würde er beim Speichern still entfernt.

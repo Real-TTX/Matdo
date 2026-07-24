@@ -59,7 +59,7 @@ public class ProjectEditModel : PageModel
     {
         Columns = await _projects.GetColumnsAsync(id);
         Shares = await _shares.GetProjectSharesAsync(id);
-        ShareableUsers = await _shares.GetShareableUsersAsync();
+        ShareableUsers = await _shares.GetCollaboratorsAsync();
         PendingInvites = await _shares.GetProjectPendingInvitesAsync(id);
         await LoadContextAsync(id);
     }
@@ -163,13 +163,13 @@ public class ProjectEditModel : PageModel
         if (string.IsNullOrWhiteSpace(shareEmail)) return RedirectToPage(new { id });
         var outcome = await _shares.ShareProjectByEmailAsync(id, shareEmail, (SharePermission)shareEmailPermission);
         // Ergebnis über TempData zurückmelden (überlebt den Redirect).
+        // Neutrale Einheitsmeldung für Shared/AlreadyShared/PendingInvite: verrät NICHT, ob zu der
+        // Adresse bereits ein Konto existiert (schließt das E-Mail-Existenz-Orakel).
         TempData["ShareMsg"] = outcome switch
         {
-            ShareService.ShareByEmailOutcome.Shared => "Projekt freigegeben.",
-            ShareService.ShareByEmailOutcome.AlreadyShared => "Freigabe aktualisiert.",
-            ShareService.ShareByEmailOutcome.PendingInvite => "Einladung gespeichert – sie greift automatisch bei der Registrierung.",
             ShareService.ShareByEmailOutcome.Self => "Du kannst nicht mit dir selbst teilen.",
-            _ => "Nur der Eigentümer kann teilen."
+            ShareService.ShareByEmailOutcome.NotOwner => "Nur der Eigentümer kann teilen.",
+            _ => "Eingeladen. Sobald die Person Matdo mit dieser Adresse nutzt, erhält sie Zugriff."
         };
         return RedirectToPage(new { id });
     }

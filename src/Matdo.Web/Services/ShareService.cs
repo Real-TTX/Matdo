@@ -18,13 +18,19 @@ public class ShareService
 
     private long Uid => _me.UserId ?? throw new InvalidOperationException("Kein angemeldeter Benutzer.");
 
-    /// <summary>Benutzer die als Teil-Ziel in Frage kommen (alle außer man selbst).</summary>
-    public Task<List<User>> GetShareableUsersAsync() =>
-        _db.Users.Where(u => u.IsActive && u.Id != Uid).OrderBy(u => u.DisplayName).ToListAsync();
-
-    /// <summary>Mitstreiter (Team-Kollegen / Freigabe-Partner) – Zuweisungs-Kandidaten für @Person.</summary>
+    /// <summary>Mitstreiter (Team-Kollegen / Freigabe-Partner) – die einzigen per Direkt-Auswahl
+    /// teilbaren Personen. Neue Personen erreicht man nur über die exakte E-Mail-Adresse
+    /// (keine Aufzählung aller Nutzer).</summary>
     public Task<List<User>> GetCollaboratorsAsync() =>
         Collaborators.Query(_db, Uid).OrderBy(u => u.DisplayName).ToListAsync();
+
+    /// <summary>Verhindert, dass per (beliebiger) Benutzer-Id an Fremde geteilt wird: Ziel muss
+    /// bereits Mitstreiter sein. Neue Freigaben laufen ausschließlich über die E-Mail-Wege.</summary>
+    private async Task EnsureCollaboratorAsync(long targetUserId)
+    {
+        if (!await Collaborators.Query(_db, Uid).AnyAsync(u => u.Id == targetUserId))
+            throw new InvalidOperationException("Diese Person ist kein Mitstreiter.");
+    }
 
     // ----- Projekte -----
 
@@ -41,6 +47,7 @@ public class ShareService
         // Nur der Eigentümer darf teilen.
         var owns = await _db.Projects.AnyAsync(p => p.Id == projectId && p.OwnerId == Uid);
         if (!owns) throw new InvalidOperationException("Nur der Eigentümer kann teilen.");
+        await EnsureCollaboratorAsync(targetUserId);
 
         var share = await _db.ProjectShares
             .FirstOrDefaultAsync(s => s.ProjectId == projectId && s.SharedWithUserId == targetUserId);
@@ -146,6 +153,7 @@ public class ShareService
     {
         var owns = await _db.Tasks.AnyAsync(t => t.Id == taskId && t.OwnerId == Uid);
         if (!owns) throw new InvalidOperationException("Nur der Eigentümer kann teilen.");
+        await EnsureCollaboratorAsync(targetUserId);
 
         var share = await _db.TaskShares
             .FirstOrDefaultAsync(s => s.TaskItemId == taskId && s.SharedWithUserId == targetUserId);

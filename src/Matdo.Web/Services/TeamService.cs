@@ -198,28 +198,9 @@ public class TeamService
         return InviteOutcome.PendingInvite;
     }
 
-    /// <summary>Aktive Nutzer, die noch nicht Mitglied des Teams sind (für die Direkt-Auswahl beim Einladen).</summary>
-    public async Task<List<User>> GetInvitableUsersAsync(long teamId)
-    {
-        if (!await IsManagerAsync(teamId)) return new();
-        var memberIds = await _db.TeamMembers.Where(m => m.TeamId == teamId).Select(m => m.UserId).ToListAsync();
-        return await _db.Users.Where(u => u.IsActive && !memberIds.Contains(u.Id))
-            .OrderBy(u => u.DisplayName).ToListAsync();
-    }
-
-    /// <summary>Einen bestehenden Plattform-Nutzer direkt ins Team aufnehmen (per Auswahl).</summary>
-    public async Task<InviteOutcome> InviteUserAsync(long teamId, long userId, TeamRole role)
-    {
-        if (!await IsManagerAsync(teamId)) throw new InvalidOperationException("Kein Zugriff auf dieses Team.");
-        if (role == TeamRole.Owner) role = TeamRole.Admin;
-        if (userId == Uid) return InviteOutcome.Self;
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-        if (user is null) return InviteOutcome.AlreadyInvited;
-        if (await _db.TeamMembers.AnyAsync(m => m.TeamId == teamId && m.UserId == userId)) return InviteOutcome.AlreadyMember;
-        _db.TeamMembers.Add(new TeamMember { TeamId = teamId, UserId = userId, Role = role });
-        await _db.SaveChangesAsync();
-        return InviteOutcome.AddedDirectly;
-    }
+    // Einladen erfolgt ausschließlich per exakter E-Mail-Adresse (InviteToTeamAsync) –
+    // es gibt bewusst KEINE Auflistung aller Plattform-Nutzer und kein Einladen per Benutzer-Id
+    // (verhindert Verzeichnis-/E-Mail-Enumeration auf einer öffentlichen Plattform).
 
     // ----- Plattform-Administration (alle Teams, nur Admin) -----
 
