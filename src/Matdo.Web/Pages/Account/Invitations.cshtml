@@ -1,0 +1,50 @@
+@page
+@model Matdo.Web.Pages.Account.InvitationsModel
+@{
+    ViewData["Title"] = T["invites.title"];
+}
+<div class="page-head">
+    <h1>@T["invites.title"]</h1>
+    <div class="sub">@T["invites.subtitle"]</div>
+</div>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="empty">@T["invites.empty"]</div>
+}
+else
+{
+    <div class="form-card">
+        <div class="table-wrap">
+            <table class="table">
+                <tbody>
+                @foreach (var inv in Model.Items)
+                {
+                    <tr>
+                        <td>
+                            @if (inv.TeamId != null)
+                            {
+                                <span><icon name="user" size="15" /> @T["invites.team"]: <strong>@(inv.Team?.Name ?? "?")</strong></span>
+                            }
+                            else if (inv.ProjectId != null)
+                            {
+                                <span><icon name="inbox" size="15" /> @T["invites.project"]: <strong>@(inv.Project?.Name ?? "?")</strong></span>
+                            }
+                        </td>
+                        <td class="actions-cell">
+                            <form method="post" asp-page-handler="Accept" style="display:inline">
+                                <input type="hidden" name="id" value="@inv.Id" />
+                                <button type="submit" class="btn btn-primary small"><icon name="check" size="14" /> @T["invites.accept"]</button>
+                            </form>
+                            <form method="post" asp-page-handler="Decline" style="display:inline" data-confirm="@T["invites.declineConfirm"]">
+                                <input type="hidden" name="id" value="@inv.Id" />
+                                <button type="submit" class="btn small danger"><icon name="x" size="14" /> @T["invites.decline"]</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

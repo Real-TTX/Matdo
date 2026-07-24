@@ -79,21 +79,12 @@ public class ShareService
         if (string.IsNullOrWhiteSpace(email)) throw new InvalidOperationException("E-Mail-Adresse fehlt.");
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
-        if (user != null)
-        {
-            if (user.Id == uid) return ShareByEmailOutcome.Self;
-            var existing = await _db.ProjectShares
-                .FirstOrDefaultAsync(s => s.ProjectId == projectId && s.SharedWithUserId == user.Id);
-            if (existing != null)
-            {
-                existing.Permission = permission;
-                await _db.SaveChangesAsync();
-                return ShareByEmailOutcome.AlreadyShared;
-            }
-            _db.ProjectShares.Add(new ProjectShare { ProjectId = projectId, SharedWithUserId = user.Id, Permission = permission });
-            await _db.SaveChangesAsync();
-            return ShareByEmailOutcome.Shared;
-        }
+        if (user != null && user.Id == uid) return ShareByEmailOutcome.Self;
+        // Bestehende Nutzer werden NICHT mehr sofort freigegeben – es entsteht eine Einladung,
+        // die die Person unter „Einladungen" annimmt (Zustimmung). „registriert" und „nicht
+        // registriert" sind damit von außen nicht unterscheidbar (kein E-Mail-Existenz-Orakel).
+        if (user != null && await _db.ProjectShares.AnyAsync(s => s.ProjectId == projectId && s.SharedWithUserId == user.Id))
+            return ShareByEmailOutcome.AlreadyShared;
 
         var pending = await _db.Invitations.AnyAsync(i => i.Email == email && i.ProjectId == projectId && !i.Accepted);
         if (!pending)

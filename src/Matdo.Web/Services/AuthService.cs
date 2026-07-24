@@ -91,8 +91,8 @@ public class AuthService
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
 
-            // Ausstehende Einladungen (Team/Projekt) für diese E-Mail automatisch übernehmen.
-            await TeamService.ApplyPendingInvitationsAsync(_db, user);
+            // Einladungen werden NICHT mehr automatisch übernommen – der neue Nutzer nimmt sie
+            // bewusst unter „Einladungen" an (Zustimmung). Sie bleiben als offen bestehen.
 
             await tx.CommitAsync();
         }

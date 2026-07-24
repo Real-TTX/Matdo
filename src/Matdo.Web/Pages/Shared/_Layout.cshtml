@@ -1,5 +1,6 @@
 @inject ICurrentUserAccessor CurrentUser
 @inject Matdo.Web.Services.UiPreferences Ui
+@inject Matdo.Web.Services.TeamService Teams
 @{
     var accent = Matdo.Web.Services.ThemeCatalog.Themes.FirstOrDefault(t => t.Key == Ui.Theme)?.Accent ?? "#8300bc";
 }
@@ -75,6 +76,14 @@
                 <div class="verify-bar">
                     <span><icon name="mail" size="15" /> @T["auth.verifyBanner"]</span>
                     <a href="/Account/ConfirmEmail">@T["auth.verifyBannerAction"]</a>
+                </div>
+            }
+            @{ var pendingInvites = await Teams.MyPendingInvitationCountAsync(); }
+            @if (pendingInvites > 0)
+            {
+                <div class="verify-bar">
+                    <span><icon name="user" size="15" /> @string.Format(T["invites.banner"], pendingInvites)</span>
+                    <a href="/Account/Invitations">@T["invites.bannerAction"]</a>
                 </div>
             }
             <div class="app-content">

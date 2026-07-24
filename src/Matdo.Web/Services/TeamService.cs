@@ -171,15 +171,12 @@ public class TeamService
         if (string.IsNullOrWhiteSpace(email)) throw new InvalidOperationException("E-Mail-Adresse fehlt.");
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
-        if (user != null)
-        {
-            if (user.Id == Uid) return InviteOutcome.Self;
-            var exists = await _db.TeamMembers.AnyAsync(m => m.TeamId == teamId && m.UserId == user.Id);
-            if (exists) return InviteOutcome.AlreadyMember;
-            _db.TeamMembers.Add(new TeamMember { TeamId = teamId, UserId = user.Id, Role = role });
-            await _db.SaveChangesAsync();
-            return InviteOutcome.AddedDirectly;
-        }
+        if (user != null && user.Id == Uid) return InviteOutcome.Self;
+        // Bestehende Nutzer werden NICHT mehr still hinzugefügt – sie müssen die Einladung
+        // annehmen (Zustimmung). Dadurch sind „registriert" und „nicht registriert" von außen
+        // ununterscheidbar (kein E-Mail-Existenz-Orakel).
+        if (user != null && await _db.TeamMembers.AnyAsync(m => m.TeamId == teamId && m.UserId == user.Id))
+            return InviteOutcome.AlreadyMember;
 
         var pending = await _db.Invitations.AnyAsync(i => i.Email == email && i.TeamId == teamId && !i.Accepted);
         if (pending) return InviteOutcome.AlreadyInvited;
@@ -196,6 +193,60 @@ public class TeamService
 
         await TrySendInviteEmailAsync(inv);
         return InviteOutcome.PendingInvite;
+    }
+
+    // ----- Einladungen des aktuellen Nutzers (Zustimmung) -----
+
+    /// <summary>Offene Einladungen für die E-Mail-Adresse des angemeldeten Nutzers.</summary>
+    public async Task<List<Invitation>> GetMyInvitationsAsync()
+    {
+        var email = await _db.Users.Where(u => u.Id == Uid).Select(u => u.Email).FirstAsync();
+        return await _db.Invitations.Include(i => i.Team).Include(i => i.Project)
+            .Where(i => i.Email == email && !i.Accepted)
+            .OrderByDescending(i => i.Id).ToListAsync();
+    }
+
+    /// <summary>Anzahl offener Einladungen (für Hinweisleiste). 0 wenn nicht angemeldet.</summary>
+    public async Task<int> MyPendingInvitationCountAsync()
+    {
+        if (_me.UserId is not long uid) return 0;
+        var email = await _db.Users.Where(u => u.Id == uid).Select(u => u.Email).FirstOrDefaultAsync();
+        if (email is null) return 0;
+        return await _db.Invitations.CountAsync(i => i.Email == email && !i.Accepted);
+    }
+
+    /// <summary>Nimmt eine an die eigene Adresse gerichtete Einladung an (materialisiert Zugriff).</summary>
+    public async Task<bool> AcceptInvitationAsync(long invitationId)
+    {
+        var uid = Uid;
+        var email = await _db.Users.Where(u => u.Id == uid).Select(u => u.Email).FirstAsync();
+        var inv = await _db.Invitations.FirstOrDefaultAsync(i => i.Id == invitationId && i.Email == email && !i.Accepted);
+        if (inv is null) return false;
+
+        if (inv.TeamId is long tid)
+        {
+            if (await _db.Teams.AnyAsync(t => t.Id == tid) && !await _db.TeamMembers.AnyAsync(m => m.TeamId == tid && m.UserId == uid))
+                _db.TeamMembers.Add(new TeamMember { TeamId = tid, UserId = uid, Role = inv.TeamRole });
+        }
+        else if (inv.ProjectId is long pid)
+        {
+            if (await _db.Projects.AnyAsync(p => p.Id == pid) && !await _db.ProjectShares.AnyAsync(s => s.ProjectId == pid && s.SharedWithUserId == uid))
+                _db.ProjectShares.Add(new ProjectShare { ProjectId = pid, SharedWithUserId = uid, Permission = inv.Permission });
+        }
+        inv.Accepted = true;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    /// <summary>Lehnt eine an die eigene Adresse gerichtete Einladung ab (entfernt sie).</summary>
+    public async Task DeclineInvitationAsync(long invitationId)
+    {
+        var uid = Uid;
+        var email = await _db.Users.Where(u => u.Id == uid).Select(u => u.Email).FirstAsync();
+        var inv = await _db.Invitations.FirstOrDefaultAsync(i => i.Id == invitationId && i.Email == email && !i.Accepted);
+        if (inv is null) return;
+        _db.Invitations.Remove(inv);
+        await _db.SaveChangesAsync();
     }
 
     // Einladen erfolgt ausschließlich per exakter E-Mail-Adresse (InviteToTeamAsync) –
@@ -292,9 +343,9 @@ public class TeamService
                 $"<p>Hallo,</p>" +
                 $"<p><b>{System.Net.WebUtility.HtmlEncode(by)}</b> hat dich zum Team " +
                 $"<b>{System.Net.WebUtility.HtmlEncode(teamName)}</b> bei {appName} eingeladen.</p>" +
-                $"<p>Registriere dich einfach mit dieser E-Mail-Adresse – die Einladung wird dann " +
-                $"automatisch übernommen:</p>" +
-                $"<p><a href=\"{baseUrl}/Account/Register\">{baseUrl}/Account/Register</a></p>";
+                $"<p>Melde dich mit dieser E-Mail-Adresse an (oder registriere dich) und nimm die " +
+                $"Einladung unter „Einladungen\" an:</p>" +
+                $"<p><a href=\"{baseUrl}/Account/Invitations\">{baseUrl}/Account/Invitations</a></p>";
             await _email.SendAsync(inv.Email, inv.Email, subject, body);
         }
         catch (Exception ex)
@@ -303,36 +354,4 @@ public class TeamService
         }
     }
 
-    // ----- Auflösung bei Registrierung -----
-
-    /// <summary>
-    /// Übernimmt alle ausstehenden Einladungen für die E-Mail-Adresse des neu registrierten Benutzers.
-    /// Wird ohne angemeldeten Kontext aus <see cref="AuthService"/> aufgerufen – nutzt daher kein Uid.
-    /// </summary>
-    public static async Task ApplyPendingInvitationsAsync(MatdoDbContext db, User user)
-    {
-        var email = user.Email.Trim().ToLowerInvariant();
-        var invites = await db.Invitations.Where(i => i.Email == email && !i.Accepted).ToListAsync();
-        if (invites.Count == 0) return;
-
-        foreach (var inv in invites)
-        {
-            if (inv.TeamId is long tid)
-            {
-                var teamExists = await db.Teams.AnyAsync(t => t.Id == tid);
-                var already = await db.TeamMembers.AnyAsync(m => m.TeamId == tid && m.UserId == user.Id);
-                if (teamExists && !already)
-                    db.TeamMembers.Add(new TeamMember { TeamId = tid, UserId = user.Id, Role = inv.TeamRole });
-            }
-            else if (inv.ProjectId is long pid)
-            {
-                var projExists = await db.Projects.AnyAsync(p => p.Id == pid);
-                var already = await db.ProjectShares.AnyAsync(s => s.ProjectId == pid && s.SharedWithUserId == user.Id);
-                if (projExists && !already)
-                    db.ProjectShares.Add(new ProjectShare { ProjectId = pid, SharedWithUserId = user.Id, Permission = inv.Permission });
-            }
-            inv.Accepted = true;
-        }
-        await db.SaveChangesAsync();
-    }
 }
