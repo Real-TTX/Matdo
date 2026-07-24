@@ -1,22 +1,40 @@
 # Matdo – einfachster Stack für Homelab/Public: deine App + offizielles Postgres.
-# Start:  docker compose -f docker-compose.public.yml up -d
-# Dann:   http://<host>:6006   (beim ersten Start: Admin anlegen)
+#
+# Erststart:
+#   1) Ein DB-Passwort setzen (Pflicht – es gibt bewusst KEINEN unsicheren Standard):
+#        export POSTGRES_PASSWORD='ein-langes-zufaelliges-passwort'
+#      (oder eine .env-Datei neben dieser Datei mit  POSTGRES_PASSWORD=...)
+#   2) docker compose -f docker-compose.public.yml up -d
+#   3) Ueber einen HTTPS-Reverse-Proxy (z.B. Caddy) erreichbar machen – Service Worker,
+#      Push und sichere Cookies brauchen HTTPS. Direkt http://<host>:6006 nur zum Testen.
+#   4) Beim ersten Aufruf Admin-Konto anlegen; danach unter Einstellungen die
+#      "Oeffentliche Basis-URL" (PublicBaseUrl) auf die HTTPS-Adresse setzen –
+#      sonst zeigen Bestaetigungs-/Reset-Links auf die falsche Adresse.
 services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: matdo
-      POSTGRES_PASSWORD: matdo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD muss gesetzt sein (kein Standard)}
       POSTGRES_DB: matdo
     volumes:
       - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matdo -d matdo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   matdo:
     image: ghcr.io/real-ttx/matdo:latest
     restart: unless-stopped
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    environment:
+      # Verbindung zur DB im selben Compose-Netz (Host = Servicename "db").
+      ConnectionStrings__Postgres: "Host=db;Port=5432;Database=matdo;Username=matdo;Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD muss gesetzt sein (kein Standard)}"
     ports:
       - "6006:6006"
     volumes:

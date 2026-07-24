@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace Matdo.Web.Services;
 
@@ -48,10 +49,17 @@ public class AppConfig
     }
 }
 
-/// <summary>Lädt/speichert <see cref="AppConfig"/> als JSON-Datei im Daten-Volume.</summary>
+/// <summary>Lädt/speichert <see cref="AppConfig"/> als JSON-Datei im Daten-Volume.
+/// Sensible Felder (SMTP-Passwort, OAuth-Secrets, VAPID-Privatschlüssel) werden mit
+/// DataProtection verschlüsselt gespeichert („enc:"-Präfix). Im Speicher (Current) liegen
+/// sie entschlüsselt vor; Altbestände in Klartext werden weiterhin gelesen und beim
+/// nächsten Speichern automatisch verschlüsselt.</summary>
 public class JsonConfigService
 {
+    private const string EncPrefix = "enc:";
+
     private readonly string _path;
+    private readonly IDataProtector _protector;
     private readonly object _lock = new();
     private AppConfig _cache;
 
@@ -61,8 +69,9 @@ public class JsonConfigService
         PropertyNameCaseInsensitive = true
     };
 
-    public JsonConfigService(IConfiguration configuration, IWebHostEnvironment env)
+    public JsonConfigService(IConfiguration configuration, IWebHostEnvironment env, IDataProtectionProvider dp)
     {
+        _protector = dp.CreateProtector("Matdo.AppConfig.Secrets.v1");
         var configured = configuration["Matdo:ConfigDir"];
         var dir = string.IsNullOrWhiteSpace(configured)
             ? Path.Combine(env.ContentRootPath, "data", "config")
@@ -81,7 +90,10 @@ public class JsonConfigService
     {
         lock (_lock)
         {
-            File.WriteAllText(_path, JsonSerializer.Serialize(config, JsonOpts));
+            // Klartext bleibt im Speicher; auf Platte wird eine verschlüsselte Kopie geschrieben.
+            var onDisk = Clone(config);
+            ProtectSecrets(onDisk);
+            File.WriteAllText(_path, JsonSerializer.Serialize(onDisk, JsonOpts));
             _cache = config;
         }
     }
@@ -91,12 +103,51 @@ public class JsonConfigService
         try
         {
             if (File.Exists(_path))
-                return JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(_path), JsonOpts) ?? new AppConfig();
+            {
+                var cfg = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(_path), JsonOpts) ?? new AppConfig();
+                UnprotectSecrets(cfg);
+                return cfg;
+            }
         }
         catch { /* Bei defekter Datei: Standardwerte verwenden. */ }
 
         var def = new AppConfig();
-        try { File.WriteAllText(_path, JsonSerializer.Serialize(def, JsonOpts)); } catch { }
-        return def;
+        try { Save(def); return def; } catch { return def; }
+    }
+
+    // ----- Secret-Verschlüsselung -----
+
+    private static AppConfig Clone(AppConfig c) =>
+        JsonSerializer.Deserialize<AppConfig>(JsonSerializer.Serialize(c, JsonOpts), JsonOpts) ?? new AppConfig();
+
+    private void ProtectSecrets(AppConfig c)
+    {
+        c.Smtp.Password = Protect(c.Smtp.Password);
+        c.Google.ClientSecret = Protect(c.Google.ClientSecret);
+        c.Microsoft.ClientSecret = Protect(c.Microsoft.ClientSecret);
+        c.Push.PrivateKey = Protect(c.Push.PrivateKey);
+    }
+
+    private void UnprotectSecrets(AppConfig c)
+    {
+        c.Smtp.Password = Unprotect(c.Smtp.Password);
+        c.Google.ClientSecret = Unprotect(c.Google.ClientSecret);
+        c.Microsoft.ClientSecret = Unprotect(c.Microsoft.ClientSecret);
+        c.Push.PrivateKey = Unprotect(c.Push.PrivateKey);
+    }
+
+    private string Protect(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return value ?? "";
+        if (value.StartsWith(EncPrefix, StringComparison.Ordinal)) return value; // schon verschlüsselt
+        return EncPrefix + _protector.Protect(value);
+    }
+
+    private string Unprotect(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return value ?? "";
+        if (!value.StartsWith(EncPrefix, StringComparison.Ordinal)) return value; // Altbestand: Klartext
+        try { return _protector.Unprotect(value[EncPrefix.Length..]); }
+        catch { return ""; }   // Schlüsselbund verloren/defekt -> leeren statt crashen
     }
 }
