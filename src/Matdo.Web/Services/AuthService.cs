@@ -17,6 +17,10 @@ public class AuthService
     private const int LockoutMinutes = 15;
     private const int ResetValidHours = 2;      // Gültigkeit des Passwort-Reset-Links
 
+    // Fester Dummy-Hash: gleicht die Antwortzeit bei nicht existierenden/gesperrten Konten an
+    // die echte BCrypt-Prüfung an, damit über Timing nicht auf Konto-Existenz geschlossen werden kann.
+    private static readonly string DummyHash = BCrypt.Net.BCrypt.HashPassword("timing-equalizer");
+
     private readonly MatdoDbContext _db;
     private readonly IHttpContextAccessor _http;
     private readonly JsonConfigService _config;
@@ -113,8 +117,16 @@ public class AuthService
         // (keine Nutzer-Enumeration). Die Sperre wirkt unabhängig von der Meldung.
         const string invalid = "E-Mail-Adresse oder Passwort ist ungültig.";
 
-        if (user is null || !user.IsActive) return new AuthResult(false, invalid);
-        if (user.LockoutUntilUtc is DateTime until && until > now) return new AuthResult(false, invalid);
+        if (user is null || !user.IsActive)
+        {
+            BCrypt.Net.BCrypt.Verify(password, DummyHash);   // Timing angleichen
+            return new AuthResult(false, invalid);
+        }
+        if (user.LockoutUntilUtc is DateTime until && until > now)
+        {
+            BCrypt.Net.BCrypt.Verify(password, DummyHash);
+            return new AuthResult(false, invalid);
+        }
 
         if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
         {
@@ -169,11 +181,16 @@ public class AuthService
     {
         email = (email ?? "").Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(email)) return;
+        var now = DateTime.UtcNow;
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
         if (user is null) return;   // neutral: kein Hinweis auf Existenz
 
+        // Cooldown: höchstens alle 2 Minuten eine Reset-Mail je Konto (kein Mail-Bombing).
+        var issuedAt = user.PasswordResetExpiresUtc?.AddHours(-ResetValidHours);
+        if (issuedAt is DateTime t && t > now.AddMinutes(-2)) return;
+
         user.PasswordResetToken = Guid.NewGuid();
-        user.PasswordResetExpiresUtc = DateTime.UtcNow.AddHours(ResetValidHours);
+        user.PasswordResetExpiresUtc = now.AddHours(ResetValidHours);
         await _db.SaveChangesAsync();
 
         var link = BuildLink($"/Account/ResetPassword?token={user.PasswordResetToken}");
@@ -181,7 +198,8 @@ public class AuthService
             + "<p>zum Zurücksetzen deines Matdo-Passworts klicke auf den folgenden Link "
             + $"(gültig {ResetValidHours} Stunden):</p><p><a href=\"{link}\">{link}</a></p>"
             + "<p>Wenn du das nicht angefordert hast, ignoriere diese E-Mail einfach.</p>";
-        await SendMailOrLogAsync(user.Email, user.DisplayName, "Passwort zurücksetzen · Matdo", html, link);
+        // Nicht awaiten: Antwortzeit unabhängig vom (langsamen) SMTP-Versand halten -> kein Timing-Orakel.
+        _ = SendMailOrLogAsync(user.Email, user.DisplayName, "Passwort zurücksetzen · Matdo", html, link);
     }
 
     /// <summary>Setzt das Passwort per gültigem Token. Invalidiert alle bestehenden Sessions.</summary>

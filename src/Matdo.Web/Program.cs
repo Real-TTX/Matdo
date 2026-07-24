@@ -145,13 +145,28 @@ builder.Services.AddRateLimiter(o =>
 
 // Hinter einem TLS-terminierenden Reverse-Proxy X-Forwarded-Proto/-For auswerten,
 // damit Request.IsHttps korrekt ist und das Session-Cookie das Secure-Flag erhält.
+// WICHTIG: X-Forwarded-* werden NUR ausgewertet, wenn die Proxy-IP(s) explizit als
+// vertrauenswürdig konfiguriert sind (Matdo:KnownProxies, kommagetrennt). Sonst könnte
+// jeder Client X-Forwarded-For fälschen und damit das IP-Rate-Limit aushebeln. Ohne
+// Konfiguration wird die echte Verbindungs-IP verwendet (sicherer Standard).
+var knownProxies = (builder.Configuration["Matdo:KnownProxies"] ?? "")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o =>
 {
-    o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
-                         | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor;
-    // In Container-Setups ist die Proxy-IP nicht vorab bekannt.
     o.KnownNetworks.Clear();
     o.KnownProxies.Clear();
+    if (knownProxies.Length > 0)
+    {
+        o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+                             | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor;
+        foreach (var p in knownProxies)
+            if (System.Net.IPAddress.TryParse(p, out var ip)) o.KnownProxies.Add(ip);
+    }
+    else
+    {
+        // Keine vertrauenswürdigen Proxys konfiguriert -> Forwarded-Header ignorieren.
+        o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.None;
+    }
 });
 
 var app = builder.Build();

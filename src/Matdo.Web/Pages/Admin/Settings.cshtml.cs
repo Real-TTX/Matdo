@@ -17,6 +17,14 @@ public class AdminSettingsModel : PageModel
 
     public IActionResult OnPost()
     {
+        // Geheimnis-Felder sind Passwort-Inputs und rendern nie ihren Wert -> ein leeres
+        // Feld bedeutet „unverändert lassen", NICHT „löschen" (sonst würden SMTP-Passwort,
+        // OAuth-Secrets und der VAPID-Privatschlüssel bei jedem Speichern verschwinden).
+        var cur = _config.Current;
+        if (string.IsNullOrEmpty(Config.Smtp.Password)) Config.Smtp.Password = cur.Smtp.Password;
+        if (string.IsNullOrEmpty(Config.Push.PrivateKey)) Config.Push.PrivateKey = cur.Push.PrivateKey;
+        if (string.IsNullOrEmpty(Config.Google.ClientSecret)) Config.Google.ClientSecret = cur.Google.ClientSecret;
+        if (string.IsNullOrEmpty(Config.Microsoft.ClientSecret)) Config.Microsoft.ClientSecret = cur.Microsoft.ClientSecret;
         _config.Save(Config);
         Message = "Einstellungen gespeichert.";
         return Page();

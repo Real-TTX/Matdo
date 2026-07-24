@@ -60,6 +60,7 @@ public class JsonConfigService
 
     private readonly string _path;
     private readonly IDataProtector _protector;
+    private readonly ILogger<JsonConfigService> _logger;
     private readonly object _lock = new();
     private AppConfig _cache;
 
@@ -69,8 +70,10 @@ public class JsonConfigService
         PropertyNameCaseInsensitive = true
     };
 
-    public JsonConfigService(IConfiguration configuration, IWebHostEnvironment env, IDataProtectionProvider dp)
+    public JsonConfigService(IConfiguration configuration, IWebHostEnvironment env, IDataProtectionProvider dp,
+        ILogger<JsonConfigService> logger)
     {
+        _logger = logger;
         _protector = dp.CreateProtector("Matdo.AppConfig.Secrets.v1");
         var configured = configuration["Matdo:ConfigDir"];
         var dir = string.IsNullOrWhiteSpace(configured)
@@ -100,19 +103,28 @@ public class JsonConfigService
 
     private AppConfig Load()
     {
-        try
+        if (File.Exists(_path))
         {
-            if (File.Exists(_path))
+            try
             {
                 var cfg = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(_path), JsonOpts) ?? new AppConfig();
                 UnprotectSecrets(cfg);
                 return cfg;
             }
+            catch (Exception ex)
+            {
+                // Fail-closed: bestehende (aber unlesbare) Datei NICHT überschreiben – sonst gingen
+                // die verschlüsselten Secrets verloren. Mit sicheren Defaults weiterlaufen
+                // (Registrierung geschlossen) und die Ursache protokollieren.
+                _logger.LogError(ex, "appconfig.json konnte nicht gelesen/geparst werden. Datei bleibt unverändert; nutze sichere Standardwerte (Registrierung aus).");
+                return new AppConfig { AllowRegistration = false };
+            }
         }
-        catch { /* Bei defekter Datei: Standardwerte verwenden. */ }
 
+        // Datei existiert noch nicht -> Standard anlegen.
         var def = new AppConfig();
-        try { Save(def); return def; } catch { return def; }
+        try { Save(def); } catch { }
+        return def;
     }
 
     // ----- Secret-Verschlüsselung -----
@@ -139,7 +151,9 @@ public class JsonConfigService
     private string Protect(string? value)
     {
         if (string.IsNullOrEmpty(value)) return value ?? "";
-        if (value.StartsWith(EncPrefix, StringComparison.Ordinal)) return value; // schon verschlüsselt
+        // Immer verschlüsseln. Current hält stets Klartext (Load entschlüsselt), daher kann hier
+        // kein bereits verschlüsselter Wert ankommen – so gibt es auch keine "enc:"-Präfix-Kollision
+        // mit Klartext-Secrets, die zufällig mit "enc:" beginnen.
         return EncPrefix + _protector.Protect(value);
     }
 
@@ -148,6 +162,12 @@ public class JsonConfigService
         if (string.IsNullOrEmpty(value)) return value ?? "";
         if (!value.StartsWith(EncPrefix, StringComparison.Ordinal)) return value; // Altbestand: Klartext
         try { return _protector.Unprotect(value[EncPrefix.Length..]); }
-        catch { return ""; }   // Schlüsselbund verloren/defekt -> leeren statt crashen
+        catch (Exception ex)
+        {
+            // Schlüsselbund verloren/rotiert: nicht crashen, aber deutlich protokollieren –
+            // sonst „verschwinden" SMTP/OAuth/Push-Secrets ohne jede Diagnose.
+            _logger.LogError(ex, "Ein verschlüsseltes Konfigurations-Secret konnte nicht entschlüsselt werden (DataProtection-Schlüssel verloren/rotiert?). Bitte Secret neu setzen.");
+            return "";
+        }
     }
 }

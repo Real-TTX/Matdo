@@ -234,7 +234,8 @@ public class TeamService
                 _db.ProjectShares.Add(new ProjectShare { ProjectId = pid, SharedWithUserId = uid, Permission = inv.Permission });
         }
         inv.Accepted = true;
-        await _db.SaveChangesAsync();
+        try { await _db.SaveChangesAsync(); }
+        catch (DbUpdateException) { /* paralleler Doppel-Klick: bereits Mitglied/Freigabe -> idempotent */ }
         return true;
     }
 
