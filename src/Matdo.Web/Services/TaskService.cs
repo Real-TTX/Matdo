@@ -252,6 +252,25 @@ public class TaskService
         await _db.SaveChangesAsync();
     }
 
+    /// <summary>Verschiebt alle überfälligen (bearbeitbaren, offenen) Aufgaben um
+    /// <paramref name="daysFromToday"/> Tage ab heute (0 = heute, 1 = morgen). Eine gesetzte
+    /// Uhrzeit bleibt erhalten. Gibt die Anzahl der verschobenen Aufgaben zurück.</summary>
+    public async Task<int> RescheduleOverdueAsync(int daysFromToday)
+    {
+        var startOfTodayUtc = DateTime.Today.ToUniversalTime();
+        var targetDate = DateTime.Today.AddDays(Math.Clamp(daysFromToday, 0, 3650));
+        var overdue = await EditableTasks()
+            .Where(t => !t.IsCompleted && t.ParentTaskId == null && t.DueDate != null && t.DueDate < startOfTodayUtc)
+            .ToListAsync();
+        foreach (var t in overdue)
+        {
+            var timeOfDay = t.DueHasTime ? t.DueDate!.Value.ToLocalTime().TimeOfDay : TimeSpan.Zero;
+            t.DueDate = (targetDate + timeOfDay).ToUniversalTime();
+        }
+        if (overdue.Count > 0) await _db.SaveChangesAsync();
+        return overdue.Count;
+    }
+
     private static DateTime AdvanceDue(DateTime d, RecurrenceUnit u, int n) => u switch
     {
         RecurrenceUnit.Day => d.AddDays(n),

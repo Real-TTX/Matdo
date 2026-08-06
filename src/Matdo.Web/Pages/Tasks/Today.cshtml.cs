@@ -1,6 +1,7 @@
 using Matdo.Web.Data.Entities;
 using Matdo.Web.Services;
 using Matdo.Web.Services.Calendar;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Matdo.Web.Pages.Tasks;
@@ -45,6 +46,18 @@ public class TodayModel : PageModel
             Events = (await _calendar.GetEventsAsync(uid, fromUtc, toUtc))
                 .OrderBy(e => e.AllDay ? 0 : 1).ThenBy(e => e.StartUtc).ToList();
         }
+    }
+
+    public async Task<IActionResult> OnPostRescheduleOverdueAsync(int days, bool done, string? sort, int prio)
+    {
+        await _tasks.RescheduleOverdueAsync(days);
+        // Aktuelle Anzeige-Filter beibehalten.
+        return RedirectToPage(new
+        {
+            done = done ? "true" : null,
+            sort = sort is "due" or "priority" or "name" ? sort : null,
+            prio = prio is >= 1 and <= 4 ? prio : (int?)null
+        });
     }
 
     // Innerhalb einer Datumsgruppe: erledigte ans Ende, dann nach gewählter Sortierung.
