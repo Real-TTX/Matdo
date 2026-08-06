@@ -372,7 +372,7 @@
   "tasks.common.today": "Today",
   "tasks.common.tomorrow": "Tomorrow",
   "tasks.composer.addTask": "Add task",
-  "tasks.composer.apply": "Apply",
+  "tasks.composer.apply": "Done",
   "tasks.composer.createLabel": "Create",
   "tasks.composer.namePlaceholder": "Task name",
   "tasks.composer.nextWeek": "Next week",
