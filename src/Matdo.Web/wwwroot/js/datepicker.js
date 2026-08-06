@@ -222,10 +222,12 @@
         var wrap = document.createElement(inline ? 'div' : 'span');
         wrap.className = inline ? 'dp dp-inline' : 'dp';
         input.parentNode.insertBefore(wrap, input);
-        wrap.appendChild(input);
         hideNative(input);
 
         if (inline) {
+            // WICHTIG: das <input> NICHT in wrap verschieben. paint(wrap) setzt wrap.innerHTML
+            // und würde das Feld sonst löschen -> der Wert käme nie ins Formular. Es bleibt als
+            // verstecktes Sibling neben dem Kalender und wird ganz normal mit abgeschickt.
             wrap._dpInput = input; wrap._y = null; wrap._m = null;
             wire(wrap, false);
             paint(wrap);
@@ -234,6 +236,9 @@
             input.addEventListener('change', function () { wrap._dpReset(); });
             if (ti) ti.addEventListener('change', function () { paint(wrap); });
         } else {
+            // Popup-Modus: hier wird paint() auf einem separaten pop-Element gerendert, nicht auf
+            // wrap – daher darf das (versteckte) Feld im wrap liegen.
+            wrap.appendChild(input);
             var btn = document.createElement('button');
             btn.type = 'button'; btn.className = 'dp-trigger';
             wrap.appendChild(btn);
