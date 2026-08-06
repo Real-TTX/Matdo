@@ -312,8 +312,12 @@ textarea { resize: vertical; min-height: 60px; }
 .menu-inline { display: flex; gap: 6px; padding: 2px; }
 .menu-inline input[type=text] { flex: 1; min-width: 140px; }
 .overdue-head { color: var(--danger); font-weight: 700; }
-.resched-btn { display: inline-flex; align-items: center; gap: 5px; border: none; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 3px 7px; border-radius: 6px; }
-.resched-btn:hover { color: var(--accent); background: var(--accent-soft); }
+.resched-form { margin: 0; }
+.resched-dp { display: inline-block; }
+.resched-dp .dp-trigger { min-width: 0; border: none; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; font-weight: 600; padding: 3px 7px; border-radius: 6px; gap: 5px; }
+.resched-dp .dp-trigger:hover { color: var(--accent); background: var(--accent-soft); }
+.resched-dp .dp-trigger svg { width: 14px; height: 14px; color: inherit; }
+.resched-dp .dp-trigger .dp-tval.dp-ph { color: inherit; }
 
 /* ---------- Kanban ---------- */
 .kanban { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 20px; align-items: flex-start; }

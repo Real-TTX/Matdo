@@ -258,7 +258,8 @@
     function renderTrigger(input) {
         var btn = input._dpBtn; if (!btn) return;
         var disp = fmtDisplay(input);
-        btn.innerHTML = IC.cal + "<span class='dp-tval" + (disp ? '' : ' dp-ph') + "'>" + esc(disp || L.pick) + "</span>"
+        var ph = input.getAttribute('data-dp-label') || L.pick;   // optionaler eigener Trigger-Text
+        btn.innerHTML = IC.cal + "<span class='dp-tval" + (disp ? '' : ' dp-ph') + "'>" + esc(disp || ph) + "</span>"
             + (disp ? "<span class='dp-clear' role='button' aria-label='" + esc(L.noDate) + "'>" + IC.x + "</span>" : "");
     }
 

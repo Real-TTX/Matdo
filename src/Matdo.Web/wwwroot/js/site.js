@@ -191,6 +191,15 @@
             .catch(function () { });
     });
 
+    // "Überfällig verschieben": Datum im Datepicker gewählt -> Formular sofort abschicken.
+    document.addEventListener('change', function (e) {
+        var el = e.target;
+        if (el && el.matches && el.matches('[data-reschedule-overdue]') && el.value) {
+            var form = el.form || el.closest('form');
+            if (form) { if (form.requestSubmit) form.requestSubmit(); else form.submit(); }
+        }
+    });
+
     // ---------- Bestätigung für Löschen ----------
     document.addEventListener('submit', function (e) {
         var form = e.target;

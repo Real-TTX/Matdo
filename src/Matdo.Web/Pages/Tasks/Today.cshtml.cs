@@ -48,9 +48,11 @@ public class TodayModel : PageModel
         }
     }
 
-    public async Task<IActionResult> OnPostRescheduleOverdueAsync(int days, bool done, string? sort, int prio)
+    public async Task<IActionResult> OnPostRescheduleOverdueAsync(string? date, bool done, string? sort, int prio)
     {
-        await _tasks.RescheduleOverdueAsync(days);
+        if (DateTime.TryParse(date, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var target))
+            await _tasks.RescheduleOverdueAsync(target);
         // Aktuelle Anzeige-Filter beibehalten.
         return RedirectToPage(new
         {

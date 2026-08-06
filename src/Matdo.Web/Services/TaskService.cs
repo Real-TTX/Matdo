@@ -252,13 +252,13 @@ public class TaskService
         await _db.SaveChangesAsync();
     }
 
-    /// <summary>Verschiebt alle überfälligen (bearbeitbaren, offenen) Aufgaben um
-    /// <paramref name="daysFromToday"/> Tage ab heute (0 = heute, 1 = morgen). Eine gesetzte
-    /// Uhrzeit bleibt erhalten. Gibt die Anzahl der verschobenen Aufgaben zurück.</summary>
-    public async Task<int> RescheduleOverdueAsync(int daysFromToday)
+    /// <summary>Verschiebt alle überfälligen (bearbeitbaren, offenen) Aufgaben auf
+    /// <paramref name="targetLocalDate"/> (lokales Datum). Eine gesetzte Uhrzeit bleibt erhalten.
+    /// Gibt die Anzahl der verschobenen Aufgaben zurück.</summary>
+    public async Task<int> RescheduleOverdueAsync(DateTime targetLocalDate)
     {
         var startOfTodayUtc = DateTime.Today.ToUniversalTime();
-        var targetDate = DateTime.Today.AddDays(Math.Clamp(daysFromToday, 0, 3650));
+        var targetDate = DateTime.SpecifyKind(targetLocalDate.Date, DateTimeKind.Local);
         var overdue = await EditableTasks()
             .Where(t => !t.IsCompleted && t.ParentTaskId == null && t.DueDate != null && t.DueDate < startOfTodayUtc)
             .ToListAsync();

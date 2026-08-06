@@ -48,26 +48,16 @@
     <div class="task-group">
         <h3 class="group-head">
             <span class="overdue-head">@T["tasks.today.overdue"]</span>
-            <div class="tb-menu" data-menu>
-                <button type="button" class="resched-btn" data-menu-toggle><icon name="repeat" size="14" /> @T["tasks.today.reschedule"]</button>
-                <div class="menu-pop">
-                    <div class="pop-title">@T["tasks.today.rescheduleAll"]</div>
-                    <form method="post" asp-page-handler="RescheduleOverdue">
-                        <input type="hidden" name="days" value="0" />
-                        <input type="hidden" name="done" value="@Model.ShowCompleted" />
-                        <input type="hidden" name="sort" value="@Model.Sort" />
-                        <input type="hidden" name="prio" value="@Model.PrioFilter" />
-                        <button type="submit" class="menu-item"><icon name="calendar" size="15" /> @T["tasks.today.rescheduleToday"]</button>
-                    </form>
-                    <form method="post" asp-page-handler="RescheduleOverdue">
-                        <input type="hidden" name="days" value="1" />
-                        <input type="hidden" name="done" value="@Model.ShowCompleted" />
-                        <input type="hidden" name="sort" value="@Model.Sort" />
-                        <input type="hidden" name="prio" value="@Model.PrioFilter" />
-                        <button type="submit" class="menu-item"><icon name="calendar" size="15" /> @T["tasks.today.rescheduleTomorrow"]</button>
-                    </form>
-                </div>
-            </div>
+            @* "Verschieben" öffnet denselben Datepicker wie Fälligkeit/Deadline; das gewählte
+               Datum verschiebt ALLE offenen überfälligen Aufgaben dorthin (Auto-Submit bei Auswahl). *@
+            <form method="post" asp-page-handler="RescheduleOverdue" class="resched-form">
+                <input type="hidden" name="done" value="@Model.ShowCompleted" />
+                <input type="hidden" name="sort" value="@Model.Sort" />
+                <input type="hidden" name="prio" value="@Model.PrioFilter" />
+                <span class="resched-dp">
+                    <input type="date" name="date" data-reschedule-overdue data-dp-label="@T["tasks.today.reschedule"]" />
+                </span>
+            </form>
         </h3>
         @foreach (var t in Model.Overdue)
         {
