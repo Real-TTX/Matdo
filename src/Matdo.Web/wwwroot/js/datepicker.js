@@ -14,13 +14,13 @@
             months: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
             mon: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
             days: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
-            today: 'Heute', tomorrow: 'Morgen', dayAfter: 'Übermorgen', nextWeek: 'Nächste Woche', weekend: 'Wochenende', noDate: 'Kein Datum', time: 'Uhrzeit', pick: 'Datum wählen'
+            today: 'Heute', tomorrow: 'Morgen', dayAfter: 'Übermorgen', nextWeek: 'Nächste Woche', weekend: 'Wochenende', noDate: 'Kein Datum', time: 'Uhrzeit', pick: 'Datum wählen', done: 'Fertig'
         },
         en: {
             months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
             mon: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             days: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
-            today: 'Today', tomorrow: 'Tomorrow', dayAfter: 'Day after', nextWeek: 'Next week', weekend: 'Weekend', noDate: 'No date', time: 'Time', pick: 'Pick a date'
+            today: 'Today', tomorrow: 'Tomorrow', dayAfter: 'Day after', nextWeek: 'Next week', weekend: 'Weekend', noDate: 'No date', time: 'Time', pick: 'Pick a date', done: 'Done'
         }
     };
     var L = I18N[LANG] || I18N.de;
@@ -128,6 +128,8 @@
         var ti = partnerTime(input);
         if (ti) h += "<label class='dp-time'>" + IC.clock + "<select class='dp-time-sel'><option value=''>" + L.time + "</option>" + timeOptions(ti.value) + "</select></label>";
         h += "</div>";
+        // Im Popup-Modus ein klarer „Fertig"-Button; im Inline-Modus schließt das Composer-Popover.
+        if (c._popup) h += "<button type='button' class='dp-done'>" + L.done + "</button>";
 
         c.innerHTML = h;
     }
@@ -144,11 +146,14 @@
             // Composer sonst das Popover schließen würde.
             var nav = e.target.closest('[data-nav]');
             if (nav) { e.preventDefault(); e.stopPropagation(); c._m += (+nav.getAttribute('data-nav')); if (c._m < 0) { c._m = 11; c._y--; } else if (c._m > 11) { c._m = 0; c._y++; } paint(c); return; }
+            // Datum wählen: NICHT sofort schließen – offen halten, damit man noch die Uhrzeit
+            // einstellen kann. Geschlossen wird per „Fertig"-Button oder Klick daneben.
             var quick = e.target.closest('[data-date]');
-            if (quick) { e.preventDefault(); e.stopPropagation(); setDate(c._dpInput, parseISO(quick.getAttribute('data-date'))); if (isPopup) closePop(); else paint(c); return; }
+            if (quick) { e.preventDefault(); e.stopPropagation(); setDate(c._dpInput, parseISO(quick.getAttribute('data-date'))); paint(c); return; }
             var day = e.target.closest('[data-day]');
-            if (day) { e.preventDefault(); e.stopPropagation(); setDate(c._dpInput, new Date(c._y, c._m, +day.getAttribute('data-day'))); if (isPopup) closePop(); else paint(c); return; }
+            if (day) { e.preventDefault(); e.stopPropagation(); setDate(c._dpInput, new Date(c._y, c._m, +day.getAttribute('data-day'))); paint(c); return; }
             if (e.target.closest('.dp-nodate')) { e.preventDefault(); e.stopPropagation(); clearVal(c._dpInput); if (isPopup) closePop(); else paint(c); return; }
+            if (e.target.closest('.dp-done')) { e.preventDefault(); e.stopPropagation(); closePop(); return; }
         });
         c.addEventListener('change', function (e) {
             var ts = e.target.closest('.dp-time-sel');
@@ -172,7 +177,7 @@
         closePop();
         pop = document.createElement('div');
         pop.className = 'dp-pop';
-        pop._dpInput = input; pop._y = null; pop._m = null;
+        pop._dpInput = input; pop._y = null; pop._m = null; pop._popup = true;
         document.body.appendChild(pop);
         wire(pop, true);
         paint(pop);

@@ -37,6 +37,7 @@
             <div class="popover popover-cal" data-pop-panel="due">
                 <input type="date" name="Input.DueDate" data-f="dueDate" data-dp-inline value="@dueVal" />
                 <input type="time" name="Input.DueTime" data-f="dueTime" value="@LocT(edit?.DueDate, edit?.DueHasTime ?? false)" />
+                <button type="button" class="btn btn-primary small dp-done-inline" data-pop-close>@T["tasks.composer.apply"]</button>
             </div>
         </div>
 

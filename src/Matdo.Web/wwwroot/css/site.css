@@ -502,6 +502,9 @@ body.modal-lock { overflow: hidden; }
 .dp-time-sel { border: 1px solid var(--border-strong); border-radius: 6px; background: var(--card); color: var(--text); font: inherit; font-size: 12px; padding: 3px 4px; }
 .dp-nodate { display: inline-flex; align-items: center; gap: 4px; border: none; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; padding: 3px 6px; border-radius: 6px; }
 .dp-nodate:hover { color: var(--danger); background: var(--hover); }
+.dp-done { display: block; width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 8px; background: var(--accent); color: #fff; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.dp-done:hover { opacity: .9; }
+.dp-done-inline { width: 100%; margin-top: 8px; }
 @media (max-width: 860px) {
     .popover { position: fixed; left: 12px; right: 12px; top: auto; bottom: 12px; min-width: 0; }
     /* Datepicker: volle Breite + größere Tap-Ziele auf Mobile */
