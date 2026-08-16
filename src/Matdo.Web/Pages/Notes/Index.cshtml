@@ -1,0 +1,53 @@
+@page
+@model Matdo.Web.Pages.Notes.IndexModel
+@{
+    ViewData["Title"] = T["notes.title"];
+}
+@section TopbarActions {
+    <a class="btn btn-primary small" href="/Notes/Edit"><icon name="plus" size="15" /> @T["notes.new"]</a>
+}
+<div class="page-head">
+    <h1><icon name="note" size="20" /> @T["notes.title"]</h1>
+    <div class="sub">@Model.Items.Count @T["notes.count"]</div>
+</div>
+
+<form method="get" class="notes-search">
+    <input type="search" name="q" value="@Model.Q" placeholder="@T["notes.searchPlaceholder"]" />
+    <button type="submit" class="btn small"><icon name="search" size="14" /></button>
+</form>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="empty">
+        @(string.IsNullOrWhiteSpace(Model.Q) ? T["notes.empty"] : T["notes.noResults"])
+        @if (string.IsNullOrWhiteSpace(Model.Q)) { <a href="/Notes/Edit">@T["notes.createFirst"]</a> }
+    </div>
+}
+else
+{
+    <div class="note-grid">
+        @foreach (var n in Model.Items)
+        {
+            <div class="note-card @(n.IsPinned ? "pinned" : "")">
+                <div class="note-card-actions">
+                    <form method="post" asp-page-handler="Pin" asp-route-q="@Model.Q">
+                        <input type="hidden" name="id" value="@n.Id" />
+                        <button type="submit" class="icon-btn small" title="@T["notes.pin"]" aria-label="@T["notes.pin"]"><icon name="star" size="15" /></button>
+                    </form>
+                    <form method="post" asp-page-handler="Delete" asp-route-q="@Model.Q" data-confirm="@T["notes.deleteConfirm"]">
+                        <input type="hidden" name="id" value="@n.Id" />
+                        <button type="submit" class="icon-btn small" title="@T["common.delete"]" aria-label="@T["common.delete"]"><icon name="x" size="15" /></button>
+                    </form>
+                </div>
+                <a class="note-card-body" href="/Notes/Edit?id=@n.Id">
+                    <div class="note-card-title">@(string.IsNullOrWhiteSpace(n.Title) ? T["notes.untitled"] : n.Title)</div>
+                    <div class="note-card-text">@(n.Body.Length > 200 ? n.Body[..200] + "…" : n.Body)</div>
+                    @if (n.Project != null)
+                    {
+                        <div class="note-card-meta"><span class="proj-ico" style="color:@n.Project.Color"><icon name="hash" size="13" /></span> @n.Project.Name</div>
+                    }
+                </a>
+            </div>
+        }
+    </div>
+}

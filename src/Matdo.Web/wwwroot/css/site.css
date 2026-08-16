@@ -319,6 +319,22 @@ textarea { resize: vertical; min-height: 60px; }
 .resched-dp .dp-trigger svg { width: 14px; height: 14px; color: inherit; }
 .resched-dp .dp-trigger .dp-tval.dp-ph { color: inherit; }
 
+/* ---------- Notizen ---------- */
+.notes-search { display: flex; gap: 6px; margin-bottom: 14px; max-width: 440px; }
+.notes-search input { flex: 1; }
+.note-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.note-card { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; box-shadow: var(--shadow); }
+.note-card.pinned { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.note-card-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 2px; opacity: 0; transition: opacity .12s; }
+.note-card:hover .note-card-actions, .note-card.pinned .note-card-actions { opacity: 1; }
+.note-card-actions form { display: inline; margin: 0; }
+.note-card-body { display: block; color: var(--text); }
+.note-card-title { font-weight: 700; margin-bottom: 4px; padding-right: 46px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note-card-text { font-size: 13px; color: var(--text-muted); white-space: pre-wrap; word-break: break-word; max-height: 7.5em; overflow: hidden; }
+.note-card-meta { margin-top: 8px; font-size: 12px; color: var(--text-faint); display: inline-flex; align-items: center; gap: 4px; }
+.note-body { width: 100%; font: inherit; resize: vertical; }
+@media (hover: none) { .note-card-actions { opacity: 1; } }
+
 /* ---------- Kanban ---------- */
 .kanban { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 20px; align-items: flex-start; }
 .kanban-col { flex: 1 0 280px; max-width: 360px; background: var(--sidebar-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; }

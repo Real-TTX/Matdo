@@ -38,6 +38,7 @@ public class MatdoDbContext : DbContext
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
     public DbSet<Invitation> Invitations => Set<Invitation>();
+    public DbSet<Note> Notes => Set<Note>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -64,12 +65,17 @@ public class MatdoDbContext : DbContext
         b.Entity<Team>().ToTable("Team");
         b.Entity<TeamMember>().ToTable("TeamMember");
         b.Entity<Invitation>().ToTable("Invitation");
+        b.Entity<Note>().ToTable("Note");
 
         // Eindeutigkeiten & Indizes
         b.Entity<Role>().HasIndex(x => x.Name).IsUnique();
         b.Entity<User>().HasIndex(x => x.Email).IsUnique();
         b.Entity<UserSession>().HasIndex(x => x.Token).IsUnique();
         b.Entity<Label>().HasIndex(x => new { x.OwnerId, x.Name }).IsUnique();
+        b.Entity<Note>().HasIndex(x => x.OwnerId);
+        b.Entity<Note>()
+            .HasOne(x => x.Project).WithMany()
+            .HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.SetNull);
 
         b.Entity<User>()
             .HasOne(x => x.Role).WithMany(r => r.Users)

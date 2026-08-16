@@ -37,6 +37,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<ProjectService>();
 builder.Services.AddScoped<LabelService>();
+builder.Services.AddScoped<NoteService>();
 builder.Services.AddScoped<ShareService>();
 builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<TodoistImportService>();

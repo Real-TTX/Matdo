@@ -1,0 +1,44 @@
+@page
+@model Matdo.Web.Pages.Notes.EditModel
+@{
+    ViewData["Title"] = Model.IsNew ? T["notes.new"] : T["notes.edit"];
+}
+<div class="page-head">
+    <h1>@(Model.IsNew ? T["notes.new"] : T["notes.edit"])</h1>
+</div>
+
+<form method="post" class="form-card note-form">
+    <input type="hidden" asp-for="Input.Id" />
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+    <form-field label="@T["notes.titleLabel"]">
+        <input asp-for="Input.Title" placeholder="@T["notes.titlePlaceholder"]" autocomplete="off" autofocus />
+        <span asp-validation-for="Input.Title" class="field-error"></span>
+    </form-field>
+
+    <form-field label="@T["notes.bodyLabel"]">
+        <textarea asp-for="Input.Body" rows="14" class="note-body" placeholder="@T["notes.bodyPlaceholder"]"></textarea>
+    </form-field>
+
+    <form-field label="@T["notes.projectLabel"]">
+        <select asp-for="Input.ProjectId">
+            <option value="">@T["notes.noProject"]</option>
+            @foreach (var p in Model.Projects)
+            {
+                <option value="@p.Id">@p.Name</option>
+            }
+        </select>
+    </form-field>
+
+    <div class="form-buttons">
+        <button type="submit" class="btn btn-primary">@T["common.save"]</button>
+        <a class="btn" href="/Notes">@T["common.cancel"]</a>
+        @if (!Model.IsNew)
+        {
+            <span class="spacer"></span>
+            <button type="submit" class="btn danger" asp-page-handler="Delete" asp-route-id="@Model.Input.Id" formnovalidate data-confirm="@T["notes.deleteConfirm"]">
+                <icon name="x" size="15" /> @T["common.delete"]
+            </button>
+        }
+    </div>
+</form>
