@@ -132,8 +132,16 @@ public class SettingsModel : PageModel
         }
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(Password.New);
+        // Sicherheit: nach Passwortänderung alle ANDEREN Sitzungen dieses Kontos beenden
+        // (die aktuelle bleibt aktiv). Ein evtl. gestohlenes altes Cookie wird dadurch ungültig.
+        if (Guid.TryParse(User.FindFirst(Matdo.Web.Services.MatdoClaims.SessionToken)?.Value, out var curTok))
+        {
+            var others = await _db.UserSessions
+                .Where(s => s.UserId == user.Id && s.Token != curTok).ToListAsync();
+            _db.UserSessions.RemoveRange(others);
+        }
         await _db.SaveChangesAsync();
-        Message = "Passwort geändert.";
+        Message = "Passwort geändert. Andere Geräte wurden abgemeldet.";
         return Page();
     }
 

@@ -120,6 +120,7 @@
             <div class="popover popover-cal" data-pop-panel="deadline">
                 <input type="date" name="Input.DeadlineDate" data-f="deadlineDate" data-dp-inline value="@Loc(edit?.DeadlineDate)" />
                 <input type="time" name="Input.DeadlineTime" data-f="deadlineTime" value="@LocT(edit?.DeadlineDate, edit?.DeadlineHasTime ?? false)" />
+                <button type="button" class="btn btn-primary small dp-done-inline" data-pop-close>@T["tasks.composer.apply"]</button>
             </div>
         </div>
     </div>

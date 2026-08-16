@@ -72,21 +72,32 @@ public class ReminderBackgroundService : BackgroundService
                 ? $"Fällig: {task.DueDate.Value.ToLocalTime():g}"
                 : "Fällige Aufgabe";
 
-            if (r.Channel.HasFlag(ReminderChannel.Email))
+            var hasEmail = r.Channel.HasFlag(ReminderChannel.Email);
+            var hasPush = r.Channel.HasFlag(ReminderChannel.Push);
+            var delivered = false;
+
+            if (hasEmail)
             {
                 var html = $"<h2>{System.Net.WebUtility.HtmlEncode(task.Title)}</h2>" +
                            (string.IsNullOrWhiteSpace(task.Description) ? "" : $"<p>{System.Net.WebUtility.HtmlEncode(task.Description)}</p>") +
                            $"<p>{body}</p>";
-                await email.SendAsync(task.Owner.Email, task.Owner.DisplayName, title, html, ct);
+                if (await email.SendAsync(task.Owner.Email, task.Owner.DisplayName, title, html, ct)) delivered = true;
             }
 
-            if (r.Channel.HasFlag(ReminderChannel.Push))
+            if (hasPush)
             {
                 await push.SendToUserAsync(task.Owner.Id, title, body, $"/Tasks/Edit?id={task.Id}", ct);
+                delivered = true;   // Push ist best-effort (kein Erfolgs-Rückgabewert)
             }
 
-            r.IsSent = true;
-            r.SentAt = now;
+            // Nur als gesendet markieren, wenn tatsächlich zugestellt wurde – sonst beim nächsten
+            // Lauf erneut versuchen (kein stiller Verlust z.B. bei SMTP-Ausfall). Ist gar kein Kanal
+            // gesetzt, gibt es nichts zu senden -> ebenfalls abschließen.
+            if (delivered || (!hasEmail && !hasPush))
+            {
+                r.IsSent = true;
+                r.SentAt = now;
+            }
         }
 
         if (due.Count > 0)

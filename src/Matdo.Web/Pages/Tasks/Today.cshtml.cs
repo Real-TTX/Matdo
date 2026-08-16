@@ -52,7 +52,7 @@ public class TodayModel : PageModel
     {
         if (DateTime.TryParse(date, System.Globalization.CultureInfo.InvariantCulture,
                 System.Globalization.DateTimeStyles.None, out var target))
-            await _tasks.RescheduleOverdueAsync(target);
+            await _tasks.RescheduleOverdueAsync(target, prio);
         // Aktuelle Anzeige-Filter beibehalten.
         return RedirectToPage(new
         {

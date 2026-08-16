@@ -77,6 +77,10 @@ public class ProjectExportController : Controller
     private static string Csv(string? s)
     {
         s ??= "";
+        // CSV-Formel-Injektion entschärfen: führt der Wert mit = + - @ (oder Tab/CR) ein, könnte
+        // Excel/Sheets ihn als Formel ausführen. Ein vorangestelltes ' neutralisiert das.
+        if (s.Length > 0 && (s[0] is '=' or '+' or '-' or '@' or '\t' or '\r'))
+            s = "'" + s;
         if (s.IndexOfAny(new[] { ',', '"', '\n', '\r' }) >= 0)
             return "\"" + s.Replace("\"", "\"\"") + "\"";
         return s;

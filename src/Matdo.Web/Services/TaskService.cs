@@ -255,13 +255,16 @@ public class TaskService
     /// <summary>Verschiebt alle überfälligen (bearbeitbaren, offenen) Aufgaben auf
     /// <paramref name="targetLocalDate"/> (lokales Datum). Eine gesetzte Uhrzeit bleibt erhalten.
     /// Gibt die Anzahl der verschobenen Aufgaben zurück.</summary>
-    public async Task<int> RescheduleOverdueAsync(DateTime targetLocalDate)
+    public async Task<int> RescheduleOverdueAsync(DateTime targetLocalDate, int prioFilter = 0)
     {
         var startOfTodayUtc = DateTime.Today.ToUniversalTime();
         var targetDate = DateTime.SpecifyKind(targetLocalDate.Date, DateTimeKind.Local);
-        var overdue = await EditableTasks()
-            .Where(t => !t.IsCompleted && t.ParentTaskId == null && t.DueDate != null && t.DueDate < startOfTodayUtc)
-            .ToListAsync();
+        var q = EditableTasks()
+            .Where(t => !t.IsCompleted && t.ParentTaskId == null && t.DueDate != null && t.DueDate < startOfTodayUtc);
+        // Denselben Prioritäts-Filter wie die Ansicht anwenden – es werden nur die auch
+        // sichtbaren überfälligen Aufgaben verschoben (nicht heimlich ausgeblendete).
+        if (prioFilter is >= 1 and <= 4) q = q.Where(t => (int)t.Priority == prioFilter);
+        var overdue = await q.ToListAsync();
         foreach (var t in overdue)
         {
             var timeOfDay = t.DueHasTime ? t.DueDate!.Value.ToLocalTime().TimeOfDay : TimeSpan.Zero;

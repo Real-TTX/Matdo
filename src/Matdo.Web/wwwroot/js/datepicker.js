@@ -277,7 +277,8 @@
         if (!form || !form.querySelectorAll) return;
         setTimeout(function () {
             form.querySelectorAll('.dp').forEach(function (w) {
-                var inp = w.querySelector('input[data-dp-done]');
+                // Inline: das Feld liegt jetzt NEBEN wrap -> über w._dpInput auflösen (nicht querySelector).
+                var inp = w._dpInput || w.querySelector('input[data-dp-done]');
                 if (!inp) return;
                 if (w.classList.contains('dp-inline')) { w._y = null; w._m = null; paint(w); }
                 else renderTrigger(inp);
