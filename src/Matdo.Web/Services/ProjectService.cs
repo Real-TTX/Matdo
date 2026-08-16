@@ -40,12 +40,17 @@ public class ProjectService
     private Task<bool> CanManageAsync(long projectId) => ManageableProjects().AnyAsync(p => p.Id == projectId);
 
     public Task<List<Project>> GetAllAsync() =>
-        AccessibleProjects().OrderByDescending(p => p.IsFavorite).ThenBy(p => p.Position).ThenBy(p => p.Name).ToListAsync();
+        AccessibleProjects().AsNoTracking()
+            .OrderByDescending(p => p.IsFavorite).ThenBy(p => p.Position).ThenBy(p => p.Name).ToListAsync();
 
-    /// <summary>Ids der Projekte, die geteilt sind (für die „geteilt"-Kennzeichnung im Picker).</summary>
+    /// <summary>Ids der Projekte, die geteilt sind (für die „geteilt"-Kennzeichnung im Picker).
+    /// Nur die für den Nutzer sichtbaren Projekte prüfen – kein globaler Scan aller Freigaben.</summary>
     public async Task<HashSet<long>> GetSharedProjectIdsAsync()
     {
-        var ids = await _db.ProjectShares.Select(s => s.ProjectId).Distinct().ToListAsync();
+        var accessibleIds = AccessibleProjects().Select(p => p.Id);
+        var ids = await _db.ProjectShares
+            .Where(s => accessibleIds.Contains(s.ProjectId))
+            .Select(s => s.ProjectId).Distinct().ToListAsync();
         return ids.ToHashSet();
     }
 
@@ -240,17 +245,15 @@ public class ProjectService
             OwnerId = uid,
             IsFavorite = false
         };
-        _db.Projects.Add(copy);
-        await _db.SaveChangesAsync();
-
-        var colMap = new Dictionary<long, long>();
+        // Spalten als Navigation anhängen – Ids werden beim (einen) SaveChanges gefüllt.
+        var colByOld = new Dictionary<long, KanbanColumn>();
         foreach (var c in src.Columns.OrderBy(c => c.Position))
         {
-            var nc = new KanbanColumn { ProjectId = copy.Id, Name = c.Name, Position = c.Position };
-            _db.KanbanColumns.Add(nc);
-            await _db.SaveChangesAsync();
-            colMap[c.Id] = nc.Id;
+            var nc = new KanbanColumn { Name = c.Name, Position = c.Position };
+            copy.Columns.Add(nc);
+            colByOld[c.Id] = nc;
         }
+        _db.Projects.Add(copy);
 
         var myLabels = (await _db.Labels.Where(l => l.OwnerId == uid).Select(l => l.Id).ToListAsync()).ToHashSet();
         var tasks = await _db.Tasks
@@ -262,29 +265,31 @@ public class ProjectService
 
         foreach (var t in tasks)
         {
-            var nt = Clone(t, copy.Id, uid);
-            nt.KanbanColumnId = t.KanbanColumnId is long oc && colMap.TryGetValue(oc, out var ncid) ? ncid : null;
-            _db.Tasks.Add(nt);
-            await _db.SaveChangesAsync();
+            var nt = Clone(t, uid);
+            nt.Project = copy;
+            nt.KanbanColumn = t.KanbanColumnId is long oc && colByOld.TryGetValue(oc, out var ncol) ? ncol : null;
             foreach (var tl in t.TaskLabels.Where(x => myLabels.Contains(x.LabelId)))
-                _db.TaskLabels.Add(new TaskLabel { TaskItemId = nt.Id, LabelId = tl.LabelId });
+                nt.TaskLabels.Add(new TaskLabel { LabelId = tl.LabelId });
             foreach (var s in t.SubTasks.OrderBy(x => x.Position))
             {
-                var ns = Clone(s, copy.Id, uid);
-                ns.ParentTaskId = nt.Id;
+                var ns = Clone(s, uid);
+                ns.Project = copy;
                 ns.KanbanColumnId = null;
-                _db.Tasks.Add(ns);
+                nt.SubTasks.Add(ns);
             }
-            await _db.SaveChangesAsync();
+            _db.Tasks.Add(nt);
         }
+
+        // Ein einziger SaveChanges für Kopie, Spalten, Aufgaben, Unteraufgaben und Etiketten
+        // (statt einer Schreibrunde pro Zeile). EF füllt die FKs aus den Navigationen.
+        await _db.SaveChangesAsync();
         return copy.Id;
 
-        static TaskItem Clone(TaskItem t, long pid, long owner) => new()
+        static TaskItem Clone(TaskItem t, long owner) => new()
         {
             Title = t.Title,
             Description = t.Description,
             OwnerId = owner,
-            ProjectId = pid,
             Priority = t.Priority,
             DueDate = t.DueDate,
             DueHasTime = t.DueHasTime,
@@ -354,7 +359,6 @@ public class ProjectService
         var pos = await _db.KanbanColumns.CountAsync(c => c.ProjectId == col.ProjectId);
         var nc = new KanbanColumn { ProjectId = col.ProjectId, Name = col.Name + " (Kopie)", Position = pos };
         _db.KanbanColumns.Add(nc);
-        await _db.SaveChangesAsync();
 
         var tasks = await _db.Tasks
             .Where(t => t.KanbanColumnId == columnId && t.ParentTaskId == null)
@@ -366,19 +370,19 @@ public class ProjectService
             var copy = new TaskItem
             {
                 Title = t.Title, Description = t.Description, OwnerId = uid, ProjectId = col.ProjectId,
-                KanbanColumnId = nc.Id, Priority = t.Priority, DueDate = t.DueDate, DueHasTime = t.DueHasTime,
+                KanbanColumn = nc, Priority = t.Priority, DueDate = t.DueDate, DueHasTime = t.DueHasTime,
                 DeadlineDate = t.DeadlineDate, DeadlineHasTime = t.DeadlineHasTime, Position = t.Position
             };
-            _db.Tasks.Add(copy);
-            await _db.SaveChangesAsync();
             foreach (var s in t.SubTasks.OrderBy(x => x.Position))
-                _db.Tasks.Add(new TaskItem
+                copy.SubTasks.Add(new TaskItem
                 {
                     Title = s.Title, Description = s.Description, OwnerId = uid, ProjectId = col.ProjectId,
-                    ParentTaskId = copy.Id, Priority = s.Priority, Position = s.Position
+                    Priority = s.Priority, Position = s.Position
                 });
-            await _db.SaveChangesAsync();
+            _db.Tasks.Add(copy);
         }
+        // Ein SaveChanges für neue Spalte + Aufgaben + Unteraufgaben (FKs aus Navigationen).
+        await _db.SaveChangesAsync();
         return nc.Id;
     }
 

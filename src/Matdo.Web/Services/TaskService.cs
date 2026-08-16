@@ -27,6 +27,10 @@ public class TaskService
     private long Uid => _me.UserId ?? throw new InvalidOperationException("Kein angemeldeter Benutzer.");
     private TimeZoneInfo Tz => _me.TimeZone;
 
+    /// <summary>Obergrenze für Listenansichten – schützt vor unbegrenzten Ladezeiten bei sehr
+    /// vielen Aufgaben (Guardrail; realistische Nutzung liegt weit darunter).</summary>
+    private const int MaxListResults = 2000;
+
     /// <summary>Aufgaben, die der Benutzer sehen darf (eigene + geteilte, jede Berechtigung).</summary>
     public IQueryable<TaskItem> AccessibleTasks()
     {
@@ -73,9 +77,10 @@ public class TaskService
     public async Task<List<TaskItem>> GetTodayAsync(bool includeCompleted = false)
     {
         var endOfTodayUtc = DateHelper.LocalToUtc(DateHelper.TodayLocal(Tz).AddDays(1), Tz);
-        return await WithDetails(AccessibleTasks())
+        return await WithDetails(AccessibleTasks()).AsNoTracking()
             .Where(t => (includeCompleted || !t.IsCompleted) && t.ParentTaskId == null && t.DueDate != null && t.DueDate < endOfTodayUtc)
             .OrderBy(t => t.DueDate).ThenBy(t => t.Priority)
+            .Take(MaxListResults)
             .ToListAsync();
     }
 
@@ -85,9 +90,10 @@ public class TaskService
         var today = DateHelper.TodayLocal(Tz);
         var startUtc = DateHelper.LocalToUtc(today.AddDays(1), Tz);
         var endUtc = DateHelper.LocalToUtc(today.AddDays(1 + days), Tz);
-        return await WithDetails(AccessibleTasks())
+        return await WithDetails(AccessibleTasks()).AsNoTracking()
             .Where(t => !t.IsCompleted && t.ParentTaskId == null && t.DueDate != null && t.DueDate >= startUtc && t.DueDate < endUtc)
             .OrderBy(t => t.DueDate).ThenBy(t => t.Priority)
+            .Take(MaxListResults)
             .ToListAsync();
     }
 
@@ -95,25 +101,28 @@ public class TaskService
     public async Task<List<TaskItem>> GetInboxAsync(bool includeCompleted = false)
     {
         var uid = Uid;
-        return await WithDetails(AccessibleTasks())
+        return await WithDetails(AccessibleTasks()).AsNoTracking()
             .Where(t => (includeCompleted || !t.IsCompleted) && t.ParentTaskId == null && t.ProjectId == null && t.OwnerId == uid)
             .OrderBy(t => t.Priority).ThenBy(t => t.Position)
+            .Take(MaxListResults)
             .ToListAsync();
     }
 
     public async Task<List<TaskItem>> GetByProjectAsync(long projectId, bool includeCompleted = false)
     {
-        return await WithDetails(AccessibleTasks())
+        return await WithDetails(AccessibleTasks()).AsNoTracking()
             .Where(t => t.ProjectId == projectId && t.ParentTaskId == null && (includeCompleted || !t.IsCompleted))
             .OrderBy(t => t.Position).ThenBy(t => t.Priority)
+            .Take(MaxListResults)
             .ToListAsync();
     }
 
     public async Task<List<TaskItem>> GetByLabelAsync(long labelId)
     {
-        return await WithDetails(AccessibleTasks())
+        return await WithDetails(AccessibleTasks()).AsNoTracking()
             .Where(t => !t.IsCompleted && t.TaskLabels.Any(tl => tl.LabelId == labelId))
             .OrderBy(t => t.DueDate).ThenBy(t => t.Priority)
+            .Take(MaxListResults)
             .ToListAsync();
     }
 
@@ -122,7 +131,7 @@ public class TaskService
         term = term.Trim();
         if (string.IsNullOrEmpty(term)) return new();
         var like = $"%{term}%";
-        return await WithDetails(AccessibleTasks())
+        return await WithDetails(AccessibleTasks()).AsNoTracking()
             .Where(t => EF.Functions.ILike(t.Title, like) || (t.Description != null && EF.Functions.ILike(t.Description, like)))
             .OrderBy(t => t.IsCompleted).ThenBy(t => t.DueDate)
             .Take(100)
