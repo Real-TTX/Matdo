@@ -28,6 +28,7 @@
         <tab-item target="notify" active="@(at == "notify")"><icon name="bell" size="16" /> @T["settings.tab.notify"]</tab-item>
         <tab-item target="calendar" active="@(at == "calendar")"><icon name="calendar" size="16" /> @T["calendar.title"]</tab-item>
         <tab-item target="import" active="@(at == "import")"><icon name="upload" size="16" /> @T["settings.tab.import"]</tab-item>
+        <tab-item target="data" active="@(at == "data")"><icon name="download" size="16" /> @T["settings.tab.data"]</tab-item>
     </tab-bar>
 
     <!-- Darstellung -->
@@ -296,6 +297,17 @@
                 </form-field>
                 <form-buttons><button type="submit" class="btn btn-primary"><icon name="upload" size="16" /> @T["import.run"]</button></form-buttons>
             </form>
+        </div>
+    </div>
+
+    <!-- Daten & Datenschutz -->
+    <div class="tab-panel @Cls("data")" data-tab-panel="data">
+        <div class="card">
+            <h3><icon name="download" size="16" /> @T["settings.data.exportTitle"]</h3>
+            <p class="hint muted">@T["settings.data.exportHelp"]</p>
+            <a class="btn btn-primary" href="/account/export.json" download>
+                <icon name="download" size="16" /> @T["settings.data.exportButton"]
+            </a>
         </div>
     </div>
 </div>

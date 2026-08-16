@@ -41,6 +41,7 @@ builder.Services.AddScoped<NoteService>();
 builder.Services.AddScoped<ShareService>();
 builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<TodoistImportService>();
+builder.Services.AddScoped<AccountDataService>();
 builder.Services.AddScoped<AnonymousShareService>();
 builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<SmartInputParser>();
