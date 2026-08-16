@@ -31,6 +31,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Aussagekräftige, nachvollziehbare Version:
+      #  - Tag-Build (v*)  -> der Tag selbst (z.B. "v1.2.0")
+      #  - main-Build      -> "main-YYYYMMDD-<kurz-SHA>" (statt nur "main", damit man am
+      #                       Footer sofort erkennt, ob das Deployment aktuell ist).
+      - name: Compute version
+        id: ver
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "value=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=main-$(date -u +%Y%m%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build & push app image
         uses: docker/build-push-action@v6
         with:
@@ -38,5 +51,8 @@ jobs:
           file: ./Dockerfile
           push: true
           build-args: |
-            MATDO_VERSION=${{ github.ref_name }}
-          tags: ghcr.io/real-ttx/matdo:latest
+            MATDO_VERSION=${{ steps.ver.outputs.value }}
+          # Neben :latest auch ein versioniertes Tag veröffentlichen (Pinning/Rollback).
+          tags: |
+            ghcr.io/real-ttx/matdo:latest
+            ghcr.io/real-ttx/matdo:${{ steps.ver.outputs.value }}
