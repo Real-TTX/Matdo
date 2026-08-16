@@ -61,7 +61,12 @@ builder.Services.AddHttpClient("ics", c =>
     c.Timeout = TimeSpan.FromSeconds(20);
     c.MaxResponseContentBufferSize = 5 * 1024 * 1024;
     c.DefaultRequestHeaders.UserAgent.ParseAdd("Matdo/1.0");
-}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+}).ConfigurePrimaryHttpMessageHandler(() => new System.Net.Http.SocketsHttpHandler
+{
+    AllowAutoRedirect = false,
+    // SSRF: Ziel-IP wird beim Verbinden geprüft (kein DNS-Rebinding zwischen Prüfung und Abruf).
+    ConnectCallback = Matdo.Web.Services.Calendar.SsrfGuard.SafeConnectAsync
+});
 builder.Services.AddSingleton<Matdo.Web.Services.Calendar.TokenProtector>();
 builder.Services.AddScoped<Matdo.Web.Services.Calendar.IcsCalendarReader>();
 builder.Services.AddScoped<Matdo.Web.Services.Calendar.ICalendarProvider, Matdo.Web.Services.Calendar.GoogleCalendarProvider>();

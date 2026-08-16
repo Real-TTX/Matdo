@@ -78,32 +78,9 @@ public class IcsCalendarReader
             ? new[] { literal }
             : await Dns.GetHostAddressesAsync(uri.Host, ct);
 
-        if (addresses.Length == 0 || addresses.Any(IsPrivate))
+        // Schnelle Vorabprüfung (klarere Fehlermeldung). Die eigentliche, rebinding-sichere
+        // Durchsetzung passiert im ConnectCallback (SsrfGuard.SafeConnectAsync) des "ics"-Clients.
+        if (addresses.Length == 0 || addresses.Any(SsrfGuard.IsPrivate))
             throw new InvalidOperationException("Diese Zieladresse ist nicht erlaubt.");
-    }
-
-    private static bool IsPrivate(IPAddress ip)
-    {
-        if (IPAddress.IsLoopback(ip)) return true;
-
-        if (ip.AddressFamily == AddressFamily.InterNetwork)
-        {
-            var b = ip.GetAddressBytes();
-            return b[0] == 10                                  // 10.0.0.0/8
-                || (b[0] == 172 && b[1] >= 16 && b[1] <= 31)   // 172.16.0.0/12
-                || (b[0] == 192 && b[1] == 168)                // 192.168.0.0/16
-                || (b[0] == 169 && b[1] == 254)                // 169.254.0.0/16 (Link-Local / Metadaten)
-                || (b[0] == 100 && b[1] >= 64 && b[1] <= 127)  // 100.64.0.0/10 (CGNAT)
-                || b[0] == 0;
-        }
-        if (ip.AddressFamily == AddressFamily.InterNetworkV6)
-        {
-            if (ip.IsIPv6LinkLocal || ip.IsIPv6SiteLocal) return true;
-            var b = ip.GetAddressBytes();
-            if ((b[0] & 0xFE) == 0xFC) return true;            // fc00::/7 (ULA)
-            // IPv4-mapped IPv6 -> auf zugrunde liegende v4-Adresse prüfen
-            if (ip.IsIPv4MappedToIPv6) return IsPrivate(ip.MapToIPv4());
-        }
-        return false;
     }
 }
