@@ -14,11 +14,13 @@ public class ProjectExportController : Controller
 {
     private readonly ProjectService _projects;
     private readonly MatdoDbContext _db;
+    private readonly ICurrentUserAccessor _me;
 
-    public ProjectExportController(ProjectService projects, MatdoDbContext db)
+    public ProjectExportController(ProjectService projects, MatdoDbContext db, ICurrentUserAccessor me)
     {
         _projects = projects;
         _db = db;
+        _me = me;
     }
 
     [HttpGet("/projects/{id:long}/export.csv")]
@@ -26,6 +28,7 @@ public class ProjectExportController : Controller
     {
         var project = await _projects.GetAsync(id);   // nur zugängliche Projekte
         if (project is null) return NotFound();
+        var tz = _me.TimeZone;
 
         var tasks = await _db.Tasks
             .Where(t => t.ProjectId == id && !t.IsCompleted)
@@ -48,7 +51,7 @@ public class ProjectExportController : Controller
             var date = "";
             if (t.DueDate is DateTime d)
             {
-                var local = d.ToLocalTime();
+                var local = DateHelper.ToLocal(d, tz);
                 date = t.DueHasTime ? local.ToString("yyyy-MM-dd HH:mm") : local.ToString("yyyy-MM-dd");
             }
             sb.Append($"task,{Csv(t.Title)},{prio},{indent},,,{Csv(date)},,\r\n");

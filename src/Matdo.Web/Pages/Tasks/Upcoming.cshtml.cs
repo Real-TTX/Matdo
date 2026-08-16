@@ -24,20 +24,21 @@ public class UpcomingModel : PageModel
     public async Task OnGetAsync()
     {
         const int days = 45;
+        var tz = _me.TimeZone;
         var items = await _tasks.GetUpcomingAsync(days);
         var tasksByDay = items
-            .GroupBy(t => t.DueDate!.Value.ToLocalTime().Date)
+            .GroupBy(t => DateHelper.ToLocal(t.DueDate!.Value, tz).Date)
             .ToDictionary(g => g.Key, g => g.ToList());
 
         var eventsByDay = new Dictionary<DateTime, List<CalendarEventDto>>();
         if (_me.UserId is long uid)
         {
-            var start = DateTime.Today.AddDays(1);
-            var fromUtc = start.ToUniversalTime();
-            var toUtc = start.AddDays(days).ToUniversalTime();
+            var start = DateHelper.TodayLocal(tz).AddDays(1);
+            var fromUtc = DateHelper.LocalToUtc(start, tz);
+            var toUtc = DateHelper.LocalToUtc(start.AddDays(days), tz);
             foreach (var e in await _calendar.GetEventsAsync(uid, fromUtc, toUtc))
             {
-                var day = e.StartUtc.ToLocalTime().Date;
+                var day = DateHelper.ToLocal(e.StartUtc, tz).Date;
                 if (!eventsByDay.TryGetValue(day, out var list)) eventsByDay[day] = list = new();
                 list.Add(e);
             }

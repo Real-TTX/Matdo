@@ -27,6 +27,7 @@ public class ReportingModel : PageModel
     public async Task OnGetAsync()
     {
         var uid = _me.UserId!.Value;
+        var tz = _me.TimeZone;
         var mine = _db.Tasks.Where(t => t.OwnerId == uid && t.ParentTaskId == null);
 
         Open = await mine.CountAsync(t => !t.IsCompleted);
@@ -35,7 +36,7 @@ public class ReportingModel : PageModel
         var weekAgo = DateTime.UtcNow.AddDays(-7);
         CompletedLast7 = await mine.CountAsync(t => t.IsCompleted && t.CompletedAt >= weekAgo);
 
-        var nowUtc = DateTime.Today.ToUniversalTime();
+        var nowUtc = DateHelper.StartOfTodayUtc(tz);
         Overdue = await mine.CountAsync(t => !t.IsCompleted && t.DueDate != null && t.DueDate < nowUtc);
 
         var byProject = await _db.Tasks
@@ -48,11 +49,12 @@ public class ReportingModel : PageModel
         ByProject = byProject.Select(x => (x.Name, x.Color, x.Count)).ToList();
 
         // Erledigte Aufgaben je Tag (letzte 7 Tage)
+        var today = DateHelper.TodayLocal(tz);
         for (var i = 0; i < 7; i++)
         {
-            var day = DateTime.Today.AddDays(-6 + i);
-            var startUtc = day.ToUniversalTime();
-            var endUtc = day.AddDays(1).ToUniversalTime();
+            var day = today.AddDays(-6 + i);
+            var startUtc = DateHelper.LocalToUtc(day, tz);
+            var endUtc = DateHelper.LocalToUtc(day.AddDays(1), tz);
             Last7Days[i] = await mine.CountAsync(t => t.CompletedAt >= startUtc && t.CompletedAt < endUtc);
             Last7Labels[i] = day.ToString("ddd");
         }

@@ -16,7 +16,7 @@ else
 {
     foreach (var day in Model.Days)
     {
-        var isTomorrow = day.Date == DateTime.Now.Date.AddDays(1);
+        var isTomorrow = day.Date == DateHelper.TodayLocal(CurrentUser.TimeZone).AddDays(1);
         <div class="task-group">
             <h3>@day.Date.ToString("d. MMM") · @(isTomorrow ? T["tasks.common.tomorrow"] + " · " : "")@day.Date.ToString("dddd")</h3>
             @foreach (var e in day.Events)
@@ -25,7 +25,7 @@ else
                     <div class="task-body">
                         <div class="task-title">
                             <span class="dot" style="background:@e.Color; display:inline-block; margin-right:6px"></span>
-                            @if (!e.AllDay) { <span class="muted">@e.StartUtc.ToLocalTime().ToString("HH:mm")</span> }
+                            @if (!e.AllDay) { <span class="muted">@DateHelper.ToLocal(e.StartUtc, CurrentUser.TimeZone).ToString("HH:mm")</span> }
                             @e.Title
                         </div>
                     </div>

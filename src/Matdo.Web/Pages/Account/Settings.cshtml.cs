@@ -50,6 +50,10 @@ public class SettingsModel : PageModel
     public static readonly string[] CalPalette =
         { "#246fe0", "#8300bc", "#dc4c3e", "#1e8e3e", "#e8590c", "#00897b", "#c2185b" };
 
+    /// <summary>Auswählbare Zeitzonen (auf dem Linux-Container IANA-Ids, z.B. „Europe/Berlin").</summary>
+    public static readonly IReadOnlyList<string> TimeZoneIds =
+        TimeZoneInfo.GetSystemTimeZones().Select(z => z.Id).OrderBy(z => z, StringComparer.Ordinal).ToList();
+
     public class ProfileInput
     {
         [Required(ErrorMessage = "Bitte Namen angeben.")]
@@ -99,8 +103,20 @@ public class SettingsModel : PageModel
         ActiveTab = "profile";
 
         if (!ModelState.IsValid) return Page();
+
+        var tzInput = string.IsNullOrWhiteSpace(Profile.TimeZone) ? null : Profile.TimeZone.Trim();
+        if (tzInput is not null)
+        {
+            try { TimeZoneInfo.FindSystemTimeZoneById(tzInput); }
+            catch
+            {
+                ModelState.AddModelError("Profile.TimeZone", "Unbekannte Zeitzone.");
+                return Page();
+            }
+        }
+
         user.DisplayName = Profile.DisplayName.Trim();
-        user.TimeZone = string.IsNullOrWhiteSpace(Profile.TimeZone) ? null : Profile.TimeZone.Trim();
+        user.TimeZone = tzInput;
         await _db.SaveChangesAsync();
         Message = "Profil gespeichert.";
         return Page();

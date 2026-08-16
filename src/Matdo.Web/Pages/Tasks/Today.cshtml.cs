@@ -34,15 +34,16 @@ public class TodayModel : PageModel
 
         var all = await _tasks.GetTodayAsync(includeCompleted: done);
         if (PrioFilter > 0) all = all.Where(t => (int)t.Priority == PrioFilter).ToList();
-        var today = DateTime.Now.Date;
-        Overdue = Order(all.Where(t => t.DueDate!.Value.ToLocalTime().Date < today));
-        DueToday = Order(all.Where(t => t.DueDate!.Value.ToLocalTime().Date == today));
+        var tz = _me.TimeZone;
+        var today = DateHelper.TodayLocal(tz);
+        Overdue = Order(all.Where(t => DateHelper.ToLocal(t.DueDate!.Value, tz).Date < today));
+        DueToday = Order(all.Where(t => DateHelper.ToLocal(t.DueDate!.Value, tz).Date == today));
 
         // Externe Termine des heutigen Tages (lokaler Tag -> UTC-Bereich)
         if (_me.UserId is long uid)
         {
-            var fromUtc = today.ToUniversalTime();
-            var toUtc = today.AddDays(1).ToUniversalTime();
+            var fromUtc = DateHelper.LocalToUtc(today, tz);
+            var toUtc = DateHelper.LocalToUtc(today.AddDays(1), tz);
             Events = (await _calendar.GetEventsAsync(uid, fromUtc, toUtc))
                 .OrderBy(e => e.AllDay ? 0 : 1).ThenBy(e => e.StartUtc).ToList();
         }

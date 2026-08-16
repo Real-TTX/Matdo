@@ -15,15 +15,16 @@
     string Nav(DateTime d) => Model.NavUrlTemplate.Replace("{ym}", d.ToString("yyyy-MM"));
 
     // Aufgaben nach Tag gruppieren (lokale Zeit)
+    var tz = CurrentUser.TimeZone;
     var tasksByDay = Model.Tasks
         .Where(t => t.DueDate.HasValue)
-        .GroupBy(t => t.DueDate!.Value.ToLocalTime().Date)
+        .GroupBy(t => DateHelper.ToLocal(t.DueDate!.Value, tz).Date)
         .ToDictionary(g => g.Key, g => g.ToList());
     var eventsByDay = Model.Events
-        .GroupBy(e => e.Start.ToLocalTime().Date)
+        .GroupBy(e => DateHelper.ToLocal(e.Start, tz).Date)
         .ToDictionary(g => g.Key, g => g.ToList());
 
-    var today = DateTime.Now.Date;
+    var today = DateHelper.TodayLocal(tz);
     var weekdayNames = Enumerable.Range(0, 7)
         .Select(i => culture.DateTimeFormat.AbbreviatedDayNames[((int)DayOfWeek.Monday + i) % 7])
         .ToArray();
@@ -68,7 +69,7 @@
                         {
                             foreach (var e in dayEvents.OrderBy(x => x.AllDay ? 0 : 1).ThenBy(x => x.Start))
                             {
-                                <div class="cal-ev" title="@e.Title"><span class="dot" style="background:@e.Color"></span>@(e.AllDay ? "" : e.Start.ToLocalTime().ToString("HH:mm") + " ")@e.Title</div>
+                                <div class="cal-ev" title="@e.Title"><span class="dot" style="background:@e.Color"></span>@(e.AllDay ? "" : DateHelper.ToLocal(e.Start, tz).ToString("HH:mm") + " ")@e.Title</div>
                             }
                         }
                         @if (dayTasks != null)

@@ -23,7 +23,7 @@ public class IcalExportService
             .OrderBy(t => t.DueDate).Take(1000)
             .ToListAsync(ct);
 
-        return Render("Matdo", tasks);
+        return Render("Matdo", tasks, DateHelper.Resolve(user.TimeZone));
     }
 
     /// <summary>iCal-Feed aller fälligen Aufgaben eines Projekts (per Projekt-Token, z.B. für Teams).</summary>
@@ -32,6 +32,9 @@ public class IcalExportService
         var project = await _db.Projects.FirstOrDefaultAsync(p => p.IcalToken == token && !p.IsArchived, ct);
         if (project is null) return null;
 
+        // Ganztägige Termine werden in der Zeitzone des Projekt-Eigentümers dargestellt.
+        var ownerTzId = await _db.Users.Where(u => u.Id == project.OwnerId).Select(u => u.TimeZone).FirstOrDefaultAsync(ct);
+
         var fromUtc = DateTime.UtcNow.AddDays(-60);
         var tasks = await _db.Tasks
             .Where(t => t.ProjectId == project.Id
@@ -39,10 +42,10 @@ public class IcalExportService
             .OrderBy(t => t.DueDate).Take(1000)
             .ToListAsync(ct);
 
-        return Render(project.Name, tasks);
+        return Render(project.Name, tasks, DateHelper.Resolve(ownerTzId));
     }
 
-    private static string Render(string calName, List<Data.Entities.TaskItem> tasks)
+    private static string Render(string calName, List<Data.Entities.TaskItem> tasks, TimeZoneInfo tz)
     {
         var sb = new StringBuilder();
         sb.Append("BEGIN:VCALENDAR\r\n");
@@ -65,7 +68,7 @@ public class IcalExportService
             }
             else
             {
-                var day = due.ToLocalTime().Date;
+                var day = DateHelper.ToLocal(due, tz).Date;
                 sb.Append($"DTSTART;VALUE=DATE:{day:yyyyMMdd}\r\n");
                 sb.Append($"DTEND;VALUE=DATE:{day.AddDays(1):yyyyMMdd}\r\n");
             }

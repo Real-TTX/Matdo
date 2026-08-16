@@ -25,6 +25,7 @@ public class TaskService
     }
 
     private long Uid => _me.UserId ?? throw new InvalidOperationException("Kein angemeldeter Benutzer.");
+    private TimeZoneInfo Tz => _me.TimeZone;
 
     /// <summary>Aufgaben, die der Benutzer sehen darf (eigene + geteilte, jede Berechtigung).</summary>
     public IQueryable<TaskItem> AccessibleTasks()
@@ -71,7 +72,7 @@ public class TaskService
     /// <summary>Überfällige + heute fällige Aufgaben (Ansicht "Heute").</summary>
     public async Task<List<TaskItem>> GetTodayAsync(bool includeCompleted = false)
     {
-        var endOfTodayUtc = DateTime.Today.AddDays(1).ToUniversalTime();
+        var endOfTodayUtc = DateHelper.LocalToUtc(DateHelper.TodayLocal(Tz).AddDays(1), Tz);
         return await WithDetails(AccessibleTasks())
             .Where(t => (includeCompleted || !t.IsCompleted) && t.ParentTaskId == null && t.DueDate != null && t.DueDate < endOfTodayUtc)
             .OrderBy(t => t.DueDate).ThenBy(t => t.Priority)
@@ -81,8 +82,9 @@ public class TaskService
     /// <summary>Aufgaben ab morgen (Ansicht "Demnächst").</summary>
     public async Task<List<TaskItem>> GetUpcomingAsync(int days = 30)
     {
-        var startUtc = DateTime.Today.AddDays(1).ToUniversalTime();
-        var endUtc = DateTime.Today.AddDays(1 + days).ToUniversalTime();
+        var today = DateHelper.TodayLocal(Tz);
+        var startUtc = DateHelper.LocalToUtc(today.AddDays(1), Tz);
+        var endUtc = DateHelper.LocalToUtc(today.AddDays(1 + days), Tz);
         return await WithDetails(AccessibleTasks())
             .Where(t => !t.IsCompleted && t.ParentTaskId == null && t.DueDate != null && t.DueDate >= startUtc && t.DueDate < endUtc)
             .OrderBy(t => t.DueDate).ThenBy(t => t.Priority)
@@ -257,8 +259,9 @@ public class TaskService
     /// Gibt die Anzahl der verschobenen Aufgaben zurück.</summary>
     public async Task<int> RescheduleOverdueAsync(DateTime targetLocalDate, int prioFilter = 0)
     {
-        var startOfTodayUtc = DateTime.Today.ToUniversalTime();
-        var targetDate = DateTime.SpecifyKind(targetLocalDate.Date, DateTimeKind.Local);
+        var tz = Tz;
+        var startOfTodayUtc = DateHelper.StartOfTodayUtc(tz);
+        var targetDate = targetLocalDate.Date;
         var q = EditableTasks()
             .Where(t => !t.IsCompleted && t.ParentTaskId == null && t.DueDate != null && t.DueDate < startOfTodayUtc);
         // Denselben Prioritäts-Filter wie die Ansicht anwenden – es werden nur die auch
@@ -267,8 +270,8 @@ public class TaskService
         var overdue = await q.ToListAsync();
         foreach (var t in overdue)
         {
-            var timeOfDay = t.DueHasTime ? t.DueDate!.Value.ToLocalTime().TimeOfDay : TimeSpan.Zero;
-            t.DueDate = (targetDate + timeOfDay).ToUniversalTime();
+            var timeOfDay = t.DueHasTime ? DateHelper.ToLocal(t.DueDate!.Value, tz).TimeOfDay : TimeSpan.Zero;
+            t.DueDate = DateHelper.LocalToUtc(targetDate + timeOfDay, tz);
         }
         if (overdue.Count > 0) await _db.SaveChangesAsync();
         return overdue.Count;
@@ -387,7 +390,7 @@ public class TaskService
 
     public async Task<int> CountTodayAsync()
     {
-        var endOfTodayUtc = DateTime.Today.AddDays(1).ToUniversalTime();
+        var endOfTodayUtc = DateHelper.LocalToUtc(DateHelper.TodayLocal(Tz).AddDays(1), Tz);
         return await AccessibleTasks()
             .CountAsync(t => !t.IsCompleted && t.ParentTaskId == null && t.DueDate != null && t.DueDate < endOfTodayUtc);
     }

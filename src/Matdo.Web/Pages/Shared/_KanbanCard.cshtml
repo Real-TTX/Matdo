@@ -6,8 +6,8 @@
     var prioClass = t.Priority switch { TaskPriority.P1 => "p1", TaskPriority.P2 => "p2", TaskPriority.P3 => "p3", _ => "" };
     var prioNum = t.Priority switch { TaskPriority.P1 => 1, TaskPriority.P2 => 2, TaskPriority.P3 => 3, _ => 4 };
     string? prioText = prioNum switch { 1 => T["tasks.priority.p1"], 2 => T["tasks.priority.p2"], 3 => T["tasks.priority.p3"], _ => null };
-    var due = t.DueDate?.ToLocalTime();
-    var overdue = due.HasValue && due.Value.Date < DateTime.Now.Date && !t.IsCompleted;
+    var due = t.DueDate.HasValue ? DateHelper.ToLocal(t.DueDate.Value, Me.TimeZone) : (DateTime?)null;
+    var overdue = due.HasValue && due.Value.Date < DateHelper.TodayLocal(Me.TimeZone) && !t.IsCompleted;
 }
 <div class="kanban-card" draggable="true" data-task-id="@t.Id">
     <div style="display:flex; gap:8px; align-items:flex-start">

@@ -3,12 +3,13 @@
 @inject ProjectService ProjectSvc
 @{
     var labels = await LabelSvc.GetAllAsync();
-    var today = DateTime.Today.ToString("yyyy-MM-dd");
+    var tz = CurrentUser.TimeZone;
+    var today = DateHelper.TodayLocal(tz).ToString("yyyy-MM-dd");
     var prios = new[] { (1, T["tasks.priority.p1"]), (2, T["tasks.priority.p2"]), (3, T["tasks.priority.p3"]), (4, T["tasks.priority.p4"]) };
     var edit = Model.EditTask;
     var isEdit = edit != null;
-    string Loc(DateTime? d) => d?.ToLocalTime().ToString("yyyy-MM-dd") ?? "";
-    string LocT(DateTime? d, bool has) => (d.HasValue && has) ? d.Value.ToLocalTime().ToString("HH:mm") : "";
+    string Loc(DateTime? d) => d.HasValue ? DateHelper.ToLocal(d.Value, tz).ToString("yyyy-MM-dd") : "";
+    string LocT(DateTime? d, bool has) => (d.HasValue && has) ? DateHelper.ToLocal(d.Value, tz).ToString("HH:mm") : "";
     var selPrio = isEdit ? (int)edit!.Priority : 4;
     var dueVal = isEdit ? Loc(edit!.DueDate) : (Model.DefaultDueToday ? today : "");
     var editLabelIds = isEdit ? edit!.TaskLabels.Select(tl => tl.LabelId).ToHashSet() : new HashSet<long>();

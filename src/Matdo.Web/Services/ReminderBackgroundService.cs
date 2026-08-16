@@ -68,8 +68,9 @@ public class ReminderBackgroundService : BackgroundService
             }
 
             var title = "Erinnerung: " + task.Title;
+            var ownerTz = DateHelper.Resolve(task.Owner.TimeZone);
             var body = task.DueDate.HasValue
-                ? $"Fällig: {task.DueDate.Value.ToLocalTime():g}"
+                ? $"Fällig: {DateHelper.ToLocal(task.DueDate.Value, ownerTz):g}"
                 : "Fällige Aufgabe";
 
             var hasEmail = r.Channel.HasFlag(ReminderChannel.Email);

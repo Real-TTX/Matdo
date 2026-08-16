@@ -177,7 +177,7 @@
                         @foreach (var r in Model.Reminders)
                         {
                             <tr>
-                                <td>@r.RemindAt.ToLocalTime().ToString("g")</td>
+                                <td>@DateHelper.ToLocal(r.RemindAt, CurrentUser.TimeZone).ToString("g")</td>
                                 <td>@(r.Type == Matdo.Web.Data.Entities.ReminderType.DateTime ? T["tasks.edit.reminderDateTime"] : $"{r.OffsetMinutes} {T["tasks.edit.reminderMinutesBefore"]}")</td>
                                 <td>@r.Channel</td>
                                 <td class="actions-cell">

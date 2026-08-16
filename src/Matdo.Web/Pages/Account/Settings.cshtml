@@ -86,7 +86,14 @@
                 <span asp-validation-for="Profile.DisplayName" class="field-error"></span>
             </form-field>
             <form-field label="@T["settings.timezone"]" for="Profile_TimeZone" hint="@T["settings.timezoneHint"]">
-                <input asp-for="Profile.TimeZone" placeholder="Europe/Berlin" />
+                <input asp-for="Profile.TimeZone" list="tz-list" placeholder="Europe/Berlin" autocomplete="off" />
+                <datalist id="tz-list">
+                    @foreach (var z in SettingsModel.TimeZoneIds)
+                    {
+                        <option value="@z"></option>
+                    }
+                </datalist>
+                <span asp-validation-for="Profile.TimeZone" class="field-error"></span>
             </form-field>
             <form-buttons><button type="submit" class="btn btn-primary"><icon name="save" size="16" /> @T["common.save"]</button></form-buttons>
         </form>
@@ -171,7 +178,7 @@
                                     }
                                     else { <span class="muted">–</span> }
                                 </td>
-                                <td class="muted">@(c.LastSyncAt.HasValue ? c.LastSyncAt.Value.ToLocalTime().ToString("g") : T["calendar.never"])</td>
+                                <td class="muted">@(c.LastSyncAt.HasValue ? DateHelper.ToLocal(c.LastSyncAt.Value, CurrentUser.TimeZone).ToString("g") : T["calendar.never"])</td>
                                 <td class="actions-cell">
                                     <form method="post" asp-page-handler="CalSync" style="display:inline">
                                         <input type="hidden" name="id" value="@c.Id" />

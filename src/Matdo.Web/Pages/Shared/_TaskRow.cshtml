@@ -15,8 +15,8 @@
     var overdue = false;
     if (t.DueDate.HasValue)
     {
-        var due = t.DueDate.Value.ToLocalTime();
-        var today = DateTime.Now.Date;
+        var due = DateHelper.ToLocal(t.DueDate.Value, Me.TimeZone);
+        var today = DateHelper.TodayLocal(Me.TimeZone);
         overdue = due.Date < today && !t.IsCompleted;
         if (due.Date == today) dueLabel = "Heute";
         else if (due.Date == today.AddDays(1)) dueLabel = "Morgen";
@@ -28,7 +28,7 @@
     var doneSub = t.SubTasks?.Count(s => s.IsCompleted) ?? 0;
 
     string? deadlineLabel = t.DeadlineDate.HasValue
-        ? t.DeadlineDate.Value.ToLocalTime().ToString("d. MMM") + (t.DeadlineHasTime ? " " + t.DeadlineDate.Value.ToLocalTime().ToString("HH:mm") : "")
+        ? DateHelper.ToLocal(t.DeadlineDate.Value, Me.TimeZone).ToString("d. MMM") + (t.DeadlineHasTime ? " " + DateHelper.ToLocal(t.DeadlineDate.Value, Me.TimeZone).ToString("HH:mm") : "")
         : null;
 
     var prioNum = t.Priority switch { TaskPriority.P1 => 1, TaskPriority.P2 => 2, TaskPriority.P3 => 3, _ => 4 };

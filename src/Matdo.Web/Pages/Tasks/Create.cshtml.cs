@@ -15,10 +15,12 @@ public class TaskCreateModel : PageModel
 {
     private readonly TaskService _tasks;
     private readonly SmartInputParser _parser;
-    public TaskCreateModel(TaskService tasks, SmartInputParser parser)
+    private readonly ICurrentUserAccessor _me;
+    public TaskCreateModel(TaskService tasks, SmartInputParser parser, ICurrentUserAccessor me)
     {
         _tasks = tasks;
         _parser = parser;
+        _me = me;
     }
 
     [BindProperty] public InputModel Input { get; set; } = new();
@@ -57,6 +59,7 @@ public class TaskCreateModel : PageModel
         var target = SafeReturn(Input.ReturnUrl);
         if (string.IsNullOrWhiteSpace(Input.Title))
             return Redirect(target);
+        var tz = _me.TimeZone;
 
         // ----- Inline-Bearbeiten: explizite Felder, kein Smart-Parsing (Titel bleibt wörtlich). -----
         if (Input.Id is long editId && editId > 0)
@@ -70,9 +73,9 @@ public class TaskCreateModel : PageModel
                 Description = string.IsNullOrWhiteSpace(Input.Description) ? null : Input.Description.Trim(),
                 ProjectId = Input.ProjectId,
                 Priority = (TaskPriority)Math.Clamp(Input.Priority, 1, 4),
-                DueDate = DateHelper.ToUtc(Input.DueDate, Input.DueTime),
+                DueDate = DateHelper.ToUtc(Input.DueDate, Input.DueTime, tz),
                 DueHasTime = !string.IsNullOrWhiteSpace(Input.DueTime),
-                DeadlineDate = DateHelper.ToUtc(Input.DeadlineDate, Input.DeadlineTime),
+                DeadlineDate = DateHelper.ToUtc(Input.DeadlineDate, Input.DeadlineTime, tz),
                 DeadlineHasTime = !string.IsNullOrWhiteSpace(Input.DeadlineTime),
                 // Nicht im Composer bearbeitbare Felder erhalten:
                 KanbanColumnId = existing.KanbanColumnId,
@@ -87,7 +90,7 @@ public class TaskCreateModel : PageModel
         var parsed = await _parser.ParseAsync(Input.Title);
 
         // Explizite Felder aus dem Composer haben Vorrang; Lücken werden aus dem Text gefüllt.
-        var explicitDue = DateHelper.ToUtc(Input.DueDate, Input.DueTime);
+        var explicitDue = DateHelper.ToUtc(Input.DueDate, Input.DueTime, tz);
         var due = explicitDue ?? parsed.DueUtc;
         var dueHasTime = explicitDue != null ? !string.IsNullOrWhiteSpace(Input.DueTime) : parsed.DueHasTime;
 
@@ -103,7 +106,7 @@ public class TaskCreateModel : PageModel
             Priority = (TaskPriority)Math.Clamp(Input.Priority, 1, 4),
             DueDate = due,
             DueHasTime = dueHasTime,
-            DeadlineDate = DateHelper.ToUtc(Input.DeadlineDate, Input.DeadlineTime),
+            DeadlineDate = DateHelper.ToUtc(Input.DeadlineDate, Input.DeadlineTime, tz),
             DeadlineHasTime = !string.IsNullOrWhiteSpace(Input.DeadlineTime)
         };
 
@@ -121,7 +124,7 @@ public class TaskCreateModel : PageModel
             };
             if (reminder.Type == Data.Entities.ReminderType.DateTime)
             {
-                var at = DateHelper.ToUtc(Input.RemindDate, Input.RemindTime);
+                var at = DateHelper.ToUtc(Input.RemindDate, Input.RemindTime, tz);
                 if (at.HasValue)
                 {
                     reminder.RemindAt = at.Value;

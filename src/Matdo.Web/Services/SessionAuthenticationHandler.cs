@@ -59,7 +59,8 @@ public class SessionAuthenticationHandler : AuthenticationHandler<Authentication
             new(ClaimTypes.Email, u.Email),
             new(ClaimTypes.Name, u.Email),
             new(ClaimTypes.Role, u.Role?.Name ?? "User"),
-            new("email_confirmed", u.EmailConfirmed ? "1" : "0")
+            new("email_confirmed", u.EmailConfirmed ? "1" : "0"),
+            new(MatdoClaims.TimeZone, u.TimeZone ?? "")
         };
 
         var identity = new ClaimsIdentity(claims, SchemeName);

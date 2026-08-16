@@ -13,13 +13,15 @@ public class TaskEditModel : PageModel
     private readonly ProjectService _projects;
     private readonly LabelService _labels;
     private readonly ShareService _shares;
+    private readonly ICurrentUserAccessor _me;
 
-    public TaskEditModel(TaskService tasks, ProjectService projects, LabelService labels, ShareService shares)
+    public TaskEditModel(TaskService tasks, ProjectService projects, LabelService labels, ShareService shares, ICurrentUserAccessor me)
     {
         _tasks = tasks;
         _projects = projects;
         _labels = labels;
         _shares = shares;
+        _me = me;
     }
 
     [BindProperty] public InputModel Input { get; set; } = new();
@@ -113,10 +115,10 @@ public class TaskEditModel : PageModel
                 Priority = (int)t.Priority,
                 RecurrenceUnit = (int)t.RecurrenceUnit,
                 RecurrenceInterval = t.RecurrenceInterval,
-                DueDate = DateHelper.ToDateInput(t.DueDate),
-                DueTime = DateHelper.ToTimeInput(t.DueDate, t.DueHasTime),
-                DeadlineDate = DateHelper.ToDateInput(t.DeadlineDate),
-                DeadlineTime = DateHelper.ToTimeInput(t.DeadlineDate, t.DeadlineHasTime),
+                DueDate = DateHelper.ToDateInput(t.DueDate, _me.TimeZone),
+                DueTime = DateHelper.ToTimeInput(t.DueDate, t.DueHasTime, _me.TimeZone),
+                DeadlineDate = DateHelper.ToDateInput(t.DeadlineDate, _me.TimeZone),
+                DeadlineTime = DateHelper.ToTimeInput(t.DeadlineDate, t.DeadlineHasTime, _me.TimeZone),
                 LabelIds = t.TaskLabels?.Select(tl => tl.LabelId).ToList() ?? new()
             };
             await LoadDetailsAsync(t.Id);
@@ -125,7 +127,7 @@ public class TaskEditModel : PageModel
         else
         {
             if (string.Equals(due, "today", StringComparison.OrdinalIgnoreCase))
-                Input.DueDate = DateTime.Today.ToString("yyyy-MM-dd");
+                Input.DueDate = DateHelper.TodayLocal(_me.TimeZone).ToString("yyyy-MM-dd");
             else if (!string.IsNullOrWhiteSpace(due) &&
                      DateTime.TryParseExact(due, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
                          System.Globalization.DateTimeStyles.None, out var d))
@@ -157,9 +159,9 @@ public class TaskEditModel : PageModel
             Priority = (TaskPriority)Math.Clamp(Input.Priority, 1, 4),
             RecurrenceUnit = (RecurrenceUnit)Math.Clamp(Input.RecurrenceUnit, 0, 4),
             RecurrenceInterval = Input.RecurrenceInterval < 1 ? 1 : Input.RecurrenceInterval,
-            DueDate = DateHelper.ToUtc(Input.DueDate, Input.DueTime),
+            DueDate = DateHelper.ToUtc(Input.DueDate, Input.DueTime, _me.TimeZone),
             DueHasTime = !string.IsNullOrWhiteSpace(Input.DueTime),
-            DeadlineDate = DateHelper.ToUtc(Input.DeadlineDate, Input.DeadlineTime),
+            DeadlineDate = DateHelper.ToUtc(Input.DeadlineDate, Input.DeadlineTime, _me.TimeZone),
             DeadlineHasTime = !string.IsNullOrWhiteSpace(Input.DeadlineTime)
         };
 
@@ -192,7 +194,7 @@ public class TaskEditModel : PageModel
 
         if (reminder.Type == ReminderType.DateTime)
         {
-            reminder.RemindAt = DateHelper.ToUtc(remindDate, remindTime) ?? DateTime.UtcNow.AddHours(1);
+            reminder.RemindAt = DateHelper.ToUtc(remindDate, remindTime, _me.TimeZone) ?? DateTime.UtcNow.AddHours(1);
         }
         else
         {

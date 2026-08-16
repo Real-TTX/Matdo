@@ -70,7 +70,7 @@ public class SmartInputParser
         }
         text = Regex.Replace(text, @"(?<=^|\s)\+[\p{L}\p{N}_][\p{L}\p{N}_-]*", "");
 
-        var (rest, dueUtc, hasTime) = ParseDate(text);
+        var (rest, dueUtc, hasTime) = ParseDate(text, _me.TimeZone);
         text = rest;
 
         var title = Regex.Replace(text, @"\s{2,}", " ").Trim();
@@ -136,9 +136,9 @@ public class SmartInputParser
         return h is >= 0 and < 24 && min is >= 0 and < 60 ? new TimeSpan(h, min, 0) : null;
     }
 
-    private static (string text, DateTime? dueUtc, bool hasTime) ParseDate(string text)
+    private static (string text, DateTime? dueUtc, bool hasTime) ParseDate(string text, TimeZoneInfo tz)
     {
-        var now = DateTime.Now;
+        var now = DateHelper.NowLocal(tz);
         DateTime? date = null;
         TimeSpan? time = null;
 
@@ -220,7 +220,7 @@ public class SmartInputParser
         if (date is null) date = now.Date; // nur Uhrzeit -> heute
 
         var local = date.Value.Date + (time ?? TimeSpan.Zero);
-        var utc = DateTime.SpecifyKind(local, DateTimeKind.Local).ToUniversalTime();
+        var utc = DateHelper.LocalToUtc(local, tz);
         return (text, utc, time.HasValue);
     }
 }

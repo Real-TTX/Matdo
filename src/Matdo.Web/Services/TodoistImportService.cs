@@ -154,7 +154,7 @@ public class TodoistImportService
             while (parents.Count > 0 && parents[^1].indent >= indent) parents.RemoveAt(parents.Count - 1);
             var parent = parents.Count > 0 ? parents[^1].task : null;
 
-            var (dueUtc, hasTime, dateWarn) = ParseDate(Get(r, cDate).Trim(), Get(r, cDateLang).Trim());
+            var (dueUtc, hasTime, dateWarn) = ParseDate(Get(r, cDate).Trim(), Get(r, cDateLang).Trim(), _me.TimeZone);
             if (dateWarn != null) warnings.Add($"„{Trunc(title)}“: {dateWarn}");
 
             var task = new TaskItem
@@ -302,7 +302,7 @@ public class TodoistImportService
         return TaskPriority.P4;          // leer / unbekannt → keine Priorität
     }
 
-    private static (DateTime? utc, bool hasTime, string? warning) ParseDate(string raw, string lang)
+    private static (DateTime? utc, bool hasTime, string? warning) ParseDate(string raw, string lang, TimeZoneInfo tz)
     {
         if (string.IsNullOrWhiteSpace(raw)) return (null, false, null);
         var s = raw.Trim();
@@ -317,18 +317,18 @@ public class TodoistImportService
                 var hh = hasT ? int.Parse(iso.Groups[4].Value) : 0; var mi = hasT ? int.Parse(iso.Groups[5].Value) : 0;
                 if (y is < 1 or > 9999 || mo is < 1 or > 12 || da < 1 || da > DateTime.DaysInMonth(y, mo) || hh > 23 || mi > 59)
                     return (null, false, $"Datum „{s}“ nicht erkannt");
-                var d = new DateTime(y, mo, da, hh, mi, 0, DateTimeKind.Local);
-                return (d.ToUniversalTime(), hasT, null);
+                var d = new DateTime(y, mo, da, hh, mi, 0, DateTimeKind.Unspecified);
+                return (DateHelper.LocalToUtc(d, tz), hasT, null);
             }
 
             var low = s.ToLowerInvariant();
-            var today = DateTime.Today;
-            if (low is "today" or "heute") return (today.ToUniversalTime(), false, null);
-            if (low is "tomorrow" or "morgen") return (today.AddDays(1).ToUniversalTime(), false, null);
-            if (low is "yesterday" or "gestern") return (today.AddDays(-1).ToUniversalTime(), false, null);
+            var today = DateHelper.TodayLocal(tz);
+            if (low is "today" or "heute") return (DateHelper.LocalToUtc(today, tz), false, null);
+            if (low is "tomorrow" or "morgen") return (DateHelper.LocalToUtc(today.AddDays(1), tz), false, null);
+            if (low is "yesterday" or "gestern") return (DateHelper.LocalToUtc(today.AddDays(-1), tz), false, null);
             var inDays = Regex.Match(low, @"^in (\d{1,5}) (days?|tagen?)$");
             if (inDays.Success && int.TryParse(inDays.Groups[1].Value, out var n) && n <= 3650)
-                return (today.AddDays(n).ToUniversalTime(), false, null);
+                return (DateHelper.LocalToUtc(today.AddDays(n), tz), false, null);
 
             // Wiederkehrend ohne festen Startpunkt – nicht übernehmbar.
             if (low.StartsWith("every") || low.StartsWith("jede") || low.StartsWith("jeden") || low.Contains('!')
@@ -342,8 +342,8 @@ public class TodoistImportService
             Add("en-GB"); Add("en-US"); Add("de-DE");
             cultures.Add(CultureInfo.InvariantCulture);
             foreach (var ci in cultures)
-                if (DateTime.TryParse(s, ci, DateTimeStyles.AssumeLocal, out var dt))
-                    return (dt.ToUniversalTime(), dt.TimeOfDay != TimeSpan.Zero || s.Contains(':'), null);
+                if (DateTime.TryParse(s, ci, DateTimeStyles.None, out var dt))
+                    return (DateHelper.LocalToUtc(dt, tz), dt.TimeOfDay != TimeSpan.Zero || s.Contains(':'), null);
         }
         catch { /* fällt unten auf „nicht erkannt" */ }
         return (null, false, $"Datum „{s}“ nicht erkannt");

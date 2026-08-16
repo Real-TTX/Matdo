@@ -10,11 +10,13 @@ public class ProjectViewModel : PageModel
 {
     private readonly ProjectService _projects;
     private readonly TaskService _tasks;
+    private readonly ICurrentUserAccessor _me;
 
-    public ProjectViewModel(ProjectService projects, TaskService tasks)
+    public ProjectViewModel(ProjectService projects, TaskService tasks, ICurrentUserAccessor me)
     {
         _projects = projects;
         _tasks = tasks;
+        _me = me;
     }
 
     public Project Project { get; set; } = default!;
@@ -62,7 +64,7 @@ public class ProjectViewModel : PageModel
         if (ViewMode is not ("list" or "calendar" or "kanban")) ViewMode = "list";
 
         // Monat für die Kalenderansicht (Standard: aktueller Monat)
-        var now = DateTime.Now;
+        var now = DateHelper.NowLocal(_me.TimeZone);
         CalYear = now.Year;
         CalMonth = now.Month;
         if (!string.IsNullOrWhiteSpace(ym) &&

@@ -9,6 +9,7 @@ public static class MatdoClaims
     public const string UserId = "matdo:uid";
     public const string SessionToken = "matdo:sid";
     public const string DisplayName = "matdo:name";
+    public const string TimeZone = "matdo:tz";
 }
 
 /// <summary>Zugriff auf den aktuell angemeldeten Benutzer (aus dem HTTP-Kontext).</summary>
@@ -20,6 +21,8 @@ public interface ICurrentUserAccessor
     string? Role { get; }
     bool IsAuthenticated { get; }
     bool IsAdmin { get; }
+    /// <summary>Zeitzone des Nutzers (aus dem tz-Claim); Fallback = Server-Zeitzone.</summary>
+    TimeZoneInfo TimeZone { get; }
 }
 
 public class CurrentUserAccessor : ICurrentUserAccessor
@@ -44,6 +47,7 @@ public class CurrentUserAccessor : ICurrentUserAccessor
     public string? Email => Principal?.FindFirstValue(ClaimTypes.Email);
     public string? DisplayName => Principal?.FindFirstValue(MatdoClaims.DisplayName);
     public string? Role => Principal?.FindFirstValue(ClaimTypes.Role);
+    public TimeZoneInfo TimeZone => DateHelper.Resolve(Principal?.FindFirstValue(MatdoClaims.TimeZone));
     public bool IsAdmin => string.Equals(Role, Entities_Role_Admin, StringComparison.OrdinalIgnoreCase);
 
     private const string Entities_Role_Admin = "Admin";
