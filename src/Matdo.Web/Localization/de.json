@@ -156,6 +156,7 @@
   "auth.createAccount": "Konto erstellen",
   "auth.haveAccount": "Bereits registriert?",
   "auth.inviteOnly": "Die offene Registrierung ist deaktiviert. Wenn du eingeladen wurdest, registriere dich einfach mit der eingeladenen E-Mail-Adresse.",
+  "auth.registerCheckMail": "Wenn die Registrierung möglich ist, haben wir dir eine E-Mail geschickt. Bitte prüfe dein Postfach und folge dem Link, um dein Konto zu bestätigen.",
   "auth.login": "Anmelden",
   "auth.forgotLink": "Passwort vergessen?",
   "auth.forgotTitle": "Passwort zurücksetzen",

@@ -20,6 +20,9 @@ public class RegisterModel : PageModel
     [BindProperty] public InputModel Input { get; set; } = new();
     public string? Error { get; set; }
 
+    /// <summary>Nach dem Absenden: neutrale Bestätigung (verrät nicht, ob das Konto neu ist).</summary>
+    public bool Submitted { get; set; }
+
     /// <summary>Offene Registrierung ist aus – Zugang nur über eine Einladung möglich.</summary>
     public bool InviteOnly => !_config.Current.AllowRegistration;
 
@@ -47,6 +50,8 @@ public class RegisterModel : PageModel
         // Vor der Ersteinrichtung zur Setup-Seite (erster Admin) leiten.
         if (!await _auth.AnyUsersAsync())
             return Redirect("/Account/Setup");
+        // Nach erfolgreichem Absenden (PRG): neutrale Bestätigung anzeigen.
+        Submitted = TempData["RegSubmitted"] is true;
         return Page();
     }
 
@@ -55,12 +60,14 @@ public class RegisterModel : PageModel
         if (!ModelState.IsValid) return Page();
 
         var result = await _auth.RegisterAsync(Input.Email, Input.Password, Input.DisplayName);
-        if (!result.Success)
-        {
-            Error = result.Error;
-            return Page();
-        }
 
-        return Redirect("/");
+        // Ersteinrichtung: erster Benutzer ist eingeloggt -> direkt in die App.
+        if (result.Authenticated)
+            return Redirect("/");
+
+        // Harte Fehler (sollten hier nicht auftreten) neutral behandeln, ansonsten
+        // immer dieselbe neutrale Bestätigung – unabhängig davon, ob das Konto neu ist.
+        TempData["RegSubmitted"] = true;
+        return RedirectToPage();
     }
 }

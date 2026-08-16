@@ -37,7 +37,10 @@ public class AuthService
         _logger = logger;
     }
 
-    public record AuthResult(bool Success, string? Error = null);
+    /// <summary><paramref name="Authenticated"/> = es wurde eine Session erzeugt (nur bei der
+    /// Erst-Einrichtung des ersten Benutzers). Bei der normalen Registrierung ist die Antwort
+    /// bewusst neutral (kein Auto-Login), damit sie nicht verrät, ob das Konto schon existiert.</summary>
+    public record AuthResult(bool Success, string? Error = null, bool Authenticated = false);
 
     /// <summary>Ob überhaupt schon ein Benutzer existiert (für die Ersteinrichtung).</summary>
     public Task<bool> AnyUsersAsync() => _db.Users.AnyAsync();
@@ -56,55 +59,100 @@ public class AuthService
         return await _db.Invitations.AnyAsync(i => i.Email == e && !i.Accepted);
     }
 
+    /// <summary>
+    /// Registrierung. Der allererste Benutzer (Ersteinrichtung) wird Admin und direkt eingeloggt.
+    /// Alle weiteren Registrierungen antworten <b>immer neutral</b> (kein Auto-Login, keine
+    /// Fehlermeldung „Konto existiert bereits"), damit von außen nicht erkennbar ist, ob eine
+    /// Adresse bereits ein Konto hat (keine Konto-Enumeration):
+    ///  - neue Adresse        → unbestätigtes Konto anlegen + Bestätigungslink mailen
+    ///  - bestehende Adresse  → Hinweis-Mail „Konto existiert bereits" an den Inhaber
+    ///  - nicht registrierbar → nichts tun (invite-only: verrät keinen Einladungsstatus)
+    /// In allen drei Fällen ist die Antwort identisch. Auch das Timing wird angeglichen:
+    /// der (teure) Passwort-Hash wird immer berechnet und E-Mails werden ohne await verschickt.
+    /// </summary>
     public async Task<AuthResult> RegisterAsync(string email, string password, string displayName)
     {
         email = email.Trim().ToLowerInvariant();
-        if (!await CanRegisterAsync(email))
-            return new AuthResult(false, "Die Registrierung ist derzeit deaktiviert.");
-        if (await _db.Users.AnyAsync(u => u.Email == email))
-            return new AuthResult(false, "Es existiert bereits ein Konto mit dieser E-Mail-Adresse.");
+        displayName = string.IsNullOrWhiteSpace(displayName) ? email.Split('@')[0] : displayName.Trim();
 
-        User user;
+        // Immer hashen (auch wenn kein Konto angelegt wird): angeglichene Antwortzeit
+        // unabhängig davon, ob die Adresse existiert oder registrierbar ist (kein Timing-Orakel).
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
+        User? firstUser = null;
+        User? newUser = null;
+        string? existingName = null;
+
         // Registrierung serialisieren (Postgres-Advisory-Lock), damit bei gleichzeitiger
-        // Erst-Registrierung auf leerer DB nicht zwei Benutzer parallel Admin werden (TOCTOU).
+        // Erst-Registrierung auf leerer DB nicht zwei Benutzer parallel Admin werden (TOCTOU)
+        // und keine doppelten Konten entstehen.
         await using (var tx = await _db.Database.BeginTransactionAsync())
         {
             await _db.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(4444777)");
 
-            // Nach Erhalt des Locks erneut prüfen (ein paralleler Lauf kann inzwischen angelegt haben).
-            if (await _db.Users.AnyAsync(u => u.Email == email))
-                return new AuthResult(false, "Es existiert bereits ein Konto mit dieser E-Mail-Adresse.");
-
-            // Erster Benutzer wird automatisch Admin, alle weiteren normale User.
             var isFirst = !await _db.Users.AnyAsync();
-            var roleName = isFirst ? Role.Admin : Role.User;
-            var role = await _db.Roles.FirstAsync(r => r.Name == roleName);
-
-            user = new User
+            if (isFirst)
             {
-                Email = email,
-                DisplayName = string.IsNullOrWhiteSpace(displayName) ? email.Split('@')[0] : displayName.Trim(),
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-                RoleId = role.Id,
-                IsActive = true,
-                // Der erste Nutzer (Admin, Ersteinrichtung) gilt sofort als bestätigt; alle
-                // weiteren müssen ihre E-Mail per Link bestätigen.
-                EmailConfirmed = isFirst,
-                EmailConfirmToken = isFirst ? null : Guid.NewGuid()
-            };
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
+                var role = await _db.Roles.FirstAsync(r => r.Name == Role.Admin);
+                firstUser = new User
+                {
+                    Email = email,
+                    DisplayName = displayName,
+                    PasswordHash = passwordHash,
+                    RoleId = role.Id,
+                    IsActive = true,
+                    EmailConfirmed = true,   // Ersteinrichtung gilt sofort als bestätigt
+                    EmailConfirmToken = null
+                };
+                _db.Users.Add(firstUser);
+                await _db.SaveChangesAsync();
+            }
+            else if (await CanRegisterAsync(email))
+            {
+                var existing = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+                if (existing is null)
+                {
+                    var role = await _db.Roles.FirstAsync(r => r.Name == Role.User);
+                    newUser = new User
+                    {
+                        Email = email,
+                        DisplayName = displayName,
+                        PasswordHash = passwordHash,
+                        RoleId = role.Id,
+                        IsActive = true,
+                        EmailConfirmed = false,       // muss per Link bestätigt werden
+                        EmailConfirmToken = Guid.NewGuid()
+                    };
+                    _db.Users.Add(newUser);
+                    await _db.SaveChangesAsync();
 
-            // Einladungen werden NICHT mehr automatisch übernommen – der neue Nutzer nimmt sie
-            // bewusst unter „Einladungen" an (Zustimmung). Sie bleiben als offen bestehen.
+                    // Einladungen werden NICHT automatisch übernommen – der neue Nutzer nimmt
+                    // sie bewusst unter „Einladungen" an (Zustimmung).
+                }
+                else
+                {
+                    // Konto besteht bereits → nur den Inhaber per Mail informieren (unten).
+                    existingName = existing.DisplayName;
+                }
+            }
+            // else: invite-only und nicht eingeladen → nichts anlegen, aber neutral antworten.
 
             await tx.CommitAsync();
         }
 
-        await CreateSessionAsync(user);
-        // Bestätigungs-Mail nach dem Commit verschicken (weiches Gate: Login ist schon möglich).
-        if (!user.EmailConfirmed && user.EmailConfirmToken is Guid vtok)
-            await SendVerificationEmailAsync(user, vtok);
+        // --- Ersteinrichtung: ersten Benutzer direkt einloggen. ---
+        if (firstUser is not null)
+        {
+            await CreateSessionAsync(firstUser);
+            return new AuthResult(true, Authenticated: true);
+        }
+
+        // --- Alle weiteren: neutrale Antwort, Mails ohne await (Timing unabhängig vom SMTP). ---
+        if (newUser is not null)
+            _ = SendVerificationEmailAsync(newUser, newUser.EmailConfirmToken!.Value);
+        else if (existingName is not null)
+            _ = SendAlreadyRegisteredEmailAsync(email, existingName);
+
         return new AuthResult(true);
     }
 
@@ -239,6 +287,23 @@ public class AuthService
             + "<p>bitte bestätige deine E-Mail-Adresse für Matdo:</p>"
             + $"<p><a href=\"{link}\">{link}</a></p>";
         await SendMailOrLogAsync(u.Email, u.DisplayName, "E-Mail bestätigen · Matdo", html, link);
+    }
+
+    /// <summary>Informiert den Inhaber einer bereits registrierten Adresse über den
+    /// Registrierungs-Versuch – so ist der „Konto existiert bereits"-Fall von außen nicht
+    /// von einer echten Neuregistrierung unterscheidbar (keine Enumeration).</summary>
+    private async Task SendAlreadyRegisteredEmailAsync(string email, string displayName)
+    {
+        var loginLink = BuildLink("/Account/Login");
+        var resetLink = BuildLink("/Account/ForgotPassword");
+        var html = $"<p>Hallo {WebUtility.HtmlEncode(displayName)},</p>"
+            + "<p>für diese E-Mail-Adresse besteht bereits ein Matdo-Konto. Soeben wurde versucht, "
+            + "damit ein neues Konto zu registrieren.</p>"
+            + $"<p>Warst du das? Dann melde dich einfach an: <a href=\"{loginLink}\">{loginLink}</a>. "
+            + $"Passwort vergessen? <a href=\"{resetLink}\">{resetLink}</a></p>"
+            + "<p>Andernfalls kannst du diese E-Mail ignorieren – es wurde kein neues Konto angelegt "
+            + "und dein bestehendes Konto ist unverändert.</p>";
+        await SendMailOrLogAsync(email, displayName, "Konto besteht bereits · Matdo", html, loginLink);
     }
 
     private async Task SendMailOrLogAsync(string to, string name, string subject, string html, string link)

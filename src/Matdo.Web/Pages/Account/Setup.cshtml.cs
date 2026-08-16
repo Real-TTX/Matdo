@@ -48,6 +48,8 @@ public class SetupModel : PageModel
             Error = result.Error;
             return Page();
         }
-        return Redirect("/");   // erster Benutzer wird automatisch Admin + eingeloggt
+        // Erster Benutzer wird automatisch Admin + eingeloggt. Falls (Race) doch kein Login
+        // erfolgte, weil zwischenzeitlich ein Konto entstand, zur normalen Anmeldung leiten.
+        return result.Authenticated ? Redirect("/") : Redirect("/Account/Login");
     }
 }

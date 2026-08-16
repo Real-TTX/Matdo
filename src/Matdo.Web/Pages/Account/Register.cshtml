@@ -9,41 +9,49 @@
         <h1>@T["auth.createAccount"]</h1>
         <p class="sub">@T["auth.registerSubtitle"]</p>
 
-        @if (!string.IsNullOrEmpty(Model.Error))
+        @if (Model.Submitted)
         {
-            <div class="alert error">@Model.Error</div>
+            <div class="alert info">@T["auth.registerCheckMail"]</div>
+            <div class="auth-alt">@T["auth.haveAccount"] <a href="/Account/Login">@T["auth.login"]</a></div>
         }
-        @if (Model.InviteOnly)
+        else
         {
-            <div class="alert info">@T["auth.inviteOnly"]</div>
+            if (!string.IsNullOrEmpty(Model.Error))
+            {
+                <div class="alert error">@Model.Error</div>
+            }
+            if (Model.InviteOnly)
+            {
+                <div class="alert info">@T["auth.inviteOnly"]</div>
+            }
+
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+                <form-field label="@T["common.name"]" for="Input_DisplayName" required="true">
+                    <input asp-for="Input.DisplayName" placeholder="Max Mustermann" autofocus />
+                    <span asp-validation-for="Input.DisplayName" class="field-error"></span>
+                </form-field>
+
+                <form-field label="@T["common.email"]" for="Input_Email" required="true">
+                    <input asp-for="Input.Email" type="email" autocomplete="username" placeholder="du@beispiel.de" />
+                    <span asp-validation-for="Input.Email" class="field-error"></span>
+                </form-field>
+
+                <form-field label="@T["auth.password"]" for="Input_Password" required="true">
+                    <input asp-for="Input.Password" type="password" autocomplete="new-password" placeholder="@T["auth.password"]" />
+                    <span asp-validation-for="Input.Password" class="field-error"></span>
+                </form-field>
+
+                <form-field label="@T["auth.passwordConfirm"]" for="Input_PasswordConfirm" required="true">
+                    <input asp-for="Input.PasswordConfirm" type="password" autocomplete="new-password" placeholder="••••••••" />
+                    <span asp-validation-for="Input.PasswordConfirm" class="field-error"></span>
+                </form-field>
+
+                <button type="submit" class="btn btn-primary">@T["auth.createAccount"]</button>
+            </form>
+
+            <div class="auth-alt">@T["auth.haveAccount"] <a href="/Account/Login">@T["auth.login"]</a></div>
         }
-
-        <form method="post">
-            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
-
-            <form-field label="@T["common.name"]" for="Input_DisplayName" required="true">
-                <input asp-for="Input.DisplayName" placeholder="Max Mustermann" autofocus />
-                <span asp-validation-for="Input.DisplayName" class="field-error"></span>
-            </form-field>
-
-            <form-field label="@T["common.email"]" for="Input_Email" required="true">
-                <input asp-for="Input.Email" type="email" autocomplete="username" placeholder="du@beispiel.de" />
-                <span asp-validation-for="Input.Email" class="field-error"></span>
-            </form-field>
-
-            <form-field label="@T["auth.password"]" for="Input_Password" required="true">
-                <input asp-for="Input.Password" type="password" autocomplete="new-password" placeholder="@T["auth.password"]" />
-                <span asp-validation-for="Input.Password" class="field-error"></span>
-            </form-field>
-
-            <form-field label="@T["auth.passwordConfirm"]" for="Input_PasswordConfirm" required="true">
-                <input asp-for="Input.PasswordConfirm" type="password" autocomplete="new-password" placeholder="••••••••" />
-                <span asp-validation-for="Input.PasswordConfirm" class="field-error"></span>
-            </form-field>
-
-            <button type="submit" class="btn btn-primary">@T["auth.createAccount"]</button>
-        </form>
-
-        <div class="auth-alt">@T["auth.haveAccount"] <a href="/Account/Login">@T["auth.login"]</a></div>
     </div>
 </div>

@@ -156,6 +156,7 @@
   "auth.createAccount": "Create account",
   "auth.haveAccount": "Already registered?",
   "auth.inviteOnly": "Open registration is disabled. If you were invited, just sign up with the invited email address.",
+  "auth.registerCheckMail": "If registration is possible, we've sent you an email. Please check your inbox and follow the link to confirm your account.",
   "auth.login": "Sign in",
   "auth.forgotLink": "Forgot password?",
   "auth.forgotTitle": "Reset password",
