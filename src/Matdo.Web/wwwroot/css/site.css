@@ -125,58 +125,73 @@ a.crumb:hover { color: var(--text); }
 .menu-pop form { margin: 0; }
 @media (max-width: 860px) { .crumbs { display: none; } }
 
-/* Mobil: Das Topbar-Filter-/Anzeige-Menü (Sortierung, Priorität, …) als Bottom-Sheet.
+/* Mobil: Das Topbar-Filter-/Anzeige-Menü (Sortierung, Priorität, …) als VOLLBILD-Dialog.
    site.js hängt das Menü (.menu-pop) im mobilen Fall direkt an <body> (Klasse .as-sheet)
-   und legt einen .sheet-backdrop dahinter. Dadurch ist das Sheet IMMER viewport-relativ
-   -> garantiert volle Breite und bündig bis zum unteren Rand, unabhängig von Eltern-
-   Elementen (die sonst ein fixed-Element „einfangen" könnten). */
+   und ergänzt oben eine Kopfzeile mit Schließen-Button. Da es an <body> hängt, ist das
+   fixed-Element IMMER viewport-relativ -> deckt zuverlässig den GANZEN Bildschirm ab,
+   unabhängig von Eltern-Elementen (die sonst ein fixed-Element „einfangen" könnten). */
 .sheet-backdrop {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, .5);
     z-index: 3000;
-    animation: sheet-fade .18s ease;
 }
 .menu-pop.as-sheet {
     display: block;
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: auto;
+    inset: 0;                 /* ganzer Bildschirm: oben/unten/links/rechts bündig */
     width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     min-width: 0;
     max-width: none;
-    max-height: 85vh;
-    overflow-y: auto;
+    max-height: none;
     margin: 0;
-    /* randlos an unten/links/rechts; nur oben abgerundet. */
-    padding: 6px 10px calc(12px + env(safe-area-inset-bottom));
+    padding: 0 10px calc(12px + env(safe-area-inset-bottom));
     border: none;
-    border-radius: 16px 16px 0 0;
+    border-radius: 0;
     background: var(--card);
-    box-shadow: 0 -8px 30px rgba(0, 0, 0, .28);
+    box-shadow: none;
+    overflow-y: auto;         /* die Optionen scrollen unter der fixierten Kopfzeile */
+    -webkit-overflow-scrolling: touch;
     z-index: 3001;
-    animation: sheet-up .22s cubic-bezier(.22, 1, .36, 1);
+    animation: sheet-fade .15s ease;
 }
-/* Greifer-Leiste oben. */
-.menu-pop.as-sheet::before {
-    content: '';
-    display: block;
-    width: 36px;
-    height: 4px;
-    margin: 4px auto 8px;
-    border-radius: 999px;
-    background: var(--border-strong);
+/* Kopfzeile mit Titel + Schließen (X); bleibt beim Scrollen oben. */
+.sheet-head {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 -10px 6px;
+    padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 17px;
 }
-.menu-pop.as-sheet .menu-item { padding: 12px; font-size: 15px; }
-.menu-pop.as-sheet .pop-title { padding: 8px 12px 2px; }
-/* Hintergrund nicht scrollen, solange das Sheet offen ist. */
+.sheet-head button {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 10px;
+    background: var(--hover);
+    color: var(--text);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+.menu-pop.as-sheet .menu-item { padding: 14px 12px; font-size: 16px; }
+.menu-pop.as-sheet .pop-title { padding: 12px 12px 4px; }
+/* Hintergrund nicht scrollen, solange der Dialog offen ist. */
 body.sheet-lock { overflow: hidden; }
-@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
-    .menu-pop.as-sheet, .sheet-backdrop { animation: none; }
+    .menu-pop.as-sheet { animation: none; }
 }
 
 /* Offline-Banner + Toast (PWA) */

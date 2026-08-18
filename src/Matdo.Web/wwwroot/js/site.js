@@ -147,10 +147,27 @@
             var backdrop = document.createElement('div');
             backdrop.className = 'sheet-backdrop';
             document.body.appendChild(backdrop);
+
+            // Kopfzeile (Titel aus dem Toggle-Button + Schließen-Button) einfügen.
+            var toggle = menu.querySelector('[data-menu-toggle]');
+            var title = toggle ? (toggle.getAttribute('aria-label') || toggle.getAttribute('title') || '') : '';
+            var head = document.createElement('div');
+            head.className = 'sheet-head';
+            var label = document.createElement('span');
+            label.textContent = title;
+            var close = document.createElement('button');
+            close.type = 'button';
+            close.setAttribute('aria-label', 'Schließen');
+            close.innerHTML = '&times;';
+            close.addEventListener('click', function () { menu.classList.remove('open'); });
+            head.appendChild(label);
+            head.appendChild(close);
+            pop.insertBefore(head, pop.firstChild);
+
             pop.classList.add('as-sheet');
             document.body.appendChild(pop);
             document.body.classList.add('sheet-lock');
-            portaled.push({ menu: menu, pop: pop, ph: ph, backdrop: backdrop });
+            portaled.push({ menu: menu, pop: pop, ph: ph, backdrop: backdrop, head: head });
         }
 
         function unportal(menu) {
@@ -158,6 +175,7 @@
             if (!s) return;
             portaled.splice(portaled.indexOf(s), 1);
             s.pop.classList.remove('as-sheet');
+            if (s.head && s.head.parentNode) s.head.parentNode.removeChild(s.head);   // Kopfzeile entfernen
             if (s.ph.parentNode) { s.ph.parentNode.insertBefore(s.pop, s.ph); s.ph.parentNode.removeChild(s.ph); }
             if (s.backdrop.parentNode) s.backdrop.parentNode.removeChild(s.backdrop);
             if (!portaled.length) document.body.classList.remove('sheet-lock');
