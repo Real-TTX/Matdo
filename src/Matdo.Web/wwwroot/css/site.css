@@ -130,13 +130,15 @@ a.crumb:hover { color: var(--text); }
    dass das nach unten aufklappende Dropdown am Bildschirmrand abgeschnitten wurde.
    Schließen: Tap auf den abgedunkelten Hintergrund (Outside-Click-Handler in site.js) oder Esc. */
 @media (max-width: 860px) {
+    /* Transparente, klick-abfangende Ebene über der Seite: fängt Taps neben dem Sheet ab
+       (schließt via site.js) und verhindert versehentliche Klicks auf den Inhalt.
+       Der SICHTBARE abgedunkelte Hintergrund wird als Schlagschatten des Sheets gezeichnet
+       (siehe unten) – das rendert zuverlässig zusammen mit dem Sheet, auch auf iOS/PWA. */
     .topbar-actions .tb-menu.open::before {
         content: '';
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, .45);
         z-index: 1200;
-        animation: sheet-fade .15s ease;
     }
     .topbar-actions .tb-menu.open .menu-pop,
     .topbar-actions .tb-menu.open .menu-pop.menu-scroll {
@@ -149,11 +151,12 @@ a.crumb:hover { color: var(--text); }
         min-width: 0;
         max-height: 85vh;
         overflow-y: auto;
+        /* Unten/links/rechts randlos (bündig an den Bildschirmkanten); nur oben abgerundet. */
         padding: 6px 10px calc(12px + env(safe-area-inset-bottom));
         border: none;
-        border-top: 1px solid var(--border-strong);
         border-radius: 16px 16px 0 0;
-        box-shadow: 0 -8px 30px rgba(0, 0, 0, .28);
+        /* 1) leichte Trennkante nach oben, 2) abgedunkelter Vollbild-Hintergrund als Spread-Schatten. */
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, .28), 0 0 0 100vmax rgba(0, 0, 0, .5);
         z-index: 1201;
         animation: sheet-up .22s cubic-bezier(.22, 1, .36, 1);
     }
