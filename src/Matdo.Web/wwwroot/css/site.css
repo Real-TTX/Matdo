@@ -125,6 +125,60 @@ a.crumb:hover { color: var(--text); }
 .menu-pop form { margin: 0; }
 @media (max-width: 860px) { .crumbs { display: none; } }
 
+/* Mobil: Das Topbar-Filter-/Anzeige-Menü (Sortierung, Priorität, …) als Bottom-Sheet –
+   volle Breite, von unten, nur so hoch wie nötig (scrollt bei Bedarf). Löst das Problem,
+   dass das nach unten aufklappende Dropdown am Bildschirmrand abgeschnitten wurde.
+   Schließen: Tap auf den abgedunkelten Hintergrund (Outside-Click-Handler in site.js) oder Esc. */
+@media (max-width: 860px) {
+    .topbar-actions .tb-menu.open::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .45);
+        z-index: 1200;
+        animation: sheet-fade .15s ease;
+    }
+    .topbar-actions .tb-menu.open .menu-pop,
+    .topbar-actions .tb-menu.open .menu-pop.menu-scroll {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        width: 100%;
+        min-width: 0;
+        max-height: 85vh;
+        overflow-y: auto;
+        padding: 6px 10px calc(12px + env(safe-area-inset-bottom));
+        border: none;
+        border-top: 1px solid var(--border-strong);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, .28);
+        z-index: 1201;
+        animation: sheet-up .22s cubic-bezier(.22, 1, .36, 1);
+    }
+    /* Greifer-Leiste (Sheet-Optik). */
+    .topbar-actions .tb-menu.open .menu-pop::before {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 4px;
+        margin: 4px auto 8px;
+        border-radius: 999px;
+        background: var(--border-strong);
+    }
+    /* Größere Tap-Ziele im Sheet. */
+    .topbar-actions .tb-menu.open .menu-pop .menu-item { padding: 12px; font-size: 15px; }
+    .topbar-actions .tb-menu.open .menu-pop .pop-title { padding: 8px 12px 2px; }
+}
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+/* Ohne Bewegung: Sheet ohne Slide-Animation direkt an der Endposition zeigen. */
+@media (prefers-reduced-motion: reduce) {
+    .topbar-actions .tb-menu.open .menu-pop,
+    .topbar-actions .tb-menu.open::before { animation: none; }
+}
+
 /* Offline-Banner + Toast (PWA) */
 .offline-bar { position: sticky; top: 44px; z-index: 15; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--bg)); border-bottom: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border)); }
 .offline-bar[hidden] { display: none; }

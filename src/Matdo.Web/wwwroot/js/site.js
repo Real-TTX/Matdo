@@ -114,7 +114,11 @@
             if (!wasOpen) menu.classList.add('open');
             return;
         }
-        if (!e.target.closest('[data-menu]')) {
+        // Schließen bei Klick außerhalb – ODER direkt auf dem [data-menu]-Element selbst
+        // (das ist auf Mobil der abgedunkelte Bottom-Sheet-Hintergrund, ein ::before des
+        // Menüs; ein Tap darauf zielt auf das Menü-Element, nicht auf einen Menüpunkt).
+        var inside = e.target.closest('[data-menu]');
+        if (!inside || e.target === inside) {
             document.querySelectorAll('[data-menu].open').forEach(function (m) { m.classList.remove('open'); });
         }
     });
