@@ -125,61 +125,58 @@ a.crumb:hover { color: var(--text); }
 .menu-pop form { margin: 0; }
 @media (max-width: 860px) { .crumbs { display: none; } }
 
-/* Mobil: Das Topbar-Filter-/Anzeige-Menü (Sortierung, Priorität, …) als Bottom-Sheet –
-   volle Breite, von unten, nur so hoch wie nötig (scrollt bei Bedarf). Löst das Problem,
-   dass das nach unten aufklappende Dropdown am Bildschirmrand abgeschnitten wurde.
-   Schließen: Tap auf den abgedunkelten Hintergrund (Outside-Click-Handler in site.js) oder Esc. */
-@media (max-width: 860px) {
-    /* Transparente, klick-abfangende Ebene über der Seite: fängt Taps neben dem Sheet ab
-       (schließt via site.js) und verhindert versehentliche Klicks auf den Inhalt.
-       Der SICHTBARE abgedunkelte Hintergrund wird als Schlagschatten des Sheets gezeichnet
-       (siehe unten) – das rendert zuverlässig zusammen mit dem Sheet, auch auf iOS/PWA. */
-    .topbar-actions .tb-menu.open::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        z-index: 1200;
-    }
-    .topbar-actions .tb-menu.open .menu-pop,
-    .topbar-actions .tb-menu.open .menu-pop.menu-scroll {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        top: auto;
-        width: 100%;
-        min-width: 0;
-        max-height: 85vh;
-        overflow-y: auto;
-        /* Unten/links/rechts randlos (bündig an den Bildschirmkanten); nur oben abgerundet. */
-        padding: 6px 10px calc(12px + env(safe-area-inset-bottom));
-        border: none;
-        border-radius: 16px 16px 0 0;
-        /* 1) leichte Trennkante nach oben, 2) abgedunkelter Vollbild-Hintergrund als Spread-Schatten. */
-        box-shadow: 0 -8px 30px rgba(0, 0, 0, .28), 0 0 0 100vmax rgba(0, 0, 0, .5);
-        z-index: 1201;
-        animation: sheet-up .22s cubic-bezier(.22, 1, .36, 1);
-    }
-    /* Greifer-Leiste (Sheet-Optik). */
-    .topbar-actions .tb-menu.open .menu-pop::before {
-        content: '';
-        display: block;
-        width: 36px;
-        height: 4px;
-        margin: 4px auto 8px;
-        border-radius: 999px;
-        background: var(--border-strong);
-    }
-    /* Größere Tap-Ziele im Sheet. */
-    .topbar-actions .tb-menu.open .menu-pop .menu-item { padding: 12px; font-size: 15px; }
-    .topbar-actions .tb-menu.open .menu-pop .pop-title { padding: 8px 12px 2px; }
+/* Mobil: Das Topbar-Filter-/Anzeige-Menü (Sortierung, Priorität, …) als Bottom-Sheet.
+   site.js hängt das Menü (.menu-pop) im mobilen Fall direkt an <body> (Klasse .as-sheet)
+   und legt einen .sheet-backdrop dahinter. Dadurch ist das Sheet IMMER viewport-relativ
+   -> garantiert volle Breite und bündig bis zum unteren Rand, unabhängig von Eltern-
+   Elementen (die sonst ein fixed-Element „einfangen" könnten). */
+.sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .5);
+    z-index: 3000;
+    animation: sheet-fade .18s ease;
 }
+.menu-pop.as-sheet {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100vw;
+    min-width: 0;
+    max-width: none;
+    max-height: 85vh;
+    overflow-y: auto;
+    margin: 0;
+    /* randlos an unten/links/rechts; nur oben abgerundet. */
+    padding: 6px 10px calc(12px + env(safe-area-inset-bottom));
+    border: none;
+    border-radius: 16px 16px 0 0;
+    background: var(--card);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, .28);
+    z-index: 3001;
+    animation: sheet-up .22s cubic-bezier(.22, 1, .36, 1);
+}
+/* Greifer-Leiste oben. */
+.menu-pop.as-sheet::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 4px auto 8px;
+    border-radius: 999px;
+    background: var(--border-strong);
+}
+.menu-pop.as-sheet .menu-item { padding: 12px; font-size: 15px; }
+.menu-pop.as-sheet .pop-title { padding: 8px 12px 2px; }
+/* Hintergrund nicht scrollen, solange das Sheet offen ist. */
+body.sheet-lock { overflow: hidden; }
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
-/* Ohne Bewegung: Sheet ohne Slide-Animation direkt an der Endposition zeigen. */
 @media (prefers-reduced-motion: reduce) {
-    .topbar-actions .tb-menu.open .menu-pop,
-    .topbar-actions .tb-menu.open::before { animation: none; }
+    .menu-pop.as-sheet, .sheet-backdrop { animation: none; }
 }
 
 /* Offline-Banner + Toast (PWA) */

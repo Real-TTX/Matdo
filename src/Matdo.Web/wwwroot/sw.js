@@ -1,5 +1,5 @@
 // Matdo Service Worker – App-Shell-Caching + Push-Benachrichtigungen
-const CACHE = 'matdo-v34';
+const CACHE = 'matdo-v35';
 const APP_SHELL = [
     '/offline.html',
     '/offline.js',
@@ -19,10 +19,19 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-            .then(() => self.clients.claim())
-    );
+    event.waitUntil((async () => {
+        const keys = await caches.keys();
+        // Nur ältere Matdo-Caches entfernen und merken, ob es eine frühere Version gab.
+        const stale = keys.filter((k) => k !== CACHE && k.indexOf('matdo-') === 0);
+        await Promise.all(stale.map((k) => caches.delete(k)));
+        await self.clients.claim();
+        // Bei einem echten Update (es gab eine frühere Version) offene Fenster EINMAL neu laden,
+        // damit frisches CSS/JS sofort greift und keine veralteten Assets hängen bleiben.
+        if (stale.length) {
+            const wins = await self.clients.matchAll({ type: 'window' });
+            for (const w of wins) { try { await w.navigate(w.url); } catch (e) { /* ignore */ } }
+        }
+    })());
 });
 
 self.addEventListener('fetch', (event) => {
