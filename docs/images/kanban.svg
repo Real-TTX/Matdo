@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" font-family="Inter, Segoe UI, system-ui, sans-serif">
+  <style>
+    .t{fill:#202020}.m{fill:#808080}.f{fill:#a0a0a0}.h{font-weight:700}
+    .sm{font-size:13px}.xs{font-size:12px}
+    .card{fill:#ffffff;stroke:#eceae8}
+    .col{fill:#fbfaf9;stroke:#eceae8}
+    .chip{font-size:11px}
+  </style>
+  <rect width="1200" height="700" fill="#ffffff"/>
+
+  <!-- Topbar -->
+  <rect width="1200" height="56" fill="#ffffff"/>
+  <line x1="0" y1="56" x2="1200" y2="56" stroke="#eceae8"/>
+  <g transform="translate(28,34)"><circle cx="6" cy="-4" r="5" fill="#e8590c"/><text x="20" y="0" class="t h" font-size="16">Website relaunch</text><text x="196" y="0" class="f" font-size="15">/ Board</text></g>
+  <!-- view switch pills -->
+  <g transform="translate(980,16)">
+    <rect width="120" height="26" rx="8" fill="#f0eeec"/>
+    <rect x="2" y="2" width="58" height="22" rx="7" fill="#ffffff" stroke="#dcd9d6"/>
+    <text x="31" y="17" class="xs t h" text-anchor="middle">Board</text>
+    <text x="90" y="17" class="xs m" text-anchor="middle">List</text>
+  </g>
+
+  <!-- Columns -->
+  <g transform="translate(40,86)">
+    <!-- To do -->
+    <g>
+      <rect class="col" width="360" height="560" rx="14"/>
+      <text x="18" y="32" class="t h sm">To do</text>
+      <rect x="322" y="18" width="24" height="18" rx="9" fill="#efe7f4"/><text x="334" y="31" class="xs h" fill="#8300bc" text-anchor="middle">3</text>
+
+      <g transform="translate(16,48)">
+        <rect class="card" width="328" height="70" rx="11"/>
+        <rect x="0" y="0" width="4" height="70" rx="2" fill="#eb8909"/>
+        <text x="18" y="28" class="t sm">Design new landing page</text>
+        <rect x="18" y="40" width="64" height="18" rx="9" fill="#fef3e6"/><text x="50" y="53" class="chip" fill="#eb8909" text-anchor="middle">P2 · design</text>
+      </g>
+      <g transform="translate(16,130)">
+        <rect class="card" width="328" height="60" rx="11"/>
+        <text x="18" y="26" class="t sm">Set up analytics</text>
+        <rect x="18" y="36" width="44" height="18" rx="9" fill="#eef4fd"/><text x="40" y="49" class="chip" fill="#246fe0" text-anchor="middle">dev</text>
+      </g>
+      <g transform="translate(16,202)">
+        <rect class="card" width="328" height="60" rx="11"/>
+        <text x="18" y="26" class="t sm">Write copy for the hero</text>
+        <text x="18" y="49" class="chip f">↳ 1 / 4 steps</text>
+      </g>
+    </g>
+
+    <!-- In progress -->
+    <g transform="translate(388,0)">
+      <rect class="col" width="360" height="560" rx="14"/>
+      <text x="18" y="32" class="t h sm">In progress</text>
+      <rect x="322" y="18" width="24" height="18" rx="9" fill="#efe7f4"/><text x="334" y="31" class="xs h" fill="#8300bc" text-anchor="middle">2</text>
+
+      <g transform="translate(16,48)">
+        <rect class="card" width="328" height="72" rx="11"/>
+        <rect x="0" y="0" width="4" height="72" rx="2" fill="#d1453b"/>
+        <text x="18" y="28" class="t sm">Migrate CMS content</text>
+        <rect x="18" y="40" width="82" height="18" rx="9" fill="#fdeceb"/><text x="59" y="53" class="chip" fill="#d1453b" text-anchor="middle">P1 · due Fri</text>
+      </g>
+      <g transform="translate(16,132)">
+        <rect class="card" width="328" height="60" rx="11"/>
+        <text x="18" y="26" class="t sm">Build contact form</text>
+        <rect x="18" y="36" width="44" height="18" rx="9" fill="#eef4fd"/><text x="40" y="49" class="chip" fill="#246fe0" text-anchor="middle">dev</text>
+      </g>
+    </g>
+
+    <!-- Done -->
+    <g transform="translate(776,0)">
+      <rect class="col" width="360" height="560" rx="14"/>
+      <text x="18" y="32" class="t h sm">Done</text>
+      <rect x="322" y="18" width="24" height="18" rx="9" fill="#efe7f4"/><text x="334" y="31" class="xs h" fill="#8300bc" text-anchor="middle">2</text>
+
+      <g transform="translate(16,48)">
+        <rect class="card" width="328" height="54" rx="11"/>
+        <circle cx="20" cy="27" r="8" fill="#058527"/><path d="M16 27 l3 3 l6 -7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="38" y="31" class="m sm" text-decoration="line-through">Register domain</text>
+      </g>
+      <g transform="translate(16,114)">
+        <rect class="card" width="328" height="54" rx="11"/>
+        <circle cx="20" cy="27" r="8" fill="#058527"/><path d="M16 27 l3 3 l6 -7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="38" y="31" class="m sm" text-decoration="line-through">Choose color palette</text>
+      </g>
+    </g>
+  </g>
+</svg>

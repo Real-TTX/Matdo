@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" font-family="Inter, Segoe UI, system-ui, sans-serif">
+  <defs>
+    <style>
+      .t{fill:#202020}.m{fill:#808080}.f{fill:#a0a0a0}
+      .h{font-weight:700}.sm{font-size:13px}.xs{font-size:12px}
+    </style>
+  </defs>
+  <rect width="1200" height="760" fill="#ffffff"/>
+
+  <!-- Sidebar -->
+  <rect width="260" height="760" fill="#fcfaf8"/>
+  <line x1="260" y1="0" x2="260" y2="760" stroke="#eceae8"/>
+  <g transform="translate(22,26)">
+    <rect width="26" height="26" rx="7" fill="#8300bc"/>
+    <path d="M6 13 l4 4 l10 -11" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="36" y="19" class="t h" font-size="19">Matdo</text>
+  </g>
+  <!-- search -->
+  <rect x="22" y="66" width="216" height="34" rx="9" fill="#f0eeec"/>
+  <circle cx="41" cy="83" r="6" fill="none" stroke="#a0a0a0" stroke-width="2"/>
+  <line x1="46" y1="88" x2="51" y2="93" stroke="#a0a0a0" stroke-width="2" stroke-linecap="round"/>
+  <text x="60" y="87" class="f sm">Search…</text>
+
+  <!-- nav -->
+  <g transform="translate(0,120)" class="sm">
+    <rect x="14" y="-6" width="232" height="34" rx="9" fill="#f3e6f8"/>
+    <text x="52" y="16" fill="#8300bc" class="h">Today</text>
+    <circle cx="34" cy="10" r="8" fill="none" stroke="#8300bc" stroke-width="2"/><circle cx="34" cy="10" r="2" fill="#8300bc"/>
+    <text x="52" y="16" fill="#8300bc" class="h" opacity="0">.</text>
+    <rect x="214" y="0" width="24" height="20" rx="6" fill="#8300bc"/>
+    <text x="226" y="15" fill="#fff" class="xs h" text-anchor="middle">6</text>
+
+    <g transform="translate(0,42)"><text x="52" y="16" class="t">Upcoming</text><rect x="30" y="4" width="14" height="12" rx="2" fill="none" stroke="#808080" stroke-width="2"/><line x1="34" y1="1" x2="34" y2="6" stroke="#808080" stroke-width="2"/><line x1="40" y1="1" x2="40" y2="6" stroke="#808080" stroke-width="2"/></g>
+    <g transform="translate(0,84)"><text x="52" y="16" class="t">Inbox</text><path d="M30 6 h14 v10 h-14 z M30 11 h4 l2 3 h2 l2 -3 h4" fill="none" stroke="#808080" stroke-width="2" stroke-linejoin="round"/></g>
+    <g transform="translate(0,126)"><text x="52" y="16" class="t">Calendar</text><rect x="30" y="4" width="14" height="12" rx="2" fill="none" stroke="#808080" stroke-width="2"/><line x1="30" y1="8" x2="44" y2="8" stroke="#808080" stroke-width="2"/></g>
+    <g transform="translate(0,168)"><text x="52" y="16" class="t">Reporting</text><path d="M31 16 v-6 M37 16 v-11 M43 16 v-8" stroke="#808080" stroke-width="2" stroke-linecap="round"/></g>
+    <g transform="translate(0,210)"><text x="52" y="16" class="t">Notes</text><path d="M31 4 h10 l3 3 v9 h-13 z" fill="none" stroke="#808080" stroke-width="2" stroke-linejoin="round"/></g>
+  </g>
+
+  <!-- projects -->
+  <g transform="translate(0,392)">
+    <text x="22" y="14" class="f xs h" letter-spacing="1">PROJECTS</text>
+    <g class="sm" transform="translate(0,26)">
+      <circle cx="34" cy="10" r="5" fill="#246fe0"/><text x="52" y="15" class="t">Work</text>
+      <g transform="translate(0,34)"><circle cx="34" cy="10" r="5" fill="#1e8e3e"/><text x="52" y="15" class="t">Home</text></g>
+      <g transform="translate(0,68)"><circle cx="34" cy="10" r="5" fill="#e8590c"/><text x="52" y="15" class="t">Website relaunch</text></g>
+      <g transform="translate(0,102)"><circle cx="34" cy="10" r="5" fill="#c2185b"/><text x="52" y="15" class="t">Shopping</text></g>
+    </g>
+  </g>
+
+  <!-- Topbar -->
+  <g transform="translate(260,0)">
+    <rect width="940" height="56" fill="#ffffff"/>
+    <line x1="0" y1="56" x2="940" y2="56" stroke="#eceae8"/>
+    <text x="28" y="35" class="t h" font-size="16">Today</text>
+    <!-- filter/display icon -->
+    <g transform="translate(880,20)"><line x1="0" y1="2" x2="16" y2="2" stroke="#808080" stroke-width="2"/><line x1="0" y1="8" x2="16" y2="8" stroke="#808080" stroke-width="2"/><line x1="0" y1="14" x2="16" y2="14" stroke="#808080" stroke-width="2"/></g>
+  </g>
+
+  <!-- Content -->
+  <g transform="translate(288,86)" font-size="15">
+    <text x="0" y="0" class="t h" font-size="22">Today</text>
+    <text x="0" y="24" class="m sm">6 tasks</text>
+
+    <!-- Overdue group -->
+    <text x="0" y="70" fill="#d1453b" class="h sm" letter-spacing=".3">OVERDUE</text>
+    <g transform="translate(0,84)">
+      <line x1="0" y1="46" x2="880" y2="46" stroke="#f1efed"/>
+      <circle cx="12" cy="16" r="9" fill="none" stroke="#d1453b" stroke-width="2"/>
+      <text x="34" y="14" class="t">Send invoice to Meyer GmbH</text>
+      <g transform="translate(34,26)"><rect width="86" height="18" rx="9" fill="#fdeceb"/><text x="43" y="13" class="xs" fill="#d1453b" text-anchor="middle">Yesterday</text>
+        <rect x="96" width="44" height="18" rx="9" fill="#eef4fd"/><text x="118" y="13" class="xs" fill="#246fe0" text-anchor="middle">work</text></g>
+    </g>
+
+    <!-- Today group -->
+    <text x="0" y="176" class="t h sm" letter-spacing=".3">19 Aug · Today · Tuesday</text>
+    <g transform="translate(0,190)" >
+      <!-- row template -->
+      <g>
+        <line x1="0" y1="46" x2="880" y2="46" stroke="#f1efed"/>
+        <circle cx="12" cy="16" r="9" fill="none" stroke="#246fe0" stroke-width="2"/>
+        <text x="34" y="14" class="t">Team standup</text>
+        <g transform="translate(34,26)"><rect width="52" height="18" rx="9" fill="#f5f4f2"/><text x="26" y="13" class="xs m" text-anchor="middle">09:30</text>
+          <rect x="60" width="44" height="18" rx="9" fill="#eef4fd"/><text x="82" y="13" class="xs" fill="#246fe0" text-anchor="middle">work</text></g>
+      </g>
+      <g transform="translate(0,58)">
+        <line x1="0" y1="46" x2="880" y2="46" stroke="#f1efed"/>
+        <circle cx="12" cy="16" r="9" fill="none" stroke="#808080" stroke-width="2"/>
+        <text x="34" y="14" class="t">Buy groceries</text>
+        <g transform="translate(34,26)"><rect width="46" height="18" rx="9" fill="#eef7ee"/><text x="23" y="13" class="xs" fill="#1e8e3e" text-anchor="middle">home</text>
+          <text x="58" y="13" class="xs f">↳ 2 / 3 steps</text></g>
+      </g>
+      <g transform="translate(0,116)">
+        <line x1="0" y1="46" x2="880" y2="46" stroke="#f1efed"/>
+        <circle cx="12" cy="16" r="9" fill="none" stroke="#eb8909" stroke-width="2"/>
+        <text x="34" y="14" class="t">Call the dentist</text>
+        <g transform="translate(34,26)"><rect width="70" height="18" rx="9" fill="#fef3e6"/><text x="35" y="13" class="xs" fill="#eb8909" text-anchor="middle">P2 · 14:00</text></g>
+      </g>
+      <g transform="translate(0,174)">
+        <line x1="0" y1="46" x2="880" y2="46" stroke="#f1efed"/>
+        <circle cx="12" cy="16" r="9" fill="#8300bc" stroke="#8300bc" stroke-width="2"/>
+        <path d="M7 16 l3.5 3.5 l7 -8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="34" y="14" class="m" text-decoration="line-through">Water the plants</text>
+      </g>
+      <g transform="translate(0,232)">
+        <circle cx="12" cy="16" r="9" fill="none" stroke="#246fe0" stroke-width="2"/>
+        <text x="34" y="14" class="t">Review pull request #42</text>
+        <g transform="translate(34,26)"><rect width="38" height="18" rx="9" fill="#f3e6f8"/><text x="19" y="13" class="xs" fill="#8300bc" text-anchor="middle">dev</text></g>
+      </g>
+    </g>
+
+    <!-- add task -->
+    <g transform="translate(0,510)">
+      <text x="0" y="14" fill="#8300bc" class="h" font-size="20">+</text>
+      <text x="20" y="14" fill="#8300bc">Add task</text>
+    </g>
+  </g>
+</svg>

@@ -12,6 +12,8 @@ no third-party services, your data stays yours.
 
 </div>
 
+![Matdo – the Today view](docs/images/today.svg)
+
 ---
 
 ## What this is about
@@ -58,6 +60,32 @@ app, offline fallback included.
 - **Per‑user time zone** – "Today"/"Overdue" and every date are computed in *your* zone
 - **PWA**: installable, offline fallback, light/dark, **English and German**
 - Sessions live in the database and **survive a container restart**
+
+## Screenshots
+
+> The images below are representative UI mock‑ups drawn in Matdo's real colours and layout –
+> handy as a preview until real screenshots land in `docs/images/`.
+
+### Projects as a Kanban board
+
+![Kanban board with columns and cards](docs/images/kanban.svg)
+
+Free columns, drag & drop, priority stripes, labels and sub‑task progress on each card. The same
+project switches to a plain list with one click.
+
+### Month calendar
+
+![Month calendar with tasks and events](docs/images/calendar.svg)
+
+Due tasks and connected calendar events on one grid; today is highlighted. Events come from ICS
+subscriptions and Google/Microsoft.
+
+### On the phone
+
+![Today list and the full‑screen filter dialog on a phone](docs/images/mobile.svg)
+
+Installs as a PWA; menus like the display/filter options open as a full‑screen dialog on small
+screens.
 
 ## Quick start
 

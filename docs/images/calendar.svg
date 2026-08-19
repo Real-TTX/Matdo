@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" font-family="Inter, Segoe UI, system-ui, sans-serif">
+  <style>
+    .t{fill:#202020}.m{fill:#808080}.f{fill:#c9c6c3}.h{font-weight:700}
+    .day{font-size:13px;fill:#606060}.ev{font-size:11px}
+  </style>
+  <rect width="1200" height="700" fill="#ffffff"/>
+
+  <!-- Topbar -->
+  <rect width="1200" height="56" fill="#ffffff"/>
+  <line x1="0" y1="56" x2="1200" y2="56" stroke="#eceae8"/>
+  <text x="28" y="35" class="t h" font-size="16">Calendar</text>
+  <g transform="translate(1060,20)" class="m">
+    <path d="M8 2 l-6 6 l6 6" fill="none" stroke="#808080" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="24" y="13" class="t h" font-size="14">August 2026</text>
+    <path d="M104 2 l6 6 l-6 6" fill="none" stroke="#808080" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- weekday header -->
+  <g transform="translate(40,86)" class="f" font-size="12" text-anchor="middle" font-weight="700">
+    <text x="80" y="12">MON</text><text x="240" y="12">TUE</text><text x="400" y="12">WED</text>
+    <text x="560" y="12">THU</text><text x="720" y="12">FRI</text><text x="880" y="12">SAT</text><text x="1040" y="12">SUN</text>
+  </g>
+
+  <!-- grid 7x5 -->
+  <g transform="translate(40,110)">
+    <!-- horizontal + vertical lines -->
+    <g stroke="#f0eeec">
+      <line x1="0" y1="0" x2="1120" y2="0"/><line x1="0" y1="108" x2="1120" y2="108"/><line x1="0" y1="216" x2="1120" y2="216"/><line x1="0" y1="324" x2="1120" y2="324"/><line x1="0" y1="432" x2="1120" y2="432"/><line x1="0" y1="540" x2="1120" y2="540"/>
+      <line x1="0" y1="0" x2="0" y2="540"/><line x1="160" y1="0" x2="160" y2="540"/><line x1="320" y1="0" x2="320" y2="540"/><line x1="480" y1="0" x2="480" y2="540"/><line x1="640" y1="0" x2="640" y2="540"/><line x1="800" y1="0" x2="800" y2="540"/><line x1="960" y1="0" x2="960" y2="540"/><line x1="1120" y1="0" x2="1120" y2="540"/>
+    </g>
+
+    <!-- day numbers row 1: 1..7 -->
+    <text x="12" y="22" class="day">1</text><text x="172" y="22" class="day">2</text><text x="332" y="22" class="day">3</text><text x="492" y="22" class="day">4</text><text x="652" y="22" class="day">5</text><text x="812" y="22" class="day">6</text><text x="972" y="22" class="day">7</text>
+    <!-- event: 5th -->
+    <g transform="translate(652,32)"><rect width="120" height="20" rx="6" fill="#eef4fd"/><circle cx="12" cy="10" r="4" fill="#246fe0"/><text x="24" y="14" class="ev" fill="#246fe0">Team standup</text></g>
+
+    <!-- row 2: 8..14 -->
+    <g transform="translate(0,108)">
+      <text x="12" y="22" class="day">8</text><text x="172" y="22" class="day">9</text><text x="332" y="22" class="day">10</text><text x="492" y="22" class="day">11</text><text x="652" y="22" class="day">12</text><text x="812" y="22" class="day">13</text><text x="972" y="22" class="day">14</text>
+      <g transform="translate(332,32)"><rect width="120" height="20" rx="6" fill="#fef3e6"/><circle cx="12" cy="10" r="4" fill="#eb8909"/><text x="24" y="14" class="ev" fill="#eb8909">Dentist 14:00</text></g>
+    </g>
+
+    <!-- row 3: 15..21 -->
+    <g transform="translate(0,216)">
+      <text x="12" y="22" class="day">15</text><text x="172" y="22" class="day">16</text><text x="332" y="22" class="day">17</text><text x="492" y="22" class="day">18</text>
+      <text x="652" y="22" class="day">19</text><text x="812" y="22" class="day">20</text><text x="972" y="22" class="day">21</text>
+      <!-- today = 19 highlighted -->
+      <circle cx="657" cy="17" r="13" fill="#8300bc"/><text x="657" y="22" class="day" fill="#fff" text-anchor="middle" font-weight="700">19</text>
+      <g transform="translate(652,32)"><rect width="130" height="20" rx="6" fill="#f3e6f8"/><circle cx="12" cy="10" r="4" fill="#8300bc"/><text x="24" y="14" class="ev" fill="#8300bc">Standup · review</text></g>
+      <g transform="translate(812,32)"><rect width="120" height="20" rx="6" fill="#eef7ee"/><circle cx="12" cy="10" r="4" fill="#1e8e3e"/><text x="24" y="14" class="ev" fill="#1e8e3e">Water plants</text></g>
+    </g>
+
+    <!-- row 4: 22..28 -->
+    <g transform="translate(0,324)">
+      <text x="12" y="22" class="day">22</text><text x="172" y="22" class="day">23</text><text x="332" y="22" class="day">24</text><text x="492" y="22" class="day">25</text><text x="652" y="22" class="day">26</text><text x="812" y="22" class="day">27</text><text x="972" y="22" class="day">28</text>
+      <g transform="translate(492,32)"><rect width="130" height="20" rx="6" fill="#fdeceb"/><circle cx="12" cy="10" r="4" fill="#d1453b"/><text x="24" y="14" class="ev" fill="#d1453b">Invoice due</text></g>
+    </g>
+
+    <!-- row 5: 29..31 + next-month faded -->
+    <g transform="translate(0,432)">
+      <text x="12" y="22" class="day">29</text><text x="172" y="22" class="day">30</text><text x="332" y="22" class="day">31</text>
+      <text x="492" y="22" class="f" font-size="13">1</text><text x="652" y="22" class="f" font-size="13">2</text><text x="812" y="22" class="f" font-size="13">3</text><text x="972" y="22" class="f" font-size="13">4</text>
+    </g>
+  </g>
+</svg>
