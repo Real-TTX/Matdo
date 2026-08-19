@@ -12,7 +12,7 @@ no third-party services, your data stays yours.
 
 </div>
 
-![Matdo – the Today view](docs/images/today.svg)
+![Matdo – the Today view](docs/images/today.png)
 
 ---
 
@@ -63,29 +63,28 @@ app, offline fallback included.
 
 ## Screenshots
 
-> The images below are representative UI mock‑ups drawn in Matdo's real colours and layout –
-> handy as a preview until real screenshots land in `docs/images/`.
-
 ### Projects as a Kanban board
 
-![Kanban board with columns and cards](docs/images/kanban.svg)
+![Kanban board with columns and cards](docs/images/kanban.png)
 
 Free columns, drag & drop, priority stripes, labels and sub‑task progress on each card. The same
 project switches to a plain list with one click.
 
-### Month calendar
+### Upcoming, grouped by day
 
-![Month calendar with tasks and events](docs/images/calendar.svg)
+![Upcoming view grouped by day](docs/images/upcoming.png)
 
-Due tasks and connected calendar events on one grid; today is highlighted. Events come from ICS
-subscriptions and Google/Microsoft.
+*Today*, *Upcoming* and *Inbox* give a focused, Todoist‑style overview – overdue items float to the
+top, everything else is grouped by day with priority and label chips.
 
 ### On the phone
 
-![Today list and the full‑screen filter dialog on a phone](docs/images/mobile.svg)
+| Task list | Filter sheet |
+|---|---|
+| ![Today on a phone](docs/images/mobile-today.png) | ![Filter options as a bottom sheet](docs/images/mobile-filter.png) |
 
-Installs as a PWA; menus like the display/filter options open as a full‑screen dialog on small
-screens.
+Installs as a PWA; menus like the display/filter options open as a full‑width bottom sheet with a
+dimmed backdrop on small screens.
 
 ## Quick start
 
