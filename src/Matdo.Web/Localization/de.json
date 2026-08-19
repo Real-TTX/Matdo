@@ -394,6 +394,7 @@
   "tasks.common.tasks": "Aufgaben",
   "tasks.common.today": "Heute",
   "tasks.common.tomorrow": "Morgen",
+  "tasks.common.yesterday": "Gestern",
   "tasks.composer.addTask": "Aufgabe hinzufügen",
   "tasks.composer.apply": "Fertig",
   "tasks.composer.createLabel": "Anlegen",

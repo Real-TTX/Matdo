@@ -114,84 +114,15 @@
             if (!wasOpen) menu.classList.add('open');
             return;
         }
-        // Tap auf den abgedunkelten Bottom-Sheet-Hintergrund schließt.
-        if (e.target.closest('.sheet-backdrop')) {
-            document.querySelectorAll('[data-menu].open').forEach(function (m) { m.classList.remove('open'); });
-            return;
-        }
-        // Klick außerhalb eines Menüs UND außerhalb des ins <body> portalierten Sheets schließt.
-        if (!e.target.closest('[data-menu]') && !e.target.closest('.menu-pop')) {
+        // Klick außerhalb eines Menüs schließt (auf Mobil deckt der Sheet-Vollflächenschatten
+        // den Hintergrund ab; ein Tap daneben trifft die Seite -> schließt hier).
+        if (!e.target.closest('[data-menu]')) {
             document.querySelectorAll('[data-menu].open').forEach(function (m) { m.classList.remove('open'); });
         }
     });
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') document.querySelectorAll('[data-menu].open').forEach(function (m) { m.classList.remove('open'); });
     });
-
-    // ---------- Mobiles Bottom-Sheet: Topbar-Filtermenü ans <body> portalieren ----------
-    // Auf schmalen Viewports wird das geöffnete Menü (.menu-pop) direkt an <body> gehängt und
-    // ein .sheet-backdrop dahinter gelegt. So ist das fixed-positionierte Sheet IMMER relativ
-    // zum Viewport -> garantiert volle Breite und bündig bis zum unteren Rand, egal welche
-    // Eltern-Elemente (mit transform/filter/… könnten ein fixed-Element sonst „einfangen").
-    (function () {
-        var isMobile = function () { return window.matchMedia('(max-width: 860px)').matches; };
-        var portaled = [];   // { menu, pop, ph, backdrop }
-        function findState(menu) { for (var i = 0; i < portaled.length; i++) if (portaled[i].menu === menu) return portaled[i]; return null; }
-
-        function portal(menu) {
-            if (findState(menu)) return;
-            var pop = menu.querySelector('.menu-pop');
-            if (!pop) return;
-            var ph = document.createComment('menu-pop');            // Platzhalter für spätere Rückgabe
-            pop.parentNode.insertBefore(ph, pop);
-            var backdrop = document.createElement('div');
-            backdrop.className = 'sheet-backdrop';
-            document.body.appendChild(backdrop);
-
-            // Kopfzeile (Titel aus dem Toggle-Button + Schließen-Button) einfügen.
-            var toggle = menu.querySelector('[data-menu-toggle]');
-            var title = toggle ? (toggle.getAttribute('aria-label') || toggle.getAttribute('title') || '') : '';
-            var head = document.createElement('div');
-            head.className = 'sheet-head';
-            var label = document.createElement('span');
-            label.textContent = title;
-            var close = document.createElement('button');
-            close.type = 'button';
-            close.setAttribute('aria-label', 'Schließen');
-            close.innerHTML = '&times;';
-            close.addEventListener('click', function () { menu.classList.remove('open'); });
-            head.appendChild(label);
-            head.appendChild(close);
-            pop.insertBefore(head, pop.firstChild);
-
-            pop.classList.add('as-sheet');
-            document.body.appendChild(pop);
-            document.body.classList.add('sheet-lock');
-            portaled.push({ menu: menu, pop: pop, ph: ph, backdrop: backdrop, head: head });
-        }
-
-        function unportal(menu) {
-            var s = findState(menu);
-            if (!s) return;
-            portaled.splice(portaled.indexOf(s), 1);
-            s.pop.classList.remove('as-sheet');
-            if (s.head && s.head.parentNode) s.head.parentNode.removeChild(s.head);   // Kopfzeile entfernen
-            if (s.ph.parentNode) { s.ph.parentNode.insertBefore(s.pop, s.ph); s.ph.parentNode.removeChild(s.ph); }
-            if (s.backdrop.parentNode) s.backdrop.parentNode.removeChild(s.backdrop);
-            if (!portaled.length) document.body.classList.remove('sheet-lock');
-        }
-
-        function sync(menu) { (menu.classList.contains('open') && isMobile()) ? portal(menu) : unportal(menu); }
-
-        function attach(menu) {
-            new MutationObserver(function () { sync(menu); }).observe(menu, { attributes: true, attributeFilter: ['class'] });
-        }
-        function init() {
-            var menus = document.querySelectorAll('.topbar-actions [data-menu]');
-            for (var i = 0; i < menus.length; i++) attach(menus[i]);
-        }
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-    })();
 
     // ---------- Aufgaben-Schnellaktionen (Duplizieren / Löschen) ----------
     document.addEventListener('click', function (e) {

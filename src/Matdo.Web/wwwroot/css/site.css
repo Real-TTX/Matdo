@@ -125,73 +125,40 @@ a.crumb:hover { color: var(--text); }
 .menu-pop form { margin: 0; }
 @media (max-width: 860px) { .crumbs { display: none; } }
 
-/* Mobil: Das Topbar-Filter-/Anzeige-Menü (Sortierung, Priorität, …) als VOLLBILD-Dialog.
-   site.js hängt das Menü (.menu-pop) im mobilen Fall direkt an <body> (Klasse .as-sheet)
-   und ergänzt oben eine Kopfzeile mit Schließen-Button. Da es an <body> hängt, ist das
-   fixed-Element IMMER viewport-relativ -> deckt zuverlässig den GANZEN Bildschirm ab,
-   unabhängig von Eltern-Elementen (die sonst ein fixed-Element „einfangen" könnten). */
-.sheet-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, .5);
-    z-index: 3000;
+/* Mobil: Topbar-Filter-/Anzeige-Menü (Sortierung, Priorität, …) als Bottom-Sheet.
+   REIN PER CSS – kein JavaScript. Greift, sobald das Stylesheet geladen ist:
+   volle Breite, bündig an unten/links/rechts, oben abgerundet, so hoch wie nötig
+   (scrollt bei Bedarf). Der abgedunkelte Hintergrund entsteht als Vollflächen-Schatten
+   des Sheets (0 0 0 100vmax) – rendert zuverlässig zusammen mit dem Sheet, auch iOS/PWA.
+   Das .menu-pop bleibt an seiner Stelle; da kein Eltern-Element transform/filter/contain
+   hat, ist position:fixed viewport-relativ und deckt die volle Breite ab. */
+@media (max-width: 860px) {
+    .topbar-actions .tb-menu.open .menu-pop {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        width: 100vw;
+        min-width: 0;
+        max-width: none;
+        max-height: 80vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0;
+        padding: 8px 10px calc(14px + env(safe-area-inset-bottom));
+        border: none;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, .28), 0 0 0 100vmax rgba(0, 0, 0, .5);
+        z-index: 1000;
+        animation: sheet-up .22s cubic-bezier(.22, 1, .36, 1);
+    }
+    .topbar-actions .tb-menu.open .menu-pop .menu-item { padding: 13px 12px; font-size: 15px; }
+    .topbar-actions .tb-menu.open .menu-pop .pop-title { padding: 10px 12px 3px; }
 }
-.menu-pop.as-sheet {
-    display: block;
-    position: fixed;
-    inset: 0;                 /* ganzer Bildschirm: oben/unten/links/rechts bündig */
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    min-width: 0;
-    max-width: none;
-    max-height: none;
-    margin: 0;
-    padding: 0 10px calc(12px + env(safe-area-inset-bottom));
-    border: none;
-    border-radius: 0;
-    background: var(--card);
-    box-shadow: none;
-    overflow-y: auto;         /* die Optionen scrollen unter der fixierten Kopfzeile */
-    -webkit-overflow-scrolling: touch;
-    z-index: 3001;
-    animation: sheet-fade .15s ease;
-}
-/* Kopfzeile mit Titel + Schließen (X); bleibt beim Scrollen oben. */
-.sheet-head {
-    position: sticky;
-    top: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin: 0 -10px 6px;
-    padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    font-weight: 700;
-    font-size: 17px;
-}
-.sheet-head button {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 10px;
-    background: var(--hover);
-    color: var(--text);
-    font-size: 24px;
-    line-height: 1;
-    cursor: pointer;
-}
-.menu-pop.as-sheet .menu-item { padding: 14px 12px; font-size: 16px; }
-.menu-pop.as-sheet .pop-title { padding: 12px 12px 4px; }
-/* Hintergrund nicht scrollen, solange der Dialog offen ist. */
-body.sheet-lock { overflow: hidden; }
-@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) {
-    .menu-pop.as-sheet { animation: none; }
+    .topbar-actions .tb-menu.open .menu-pop { animation: none; }
 }
 
 /* Offline-Banner + Toast (PWA) */

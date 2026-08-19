@@ -18,9 +18,9 @@
         var due = DateHelper.ToLocal(t.DueDate.Value, Me.TimeZone);
         var today = DateHelper.TodayLocal(Me.TimeZone);
         overdue = due.Date < today && !t.IsCompleted;
-        if (due.Date == today) dueLabel = "Heute";
-        else if (due.Date == today.AddDays(1)) dueLabel = "Morgen";
-        else if (due.Date == today.AddDays(-1)) dueLabel = "Gestern";
+        if (due.Date == today) dueLabel = T["tasks.common.today"];
+        else if (due.Date == today.AddDays(1)) dueLabel = T["tasks.common.tomorrow"];
+        else if (due.Date == today.AddDays(-1)) dueLabel = T["tasks.common.yesterday"];
         else dueLabel = due.ToString("d. MMM");
         if (t.DueHasTime) dueLabel += " " + due.ToString("HH:mm");
     }
