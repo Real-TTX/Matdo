@@ -57,7 +57,37 @@
             <a class="menu-item @(Model.ShowCompleted ? "active" : "")" href="@DUrl(done: !Model.ShowCompleted)"><icon name="check" size="15" /> @T["projects.view.showCompleted"]</a>
         </div>
     </div>
-    <a class="icon-btn" href="/Projects/Actions?id=@pid" data-modal aria-label="@T["projects.view.settings"]" title="@T["projects.view.settings"]"><icon name="dots" /></a>
+    @{
+        var fav = Model.Project.IsFavorite;
+        var viewUrl = $"{Request.Scheme}://{Request.Host}/Projects/View?id={pid}";
+    }
+    <div class="tb-menu" data-menu>
+        <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.view.settings"]" title="@T["projects.view.settings"]"><icon name="dots" /></button>
+        <div class="menu-pop menu-scroll">
+            <form method="post" asp-page="/Projects/Actions" asp-page-handler="Favorite">
+                <input type="hidden" name="id" value="@pid" />
+                <input type="hidden" name="favorite" value="@((!fav).ToString().ToLower())" />
+                <button type="submit" class="menu-item"><icon name="star" size="15" /> @(fav ? T["projects.menu.unfavorite"] : T["projects.menu.favorite"])</button>
+            </form>
+            <form method="post" asp-page="/Projects/Actions" asp-page-handler="Duplicate">
+                <input type="hidden" name="id" value="@pid" />
+                <button type="submit" class="menu-item"><icon name="copy" size="15" /> @T["projects.menu.duplicate"]</button>
+            </form>
+            <button type="button" class="menu-item" data-copy-link="@viewUrl" data-copied="@T["projects.menu.copied"]"><icon name="link" size="15" /> @T["projects.menu.copyLink"]</button>
+            <a class="menu-item" href="/projects/@pid/export.csv"><icon name="upload" size="15" /> @T["projects.menu.exportCsv"]</a>
+            <a class="menu-item" href="/Account/Settings?tab=import"><icon name="inbox" size="15" /> @T["projects.menu.importCsv"]</a>
+            <div class="menu-sep"></div>
+            <a class="menu-item" href="/Projects/Edit?id=@pid"><icon name="settings" size="15" /> @T["projects.actions.allSettings"]</a>
+            <form method="post" asp-page="/Projects/Actions" asp-page-handler="Archive">
+                <input type="hidden" name="id" value="@pid" />
+                <button type="submit" class="menu-item" onclick="return confirm('@T["projects.menu.archiveConfirm"]')"><icon name="archive" size="15" /> @T["projects.menu.archive"]</button>
+            </form>
+            <form method="post" asp-page="/Projects/Actions" asp-page-handler="Delete">
+                <input type="hidden" name="id" value="@pid" />
+                <button type="submit" class="menu-item danger" onclick="return confirm('@T["projects.edit.deleteConfirm"]')"><icon name="trash" size="15" /> @T["common.delete"]</button>
+            </form>
+        </div>
+    </div>
 }
 <div class="page-head">
     <h1><span class="phash" style="color:@Model.Project.Color; margin-right:2px">#</span>@Model.Project.Name</h1>
