@@ -324,6 +324,15 @@ textarea { resize: vertical; min-height: 60px; }
 .task-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 3px; font-size: 12px; color: var(--text-muted); align-items: center; }
 .task-meta .due.overdue { color: var(--danger); }
 .task-meta .due { display: inline-flex; align-items: center; gap: 3px; }
+/* Unteraufgaben (Schritte) direkt in der Liste – eingerückt & einzeln abhakbar */
+.subtasks { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+.subtask { display: flex; align-items: center; gap: 8px; padding: 2px 0 2px 2px; }
+.subtask-check { width: 15px; height: 15px; border: 1.5px solid var(--border-strong); border-radius: 50%; display: grid; place-items: center; cursor: pointer; flex: 0 0 auto; background: var(--card); color: transparent; font-size: 10px; }
+.subtask-check:hover { border-color: var(--accent); color: var(--accent); }
+.subtask-check.checked { background: var(--accent); border-color: var(--accent); color: #fff; }
+.subtask-title { font-size: 13px; color: var(--text); text-decoration: none; }
+.subtask-title:hover { text-decoration: underline; }
+.subtask.done .subtask-title { text-decoration: line-through; color: var(--text-muted); }
 /* Hover-Aktionen rechts an jeder Aufgabe (Todoist-artig) */
 .icon-btn.sm { width: 28px; height: 28px; }
 .task-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex: 0 0 auto; opacity: 0; transition: opacity .1s; }

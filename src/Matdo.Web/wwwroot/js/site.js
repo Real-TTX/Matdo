@@ -44,13 +44,28 @@
             body: JSON.stringify({ completed: completed })
         }).then(function (r) {
             if (r.ok) {
-                var row = check.closest('.task-row');
-                if (row) {
-                    row.classList.toggle('done', completed);
+                // Unteraufgabe (eingerückt) einzeln abhaken – NICHT die ganze Elternzeile.
+                var sub = check.closest('.subtask');
+                var target = sub || check.closest('.task-row');
+                if (target) {
+                    target.classList.toggle('done', completed);
                     check.setAttribute('data-completed', completed);
                     check.innerHTML = completed ? '✓' : '';
-                    if (completed) setTimeout(function () { row.style.transition = 'opacity .3s'; row.style.opacity = '.4'; }, 100);
-                    else row.style.opacity = '';
+                    // Nur ganze Aufgaben ausblenden; Unteraufgaben bleiben sichtbar (durchgestrichen).
+                    if (!sub) {
+                        if (completed) setTimeout(function () { target.style.transition = 'opacity .3s'; target.style.opacity = '.4'; }, 100);
+                        else target.style.opacity = '';
+                    }
+                    // Fortschritts-Zähler (n/m) der Elternzeile aktualisieren.
+                    var host = check.closest('.task-row');
+                    if (host) {
+                        var subs = host.querySelectorAll('.subtask');
+                        if (subs.length) {
+                            var done = host.querySelectorAll('.subtask.done').length;
+                            var pill = host.querySelector('[data-subcount]');
+                            if (pill) pill.textContent = done + '/' + subs.length;
+                        }
+                    }
                 }
             }
         });

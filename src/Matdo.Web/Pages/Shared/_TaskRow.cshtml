@@ -84,7 +84,7 @@ else
             }
             @if (subCount > 0)
             {
-                <span class="pill-label"><icon name="list" size="12" /> @doneSub/@subCount</span>
+                <span class="pill-label"><icon name="list" size="12" /> <span data-subcount>@doneSub/@subCount</span></span>
             }
             @if (t.Project != null)
             {
@@ -107,6 +107,20 @@ else
                 }
             }
         </div>
+        @if (subCount > 0)
+        {
+            <div class="subtasks">
+                @foreach (var s in t.SubTasks!.OrderBy(x => x.Position).ThenBy(x => x.Id))
+                {
+                    <div class="subtask @(s.IsCompleted ? "done" : "")">
+                        <div class="subtask-check @(s.IsCompleted ? "checked" : "")"
+                             data-complete-task="@s.Id" data-completed="@(s.IsCompleted ? "true" : "false")"
+                             role="checkbox" aria-checked="@(s.IsCompleted ? "true" : "false")" title="@T["tasks.common.completed"]">@(s.IsCompleted ? "✓" : "")</div>
+                        <a class="subtask-title" href="/Tasks/Edit?id=@s.Id">@s.Title</a>
+                    </div>
+                }
+            </div>
+        }
     </div>
     <div class="task-actions">
         <a class="icon-btn sm" href="@editUrl" title="@T["common.edit"]" aria-label="@T["common.edit"]"><icon name="edit" size="15" /></a>
