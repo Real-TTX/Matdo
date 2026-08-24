@@ -4,20 +4,19 @@
     ViewData["Title"] = T["tasks.today.title"];
     var total = Model.Overdue.Count + Model.DueToday.Count;
     var composer = new ComposerOptions { ReturnUrl = "/Tasks/Today", DefaultDueToday = true };
+
+    string DUrl(bool? done = null, string? sort = null, int? prio = null)
+    {
+        var parts = new List<string>();
+        if (done ?? Model.ShowCompleted) parts.Add("done=true");
+        var ss = sort ?? Model.Sort;
+        if (ss != "manual") parts.Add("sort=" + ss);
+        var pp = prio ?? Model.PrioFilter;
+        if (pp > 0) parts.Add("prio=" + pp);
+        return "/Tasks/Today" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
+    }
 }
 @section TopbarActions {
-    @{
-        string DUrl(bool? done = null, string? sort = null, int? prio = null)
-        {
-            var parts = new List<string>();
-            if (done ?? Model.ShowCompleted) parts.Add("done=true");
-            var ss = sort ?? Model.Sort;
-            if (ss != "manual") parts.Add("sort=" + ss);
-            var pp = prio ?? Model.PrioFilter;
-            if (pp > 0) parts.Add("prio=" + pp);
-            return "/Tasks/Today" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
-        }
-    }
     <div class="tb-menu" data-menu>
         <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.view.display"]" title="@T["projects.view.display"]"><icon name="list" /></button>
         <div class="menu-pop menu-scroll">
@@ -42,6 +41,8 @@
     <h1>@T["tasks.today.title"]</h1>
     <div class="sub"><icon name="check" size="16" /> @total @T["tasks.common.tasks"]</div>
 </div>
+@{ var _af = new Matdo.Web.ViewModels.ActiveFilters(Model.Sort, Model.PrioFilter, Model.ShowCompleted, DUrl(sort: "manual"), DUrl(prio: 0), DUrl(done: false)); }
+<partial name="_FilterChips" model="_af" />
 
 @if (Model.Overdue.Count > 0)
 {

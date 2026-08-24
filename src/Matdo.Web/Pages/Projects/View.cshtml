@@ -18,21 +18,20 @@
         NavUrlTemplate = $"/Projects/View?id={pid}&view=calendar&ym={{ym}}",
         AddUrlTemplate = $"/Tasks/Edit?projectId={pid}&due={{date}}"
     };
+
+    string DUrl(string? v = null, bool? done = null, string? sort = null, int? prio = null)
+    {
+        var q = $"/Projects/View?id={pid}&view={v ?? Model.ViewMode}";
+        if (done ?? Model.ShowCompleted) q += "&done=true";
+        var ss = sort ?? Model.Sort;
+        if (ss != "manual") q += "&sort=" + ss;
+        var pp = prio ?? Model.PrioFilter;
+        if (pp > 0) q += "&prio=" + pp;
+        return q;
+    }
 }
 @section TopbarActions {
     @* Anzeige: Layout + Sortieren + Priorität-Filter + erledigte Aufgaben. *@
-    @{
-        string DUrl(string? v = null, bool? done = null, string? sort = null, int? prio = null)
-        {
-            var q = $"/Projects/View?id={pid}&view={v ?? Model.ViewMode}";
-            if (done ?? Model.ShowCompleted) q += "&done=true";
-            var ss = sort ?? Model.Sort;
-            if (ss != "manual") q += "&sort=" + ss;
-            var pp = prio ?? Model.PrioFilter;
-            if (pp > 0) q += "&prio=" + pp;
-            return q;
-        }
-    }
     <div class="tb-menu" data-menu>
         <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.view.display"]" title="@T["projects.view.display"]"><icon name="list" /></button>
         <div class="menu-pop menu-scroll">
@@ -93,6 +92,8 @@
     <h1><span class="phash" style="color:@Model.Project.Color; margin-right:2px">#</span>@Model.Project.Name</h1>
     <div class="sub">@Model.Tasks.Count @T["projects.view.openTasks"]</div>
 </div>
+@{ var _af = new Matdo.Web.ViewModels.ActiveFilters(Model.Sort, Model.PrioFilter, Model.ShowCompleted, DUrl(sort: "manual"), DUrl(prio: 0), DUrl(done: false)); }
+<partial name="_FilterChips" model="_af" />
 
 @* Der Ansichtstyp (Liste/Kalender/Board) wird ausschließlich in den Projekteinstellungen
    festgelegt – hier wird das Projekt in seinem konfigurierten Typ dargestellt. *@

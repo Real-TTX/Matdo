@@ -1,0 +1,35 @@
+@model Matdo.Web.ViewModels.ActiveFilters
+@{
+    string SortLabel(string s) => s switch
+    {
+        "due" => T["projects.view.sortDue"],
+        "priority" => T["projects.view.sortPriority"],
+        "name" => T["projects.view.sortName"],
+        _ => T["projects.view.sortManual"]
+    };
+    var any = Model.Sort != "manual" || Model.Prio > 0 || Model.Done;
+}
+@if (any)
+{
+    <div class="filter-chips">
+        <span class="fc-label">@T["filters.active"]:</span>
+        @if (Model.Sort != "manual")
+        {
+            <a class="filter-chip" href="@Model.ClearSortUrl" title="@T["filters.clear"]">
+                <icon name="list" size="13" /> @T["projects.view.sortBy"]: @SortLabel(Model.Sort) <span class="fc-x">✕</span>
+            </a>
+        }
+        @if (Model.Prio > 0)
+        {
+            <a class="filter-chip" href="@Model.ClearPrioUrl" title="@T["filters.clear"]">
+                <icon name="flag" size="13" /> @T["projects.view.filterPriority"]: P@(Model.Prio) <span class="fc-x">✕</span>
+            </a>
+        }
+        @if (Model.Done)
+        {
+            <a class="filter-chip" href="@Model.ClearDoneUrl" title="@T["filters.clear"]">
+                <icon name="check" size="13" /> @T["projects.view.showCompleted"] <span class="fc-x">✕</span>
+            </a>
+        }
+    </div>
+}

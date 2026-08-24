@@ -3,20 +3,19 @@
 @{
     ViewData["Title"] = T["tasks.inbox.title"];
     var composer = new ComposerOptions { ReturnUrl = "/Tasks/Inbox" };
+
+    string DUrl(bool? done = null, string? sort = null, int? prio = null)
+    {
+        var parts = new List<string>();
+        if (done ?? Model.ShowCompleted) parts.Add("done=true");
+        var ss = sort ?? Model.Sort;
+        if (ss != "manual") parts.Add("sort=" + ss);
+        var pp = prio ?? Model.PrioFilter;
+        if (pp > 0) parts.Add("prio=" + pp);
+        return "/Tasks/Inbox" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
+    }
 }
 @section TopbarActions {
-    @{
-        string DUrl(bool? done = null, string? sort = null, int? prio = null)
-        {
-            var parts = new List<string>();
-            if (done ?? Model.ShowCompleted) parts.Add("done=true");
-            var ss = sort ?? Model.Sort;
-            if (ss != "manual") parts.Add("sort=" + ss);
-            var pp = prio ?? Model.PrioFilter;
-            if (pp > 0) parts.Add("prio=" + pp);
-            return "/Tasks/Inbox" + (parts.Count > 0 ? "?" + string.Join("&", parts) : "");
-        }
-    }
     <div class="tb-menu" data-menu>
         <button type="button" class="icon-btn" data-menu-toggle aria-label="@T["projects.view.display"]" title="@T["projects.view.display"]"><icon name="list" /></button>
         <div class="menu-pop menu-scroll">
@@ -41,6 +40,8 @@
     <h1>@T["tasks.inbox.title"]</h1>
     <div class="sub"><icon name="inbox" size="16" /> @Model.Items.Count @T["tasks.common.tasks"]</div>
 </div>
+@{ var _af = new Matdo.Web.ViewModels.ActiveFilters(Model.Sort, Model.PrioFilter, Model.ShowCompleted, DUrl(sort: "manual"), DUrl(prio: 0), DUrl(done: false)); }
+<partial name="_FilterChips" model="_af" />
 
 @foreach (var t in Model.Items)
 {

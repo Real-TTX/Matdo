@@ -333,6 +333,13 @@ textarea { resize: vertical; min-height: 60px; }
 .subtask-title { font-size: 13px; color: var(--text); text-decoration: none; }
 .subtask-title:hover { text-decoration: underline; }
 .subtask.done .subtask-title { text-decoration: line-through; color: var(--text-muted); }
+/* Aktive Sortier-/Filter-Chips unter der Überschrift (klick = Filter entfernen) */
+.filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 14px; }
+.filter-chips .fc-label { font-size: 12px; color: var(--text-faint); font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.filter-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; text-decoration: none; color: var(--accent-ink); background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent); }
+.filter-chip:hover { background: color-mix(in srgb, var(--accent) 20%, var(--bg)); }
+.filter-chip .fc-x { font-size: 11px; opacity: .7; margin-left: 1px; }
+.filter-chip:hover .fc-x { opacity: 1; }
 /* Hover-Aktionen rechts an jeder Aufgabe (Todoist-artig) */
 .icon-btn.sm { width: 28px; height: 28px; }
 .task-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex: 0 0 auto; opacity: 0; transition: opacity .1s; }
