@@ -193,13 +193,30 @@
 
     function position(el, anchor) {
         var r = anchor.getBoundingClientRect();
+        var m = 8;                          // Mindestabstand zum Viewport-Rand
         el.style.visibility = 'hidden';
+        el.style.maxHeight = ''; el.style.overflowY = '';
         var w = el.offsetWidth, hgt = el.offsetHeight;
         var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
-        var left = r.left + window.scrollX, top = r.bottom + window.scrollY + 4;
-        if (left + w > window.scrollX + vw - 8) left = window.scrollX + vw - w - 8;
-        if (left < window.scrollX + 8) left = window.scrollX + 8;
-        if (r.bottom + hgt + 8 > vh && r.top - hgt - 4 > 0) top = r.top + window.scrollY - hgt - 4;
+
+        // Ist der Kalender hoeher als der sichtbare Bereich? -> Hoehe begrenzen + scrollbar.
+        if (hgt > vh - 2 * m) { el.style.maxHeight = (vh - 2 * m) + 'px'; el.style.overflowY = 'auto'; hgt = vh - 2 * m; }
+
+        // Horizontal in den Viewport klemmen.
+        var left = r.left + window.scrollX;
+        if (left + w > window.scrollX + vw - m) left = window.scrollX + vw - w - m;
+        if (left < window.scrollX + m) left = window.scrollX + m;
+
+        // Standard unter dem Feld; nicht genug Platz unten UND oben mehr Platz -> darueber.
+        var spaceBelow = vh - r.bottom, spaceAbove = r.top, top;
+        if (spaceBelow >= hgt + m || spaceBelow >= spaceAbove) {
+            top = r.bottom + window.scrollY + 4;
+            var maxTop = window.scrollY + vh - hgt - m;   // niemals unten rausragen
+            if (top > maxTop) top = maxTop;
+        } else {
+            top = r.top + window.scrollY - hgt - 4;
+            if (top < window.scrollY + m) top = window.scrollY + m;
+        }
         el.style.left = left + 'px'; el.style.top = top + 'px'; el.style.visibility = '';
     }
 
