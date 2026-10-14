@@ -173,6 +173,7 @@ a.crumb:hover { color: var(--text); }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .topbar .brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; color: var(--accent); font-size: 18px; }
 .brand-mark { color: var(--accent); border-radius: 7px; flex: 0 0 auto; }
+.brand-logo { flex: 0 0 auto; }
 .brand-word { color: var(--text); letter-spacing: -.01em; }
 
 /* ---------- Sidebar ---------- */
