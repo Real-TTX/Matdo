@@ -329,6 +329,43 @@ public class AuthService
         }
     }
 
+    /// <summary>
+    /// Löscht das Konto des aktuell angemeldeten Nutzers endgültig (DSGVO Art. 17).
+    /// Verlangt das korrekte Passwort und verhindert, dass sich der letzte aktive
+    /// Administrator aussperrt. Die Datenbank kaskadiert beim Entfernen des Nutzers alle
+    /// eigenen Daten (Projekte, Aufgaben, Etiketten, Notizen, Kalender-Verbindungen,
+    /// Push-Abos, Sessions sowie eigene Teams); mit dem Nutzer geteilte Daten bleiben beim
+    /// jeweiligen Eigentümer, zugewiesene Aufgaben werden nur entzogen (AssigneeId → NULL).
+    /// </summary>
+    public async Task<AuthResult> DeleteOwnAccountAsync(string? password)
+    {
+        var ctx = _http.HttpContext;
+        if (ctx is null || !ctx.Request.Cookies.TryGetValue(SessionAuthenticationHandler.CookieName, out var raw)
+            || !Guid.TryParse(raw, out var token))
+            return new AuthResult(false, "Nicht angemeldet.");
+
+        var session = await _db.UserSessions.Include(s => s.User).FirstOrDefaultAsync(s => s.Token == token);
+        var user = session?.User;
+        if (user is null) return new AuthResult(false, "Nicht angemeldet.");
+
+        if (string.IsNullOrEmpty(password) || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            return new AuthResult(false, "Das Passwort ist falsch.");
+
+        // Letzten aktiven Administrator nicht aussperren.
+        var adminRoleId = (await _db.Roles.FirstAsync(r => r.Name == Role.Admin)).Id;
+        if (user.RoleId == adminRoleId && user.IsActive)
+        {
+            var otherAdmins = await _db.Users.CountAsync(u => u.Id != user.Id && u.IsActive && u.RoleId == adminRoleId);
+            if (otherAdmins == 0)
+                return new AuthResult(false, "Du bist der letzte aktive Administrator – dein Konto kann nicht gelöscht werden. Ernenne zuerst eine andere Person zum Administrator.");
+        }
+
+        _db.Users.Remove(user);           // DB kaskadiert alle eigenen Daten + Sessions
+        await _db.SaveChangesAsync();
+        ctx.Response.Cookies.Delete(SessionAuthenticationHandler.CookieName);
+        return new AuthResult(true);
+    }
+
     private async Task CreateSessionAsync(User user)
     {
         var ctx = _http.HttpContext;

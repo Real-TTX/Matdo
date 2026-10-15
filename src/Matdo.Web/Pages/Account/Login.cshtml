@@ -10,6 +10,10 @@
         <h1>@T["auth.welcomeBack"]</h1>
         <p class="sub">@T["auth.loginSubtitle"]</p>
 
+        @if (Request.Query["deleted"] == "1")
+        {
+            <div class="alert success">@T["auth.accountDeleted"]</div>
+        }
         @if (!string.IsNullOrEmpty(Model.Error))
         {
             <div class="alert error">@Model.Error</div>

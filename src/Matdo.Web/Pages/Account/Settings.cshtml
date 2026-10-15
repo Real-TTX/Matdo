@@ -309,6 +309,19 @@
                 <icon name="download" size="16" /> @T["settings.data.exportButton"]
             </a>
         </div>
+
+        <div class="card" style="margin-top:14px; border-color: color-mix(in srgb, var(--danger) 35%, var(--border))">
+            <h3 style="color: var(--danger)"><icon name="trash" size="16" /> @T["settings.data.deleteTitle"]</h3>
+            <p class="hint muted">@T["settings.data.deleteWarn"]</p>
+            <form method="post" asp-page-handler="DeleteAccount" onsubmit="return confirm('@T["settings.data.deleteConfirm"]')">
+                <form-field label="@T["settings.data.deletePassword"]" for="deletePassword" required="true">
+                    <input type="password" name="deletePassword" id="deletePassword" autocomplete="current-password" required />
+                </form-field>
+                <form-buttons>
+                    <button type="submit" class="btn danger"><icon name="trash" size="16" /> @T["settings.data.deleteButton"]</button>
+                </form-buttons>
+            </form>
+        </div>
     </div>
 </div>
 

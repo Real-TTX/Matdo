@@ -17,14 +17,16 @@ public class SettingsModel : PageModel
     private readonly JsonConfigService _config;
     private readonly CalendarService _calendar;
     private readonly TodoistImportService _import;
+    private readonly AuthService _auth;
 
-    public SettingsModel(MatdoDbContext db, ICurrentUserAccessor me, JsonConfigService config, CalendarService calendar, TodoistImportService import)
+    public SettingsModel(MatdoDbContext db, ICurrentUserAccessor me, JsonConfigService config, CalendarService calendar, TodoistImportService import, AuthService auth)
     {
         _db = db;
         _me = me;
         _config = config;
         _calendar = calendar;
         _import = import;
+        _auth = auth;
     }
 
     [BindProperty] public ProfileInput Profile { get; set; } = new();
@@ -159,6 +161,23 @@ public class SettingsModel : PageModel
         await _db.SaveChangesAsync();
         Message = "Passwort geändert. Andere Geräte wurden abgemeldet.";
         return Page();
+    }
+
+    // ----- Konto löschen (DSGVO Art. 17) -----
+
+    public async Task<IActionResult> OnPostDeleteAccountAsync(string? deletePassword)
+    {
+        var result = await _auth.DeleteOwnAccountAsync(deletePassword);
+        if (!result.Success)
+        {
+            var user = await LoadUserAsync();
+            if (user is not null) { Profile.DisplayName = user.DisplayName; await PopulateAsync(user); }
+            ActiveTab = "data";
+            Error = result.Error;
+            return Page();
+        }
+        // Konto gelöscht + abgemeldet -> zur Anmeldung mit Bestätigung.
+        return Redirect("/Account/Login?deleted=1");
     }
 
     // ----- Kalender-Verbindungen -----
